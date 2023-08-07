@@ -35,8 +35,8 @@ contract TimeTurner {
         isPortalOpen = false;
     }
 
-    // QUESTION is this right? killing a compiler warning to basically say "no you cannot just *pay* this contract"...
-    // QUESTION i think the actual correct behavior may be to redirect to enterPortal, but i'm not sure.
+    // QUESTION i think the actual correct behavior may be to redirect somehow to enterPortal, but i'm not sure.
+    // TODO test me
     receive() external payable {
         // revert
         revert();
@@ -47,33 +47,25 @@ contract TimeTurner {
         return keccak256(abi.encode(callObj, returnObj));
     }
 
-    /// this: takes in a call, puts out a return value from the record of return values.
+    /// this: takes in a call (structured as a CallObj), puts out a return value from the record of return values.
     /// also: does some accounting that we saw a given pair of call and return values once, and returns a thing off the emulated stack.
-    /// only ever called during reentrancy in order to balance the calls of the solution
-    /// example: call yourself and check whether your trade went well or not
-    /// get an "arbitrary value": get a contract that feeds itself a value from the future without validation
-
-    /// this would look like a contract that calls itself with arbitrary bytes
-    /// if the time turner calls me with x, i call the time turner with x, then i return true
+    /// called as reentrancy in order to balance the calls of the solution and make things validate.
+    // todo understand better when this is called and how it's used.
     function enterPortal(bytes calldata input) external payable returns (bytes memory) {
         require(isPortalOpen, "PortalClosed");
-
         require(returnStore.length > 0, "OutOfReturnValues");
 
         ReturnObject memory returnvalue = returnStore[returnStore.length - 1];
-
         emit ReturnObjectLog("enterportal", returnvalue.returnvalue);
-
         returnStore.pop();
 
         CallObject memory callobject = abi.decode(input, (CallObject));
-
         emit CallObjectLog("enterPortal", callobject);
 
         bytes32 pairID = getCallReturnID(callobject, returnvalue);
 
+        // todo this may be optimizable
         if (callbalanceStore[pairID] == 0 && callbalanceKeySet[pairID] == false) {
-            // TODO check with vlad if this is right- why was he initializing it to zero the first time we see the pair?
             callbalanceStore[pairID] = 1;
             callbalanceKeyList.push(pairID);
             callbalanceKeySet[pairID] = true;
@@ -82,7 +74,6 @@ contract TimeTurner {
         }
 
         emit CallBalance("enterPortal", pairID, callbalanceStore[pairID]);
-
         return returnvalue.returnvalue;
     }
 
@@ -90,28 +81,24 @@ contract TimeTurner {
         return this.enterPortal(input);
     }
 
-    // this is what the searcher calls
-    // "this is a bunch of stuff that comes from the future"
+    // this is what the searcher calls to finally execute and then validate everything
     function verify(CallObject[] memory calls, ReturnObject[] memory return_s) external payable {
         require(calls.length == return_s.length, "LengthMismatch");
         
         // i think: if the portal is open, then we are in a recursive call, so we should just call the fallback function and let that *record* execution...
         // but then we should also do the rest of the function, which is to check that the return values are correct.
-        // QUESTION: fml is this right?
         if (isPortalOpen) {
             // # inline so that now "fallback" caller is not self but original caller
             (bool success, bytes memory returned_from_fallback) = address(this).delegatecall(abi.encode(calls));
             require(success, "inside portalopen fallback CallFailed");
             // returned from fallback should be the return value of the verify function, which is nothing.
-            // check this.
+            // todo check that this is correct with vlad.
             require(returned_from_fallback.length == 0, "TimeImbalance");
-            // QUESTION: what do we do with this return value? i think just throw it out
-            // TODO test this.
         }
 
         isPortalOpen = true;
 
-        // QUESTION: what if the portal is open and we.... copy over return_s... again? seems fucked up?
+        // todo: see the if statement above. what if the portal is open and we copy over return_s again? this does not seem correct. think more about this.
         delete returnStore;
 
         for (uint256 i = 0; i < return_s.length; i++) {
@@ -133,17 +120,7 @@ contract TimeTurner {
 
             bytes32 pairID = getCallReturnID(calls[i], ReturnObject(returnvalue));
 
-            // fine if this goes negative- we want it EQUAL TO ZERO
-            // note this differs from vlad's code: it was this:
-            /*
-         if [calls[i],returnvalue] not in callcounts.keys() {
-          callcounts[calls[i],returnvalue] = 0
-         } else {
-          callcounts[calls[i],returnvalue] -= 1
-       	    }
-            */
-            // question what did you mean by zero-indexing counters in your example code? is this correct?
-            // question for claudia: is this okay? any chance it's uninitialized?
+            // todo write tests for this two-sets-and-a-list situation, and think about optimization.
             if (callbalanceKeySet[pairID] == false) {
                 callbalanceStore[pairID] = -1;
                 callbalanceKeyList.push(pairID);
@@ -162,6 +139,7 @@ contract TimeTurner {
 
         //     require(callbalanceStore[pairID] == 0, "TimeInbalance");
         // }
+        // todo ask vlad if i'm fixing a bug or making one here :)
         for (uint256 i = 0; i < callbalanceKeyList.length; i++) {
             emit CallBalance("verifyCheck", callbalanceKeyList[i], callbalanceStore[callbalanceKeyList[i]]);
             require(callbalanceStore[callbalanceKeyList[i]] == 0, "TimeImbalance");
@@ -174,7 +152,7 @@ contract TimeTurner {
 
         delete returnStore;
         delete callbalanceKeyList;
-        /* TODO clear some other storage out */
+        // TODO clear some other storage out
 
         isPortalOpen = false;
     }
@@ -183,7 +161,7 @@ contract TimeTurner {
 // what you should write after that:
 // write a quine: this is a contract that deploys itself...
 // just use a contract that create2s itself?
-// maybe 2 contracts that create2 each other.
+// maybe 2 contracts that create2 each other...
 
 // after that: mempool laminate?
 // main uncertainty is "idk what's possible"
