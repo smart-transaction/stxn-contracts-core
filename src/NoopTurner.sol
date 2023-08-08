@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: UNKNOWN
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.13;
 
 import "./TimeTurner.sol";
 
 contract NoopTurner {
-    address timeturner_address;
+    address private _timeturnerAddress;
 
-    constructor(address timeturner_location) {
-        timeturner_address = timeturner_location;
+    constructor(address timeturnerLocation) {
+        _timeturnerAddress = timeturnerLocation;
     }
 
     function const_loop(uint16 input) external returns (uint16) {
@@ -17,7 +17,7 @@ contract NoopTurner {
         CallObject memory callObj = CallObject({amount: 0, addr: address(this), gas: 1000000, callvalue: abi.encodeWithSignature("const_loop(uint16)", input)});
 
         // call, hit the fallback.
-        (bool success, bytes memory returnvalue) = timeturner_address.call(abi.encode(callObj));
+        (bool success, bytes memory returnvalue) = _timeturnerAddress.call(abi.encode(callObj));
 
         if (!success) {
             revert("turner CallFailed");
