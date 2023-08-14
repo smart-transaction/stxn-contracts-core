@@ -141,6 +141,7 @@ abstract contract FlashPill is IERC20 {
         bool toWasZero = _balances[to] == 0;
 
         // yeehaw the overflow and balance checks, we literally do not care at all.
+        // future us will figure it out ;)
         _balances[owner] -= value;
         _balances[to] += value;
 
