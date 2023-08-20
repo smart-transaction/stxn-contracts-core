@@ -14,7 +14,7 @@ struct ReturnObject {
     bytes returnvalue;
 }
 
-contract TimeTurner {
+contract CallBreaker {
     error PortalClosed();
     error OutOfReturnValues();
     error OutOfEther();

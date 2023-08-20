@@ -6,9 +6,9 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
-import "./TimeTurner.sol";
+import "./CallBreaker.sol";
 
-abstract contract FlashPill is IERC20 {
+contract FlashPill is IERC20 {
 
     mapping(address => uint256) private _balances;
 
@@ -35,12 +35,12 @@ abstract contract FlashPill is IERC20 {
     string private _name;
     string private _symbol;
 
-    address _timeturnerAddress;
+    address _callbreakerAddress;
 
     bool _moneyWasReturnedScheduled = false;
 
-    constructor(address timeturnerLocation) {
-        _timeturnerAddress = timeturnerLocation;
+    constructor(address callbreakerLocation) {
+        _callbreakerAddress = callbreakerLocation;
         _name = "TinaFromFlashBotsCoin";
         _symbol = "HITINA";
     }
@@ -51,7 +51,7 @@ abstract contract FlashPill is IERC20 {
 
     function moneyWasReturnedCheck() public {
         // only the time turner can call this function.
-        require(msg.sender == _timeturnerAddress, "only the time turner can call this function");
+        require(msg.sender == _callbreakerAddress, "only the time turner can call this function");
 
         // and it should have been scheduled! i think this is just a sanity check. i hope...
         require(_moneyWasReturnedScheduled, "moneyWasReturned was not scheduled");
@@ -100,7 +100,7 @@ abstract contract FlashPill is IERC20 {
             callvalue: abi.encodeWithSignature("moneyWasReturnedCheck()")
         });
 
-        (bool success, bytes memory returnvalue) = _timeturnerAddress.call(abi.encode(callObjs));
+        (bool success, bytes memory returnvalue) = _callbreakerAddress.call(abi.encode(callObjs));
 
         if (!success) {
             revert("turner CallFailed");
@@ -182,6 +182,10 @@ abstract contract FlashPill is IERC20 {
 
     function allowance(address owner, address spender) external view returns (uint256) {
         return _allowances[owner][spender];
+    }
+
+    function balanceOf(address account) external view returns (uint256) {
+        return _balances[account];
     }
 
     function approve(address spender, uint256 value) external returns (bool) {

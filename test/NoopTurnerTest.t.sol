@@ -2,18 +2,18 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../src/TimeTurner.sol";
+import "../src/CallBreaker.sol";
 import "../src/NoopTurner.sol";
 
 contract NoopTurnerTest is Test {
     // Counter public counter;
 
-    TimeTurner public timeturner;
+    CallBreaker public callbreaker;
     NoopTurner public noopturner;
 
     function setUp() public {
-        timeturner = new TimeTurner();
-        noopturner = new NoopTurner(address(timeturner));
+        callbreaker = new CallBreaker();
+        noopturner = new NoopTurner(address(callbreaker));
     }
 
     function test_loop() public {
@@ -37,6 +37,6 @@ contract NoopTurnerTest is Test {
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(uint16(52))});
 
         // call verify
-        timeturner.verify(callObjs, returnObjs);
+        callbreaker.verify(callObjs, returnObjs);
     }
 }
