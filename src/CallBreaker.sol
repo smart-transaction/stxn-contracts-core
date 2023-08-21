@@ -157,22 +157,3 @@ contract CallBreaker {
         isPortalOpen = false;
     }
 }
-
-// what you should write after that:
-// write a quine: this is a contract that deploys itself...
-// just use a contract that create2s itself?
-// maybe 2 contracts that create2 each other...
-
-// after that: mempool laminate?
-// main uncertainty is "idk what's possible"
-
-// learn K's tools (like the solvers) to help define the scope of the work
-// briefly review KEVM usage
-
-// discuss gastoken situation
-
-// "flashpill" -> ERC20 where anyone can move any balances for anyone (including negative), as long as they end up back at zero :)
-// claudia should figure out how to do this!
-// code it like flash loans- you can do anything you want as long as you end up back at zero.
-
-// DM daniel about contract harassment, ask if he wants ops help again, figure out github organization
