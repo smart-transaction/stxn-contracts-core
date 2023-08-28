@@ -82,14 +82,31 @@ contract CallBreaker {
     }
 
     // this is what the searcher calls to finally execute and then validate everything
-    function verify(CallObject[] memory calls, ReturnObject[] memory return_s) external payable {
+    function verify(bytes memory callsBytes, bytes memory returnsBytes) external payable {
+        // TODO is this correct?!??!
+        uint256 gasAtStart = gasleft();
+        CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
+        ReturnObject[] memory return_s = abi.decode(returnsBytes, (ReturnObject[]));
+        
         require(calls.length == return_s.length, "LengthMismatch");
         
-        // i think: if the portal is open, then we are in a recursive call, so we should just call the fallback function and let that *record* execution...
+        // i think: if the portal is open, then we are in a recursive call, so we should just call the fallback function and let that *record* execution of this function...
         // but then we should also do the rest of the function, which is to check that the return values are correct.
+        // i don't even know if we should be recording this! ask vlad. or maybe caffeinate and think about it harder.
+        // realistically why not just BLOCK CALLING THIS FOR NOW?
         if (isPortalOpen) {
             // # inline so that now "fallback" caller is not self but original caller
-            (bool success, bytes memory returned_from_fallback) = address(this).delegatecall(abi.encode(calls));
+            // encode myself and my calldata 
+            bytes memory callValue = abi.encodeWithSignature("verify(bytes, bytes)", callsBytes, returnsBytes);
+            CallObject memory callObj = CallObject({
+                amount: msg.value,
+                addr: address(this),
+                // TODO bug potentially???
+                gas: gasAtStart,
+                callvalue: callValue
+            });
+            (bool success, bytes memory returned_from_fallback) = address(this).delegatecall(abi.encode(callObj));
+
             require(success, "inside portalopen fallback CallFailed");
             // returned from fallback should be the return value of the verify function, which is nothing.
             // todo check that this is correct with vlad.

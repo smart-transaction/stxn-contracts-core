@@ -36,7 +36,10 @@ contract NoopTurnerTest is Test {
         // note it always returns 52
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(uint16(52))});
 
+        bytes memory callObjsBytes = abi.encode(callObjs);
+        bytes memory returnObjsBytes = abi.encode(returnObjs);
+
         // call verify
-        callbreaker.verify(callObjs, returnObjs);
+        callbreaker.verify(callObjsBytes, returnObjsBytes);
     }
 }
