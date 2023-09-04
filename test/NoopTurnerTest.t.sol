@@ -18,7 +18,8 @@ contract NoopTurnerTest is Test {
 
     function test_loop() public {
         // check vanilla call, just for fun...
-        (bool success, bytes memory ret) = address(noopturner).call{gas: 1000000, value: 0}(abi.encodeWithSignature("vanilla(uint16)", uint16(42)));
+        (bool success, bytes memory ret) =
+            address(noopturner).call{gas: 1000000, value: 0}(abi.encodeWithSignature("vanilla(uint16)", uint16(42)));
 
         require(success, "vanilla call failed");
         assertEq(abi.decode(ret, (uint16)), uint16(52), "vanilla call returned wrong value");

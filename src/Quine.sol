@@ -49,6 +49,7 @@ contract Contract1 {
         return address(new Contract2{salt: salt}(_callbreakerAddress));
     }
 }
+
 contract Contract2 {
     address private _callbreakerAddress;
 

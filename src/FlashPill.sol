@@ -7,7 +7,6 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "./CallBreaker.sol";
 
 contract FlashPill is IERC20 {
-
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -69,7 +68,7 @@ contract FlashPill is IERC20 {
 
         // BALANCES SHOULD ALL BE ZERO
         // not going to check, but it should be if our code is right. whoever fuzzes this... that's on you.
-        
+
         // clear indexOf
         for (uint256 i = 0; i < _nonzeroBalances.length; i++) {
             address nonzeroBalanceAddress = _nonzeroBalances[i];
@@ -114,7 +113,7 @@ contract FlashPill is IERC20 {
 
         // move the last item into the index being vacated
         address lastValue = _nonzeroBalances[_nonzeroBalances.length - 1];
-        _nonzeroBalances[index - 1] = lastValue;  // adjust for 1-based indexing
+        _nonzeroBalances[index - 1] = lastValue; // adjust for 1-based indexing
         _indexOf[lastValue] = index;
 
         _nonzeroBalances.pop();
@@ -193,7 +192,6 @@ contract FlashPill is IERC20 {
 
         address owner = msg.sender;
         _allowances[owner][spender] = value;
-
 
         bytes32 hashOfAllowancePair = getHashOfAllowancePair(owner, spender);
         if (_allowanceExists[hashOfAllowancePair].isValue) {

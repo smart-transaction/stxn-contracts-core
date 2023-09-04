@@ -38,8 +38,12 @@ contract PnP {
     }
 
     function callBreakerNp(address input) external returns (uint256 index) {
-
-        CallObject memory callObj = CallObject({amount: 0, addr: address(this), gas: 1000000, callvalue: abi.encodeWithSignature("const_loop(uint16)", input)});
+        CallObject memory callObj = CallObject({
+            amount: 0,
+            addr: address(this),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature("const_loop(uint16)", input)
+        });
 
         // call, hit the fallback.
         (bool success, bytes memory returnvalue) = _callbreakerAddress.call(abi.encode(callObj));
