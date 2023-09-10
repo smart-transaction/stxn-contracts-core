@@ -47,11 +47,11 @@ Would you like me to create a Notion task for these test cases or delegate any p
 
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity ^0.8.13;
+pragma solidity ^=0.8.20;
 
 import "forge-std/Test.sol";
 import "../src/timetravel/CallBreaker.sol";
-import "../src/timetravel/FlashPill.sol";
+import "../src/examples/FlashPill.sol";
 
 contract FlashPillTest is Test {
     CallBreaker private callbreaker;

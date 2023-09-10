@@ -1,14 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^=0.8.20;
 
-/// identical to the one from callbreaker
-struct CallObject {
-    uint256 amount;
-    address addr;
-    uint256 gas;
-    /// should be abi encoded
-    bytes callvalue;
-}
+import "../TimeTypes.sol";
 
 struct CallObjectHolder {
     bool initialized;
@@ -39,6 +32,11 @@ contract LaminatedProxy {
 
     // this contract can receive eth but you have to spend it with execute/push/pull
     receive() external payable {}
+    // view a deferred call with a given sequence number or give a false if it's uninitialized
+    function viewDeferredCall(uint256 seqNumber) public view returns (bool, CallObject memory) {
+        CallObjectHolder memory coh = deferredCalls[seqNumber];
+        return (coh.initialized, coh.callObj);
+    }
 
     // push a call to the laminator
     // it can be pulled next block

@@ -1,10 +1,10 @@
 // NOTE THAT THIS MAY NOT WORK YET! NO TESTS
 
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^=0.8.20;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
-import "./CallBreaker.sol";
+import "../timetravel/CallBreaker.sol";
 
 contract FlashPill is IERC20 {
     mapping(address => uint256) private _balances;
@@ -47,8 +47,7 @@ contract FlashPill is IERC20 {
     }
 
     function moneyWasReturnedCheck() public {
-        // only the time turner can call this function.
-        require(msg.sender == _callbreakerAddress, "only the time turner can call this function");
+        // todo: do there need to be any checks on who the caller is?
 
         // and it should have been scheduled! i think this is just a sanity check. i hope...
         require(_moneyWasReturnedScheduled, "moneyWasReturned was not scheduled");

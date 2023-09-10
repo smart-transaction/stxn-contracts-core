@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 // NOTE THAT THIS MAY NOT WORK YET! NO TESTS
-pragma solidity ^0.8.13;
+pragma solidity ^=0.8.20;
 
-import "./CallBreaker.sol";
+import "../timetravel/CallBreaker.sol";
 
 contract PnP {
     address private _callbreakerAddress;

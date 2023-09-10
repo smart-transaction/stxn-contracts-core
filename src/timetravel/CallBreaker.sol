@@ -1,18 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^=0.8.20;
 
-struct CallObject {
-    uint256 amount;
-    address addr;
-    uint256 gas;
-    /// should be abi encoded
-    bytes callvalue;
-}
-
-struct ReturnObject {
-    /// should be abi encoded
-    bytes returnvalue;
-}
+import "../TimeTypes.sol";
 
 contract CallBreaker {
     error PortalClosed();
@@ -33,6 +22,10 @@ contract CallBreaker {
 
     constructor() {
         isPortalOpen = false;
+    }
+    // View function to check the status of the portal
+    function isOpen() public view returns (bool) {
+        return isPortalOpen;
     }
 
     receive() external payable {

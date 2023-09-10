@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^=0.8.20;
 
 import "forge-std/Test.sol";
 //import {VmSafe} from "forge-std/Vm.sol";
 
 import "../src/lamination/Laminator.sol";
 import "../src/lamination/LaminatedProxy.sol";
-import "../src/lamination/Dummy.sol";
+import "../src/examples/Dummy.sol";
 
 contract LaminatorTest is Test {
     Laminator public laminator;
