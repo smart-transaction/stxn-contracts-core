@@ -76,7 +76,7 @@ contract Laminator {
     function pushToProxy(bytes calldata cData, uint256 delay) external returns (uint256 sequenceNumber) {
         address proxyAddress = getOrCreateProxy();
 
-        bytes memory payload = abi.encodeWithSignature("push(bytes, uint256)", cData, delay);
+        bytes memory payload = abi.encodeWithSignature("push(bytes,uint32)", cData, delay);
         (bool success, bytes memory returnData) = proxyAddress.delegatecall(payload);
         require(success, "Laminator: Delegatecall to push failed");
         sequenceNumber = abi.decode(returnData, (uint256));
