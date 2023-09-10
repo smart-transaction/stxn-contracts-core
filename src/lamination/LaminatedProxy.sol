@@ -49,29 +49,23 @@ contract LaminatedProxy {
         return currentSequenceNumber;
     }
 
-    function pull(uint256 seqNumber) external returns (bytes memory) {
+    function pull(uint256 seqNumber) external returns (bytes memory returnValue) {
         CallObjectHolder memory coh = deferredCalls[seqNumber];
-
-        require(deferredCalls[seqNumber].initialized, "Proxy: Invalid sequence number");
-
+        require(coh.initialized, "Proxy: Invalid sequence number");
         require(block.number >= coh.firstCallableBlock, "Proxy: Too early to pull this sequence number");
 
-        CallObject memory callToMake = coh.callObj;
+        returnValue = _execute(coh.callObj);
 
-        (bool success, bytes memory returnvalue) =
-            coh.callObj.addr.call{gas: coh.callObj.gas, value: coh.callObj.amount}(coh.callObj.callvalue);
-
-        require(success, "Proxy: Call failed");
-
-        emit CallPulled(callToMake, seqNumber);
-
+        emit CallPulled(coh.callObj, seqNumber);
         delete deferredCalls[seqNumber];
-
-        return returnvalue;
     }
 
     function execute(bytes calldata input) external onlyOwner returns (bytes memory) {
         CallObject memory callToMake = abi.decode(input, (CallObject));
+        return _execute(callToMake);
+    }
+
+    function _execute(CallObject memory callToMake) internal returns (bytes memory) {
         (bool success, bytes memory returnvalue) =
             callToMake.addr.call{gas: callToMake.gas, value: callToMake.amount}(callToMake.callvalue);
         require(success, "Proxy: Immediate call failed");

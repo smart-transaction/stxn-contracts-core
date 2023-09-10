@@ -62,7 +62,7 @@ contract FlashPillTest is Test {
         flashpill = new FlashPill(address(callbreaker));
     }
 
-    function test() public {
+    function test() public pure {
         assert(false);
     }
 }
