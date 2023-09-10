@@ -69,7 +69,7 @@ contract LaminatorTest is Test {
         vm.expectEmit(true, true, true, true);
         emit ProxyPushed(address(proxy), callObj1, 0);
         emit CallPushed(callObj1, 0);
-        uint256 sequenceNumber1 = laminator.pushToProxy(cData);
+        uint256 sequenceNumber1 = laminator.pushToProxy(cData, 1);
         assertEq(sequenceNumber1, 0);
 
         // push sequence number 1. it should emit 43.
@@ -84,7 +84,7 @@ contract LaminatorTest is Test {
         vm.expectEmit(true, true, true, true);
         emit ProxyPushed(address(proxy), callObj2, 1);
         emit CallPushed(callObj2, 1);
-        uint256 sequenceNumber2 = laminator.pushToProxy(cData);
+        uint256 sequenceNumber2 = laminator.pushToProxy(cData, 1);
         assertEq(sequenceNumber2, 1);
 
         // fastforward a block
@@ -278,7 +278,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("reverter()")
         });
         bytes memory cData = abi.encode(callObj);
-        uint256 sequenceNumber = laminator.pushToProxy(cData);
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 1);
         assertEq(sequenceNumber, 0);
 
         vm.warp(block.number + 1);
