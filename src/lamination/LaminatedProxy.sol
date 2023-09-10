@@ -37,15 +37,10 @@ contract LaminatedProxy {
         _;
     }
 
-    // push a call to the laminator
-    // it can be pulled next block
-    function push(bytes calldata input) public onlyOwner returns (uint256) {
-        return push(input, 1);
-    }
-
+    /// push a call to the laminator
     /// if you want to push a call with no delay, use this function and use 0 as the delay
     /// if you want to push a call with a weird delay, use this function and use the delay you want :)
-    function push(bytes calldata input, uint32 delay) public onlyOwner returns (uint256) {
+    function push(bytes calldata input, uint32 delay) external onlyOwner returns (uint256) {
         CallObject memory callObj = abi.decode(input, (CallObject));
         uint256 currentSequenceNumber = sequenceNumber++;
         deferredCalls[currentSequenceNumber] =
@@ -54,7 +49,7 @@ contract LaminatedProxy {
         return currentSequenceNumber;
     }
 
-    function pull(uint256 seqNumber) public returns (bytes memory) {
+    function pull(uint256 seqNumber) external returns (bytes memory) {
         CallObjectHolder memory coh = deferredCalls[seqNumber];
 
         require(deferredCalls[seqNumber].initialized, "Proxy: Invalid sequence number");
@@ -70,14 +65,12 @@ contract LaminatedProxy {
 
         emit CallPulled(callToMake, seqNumber);
 
-        // some cleanup :)
-        delete deferredCalls[seqNumber].callObj;
         delete deferredCalls[seqNumber];
 
         return returnvalue;
     }
 
-    function execute(bytes calldata input) public onlyOwner returns (bytes memory) {
+    function execute(bytes calldata input) external onlyOwner returns (bytes memory) {
         CallObject memory callToMake = abi.decode(input, (CallObject));
         (bool success, bytes memory returnvalue) =
             callToMake.addr.call{gas: callToMake.gas, value: callToMake.amount}(callToMake.callvalue);

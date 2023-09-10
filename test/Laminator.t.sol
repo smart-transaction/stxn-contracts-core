@@ -6,7 +6,7 @@ import {VmSafe} from "forge-std/Vm.sol";
 
 import "../src/lamination/Laminator.sol";
 import "../src/lamination/LaminatedProxy.sol";
-import "../src/lamination/Dummy.sol";
+import "./utils/Dummy.sol";
 
 contract LaminatorTest is Test {
     Laminator public laminator;
@@ -199,7 +199,7 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
         VmSafe.Wallet memory wallet = vm.createWallet("pusher");
         vm.prank(wallet.addr);
-        try proxy.push(cData) {
+        try proxy.push(cData, 1) {
             assert(false);
         } catch Error(string memory reason) {
             assertEq(reason, "Proxy: Not the owner");
@@ -220,7 +220,7 @@ contract LaminatorTest is Test {
         });
         bytes memory cData = abi.encode(callObj);
         vm.prank(address(laminator));
-        try proxy.push(cData) {
+        try proxy.push(cData, 1) {
             assert(false);
         } catch Error(string memory reason) {
             assertEq(reason, "Proxy: Not the owner");
