@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.13;
 
 /// identical to the one from callbreaker
 struct CallObject {
@@ -37,18 +37,10 @@ contract LaminatedProxy {
         _;
     }
 
-    // this contract can receive eth but you have to spend it with execute/push/pull
-    receive() external payable {}
-
     // push a call to the laminator
     // it can be pulled next block
     function push(bytes calldata input) public onlyOwner returns (uint256) {
-        CallObject memory callObj = abi.decode(input, (CallObject));
-        uint256 currentSequenceNumber = sequenceNumber++;
-        deferredCalls[currentSequenceNumber] =
-            CallObjectHolder({initialized: true, firstCallableBlock: block.number + 1, callObj: callObj});
-        emit CallPushed(callObj, currentSequenceNumber);
-        return currentSequenceNumber;
+        return push(input, 1);
     }
 
     /// if you want to push a call with no delay, use this function and use 0 as the delay
@@ -93,4 +85,7 @@ contract LaminatedProxy {
         emit CallExecuted(callToMake);
         return returnvalue;
     }
+
+    // this contract can receive eth but you have to spend it with execute/push/pull
+    receive() external payable {}
 }
