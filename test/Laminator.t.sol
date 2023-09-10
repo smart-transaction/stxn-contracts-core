@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import {VmSafe} from "forge-std/Vm.sol";
+//import {VmSafe} from "forge-std/Vm.sol";
 
 import "../src/lamination/Laminator.sol";
 import "../src/lamination/LaminatedProxy.sol";
@@ -10,6 +10,8 @@ import "../src/lamination/Dummy.sol";
 
 contract LaminatorTest is Test {
     Laminator public laminator;
+
+    address randomFriendAddress = address(0xbeefd3ad);
 
     event ProxyCreated(address indexed owner, address indexed proxyAddress);
     event ProxyPushed(address indexed proxyAddress, CallObject callObj, uint256 sequenceNumber);
@@ -90,18 +92,16 @@ contract LaminatorTest is Test {
         // fastforward a block
         vm.warp(block.number + 1);
 
-        // try pulls as a random address, make sure the events were emitted
-        VmSafe.Wallet memory wallet = vm.createWallet("puller");
         vm.expectEmit(true, true, true, true);
         emit CallPulled(callObj1, 0);
         emit DummyEvent(val1);
-        vm.prank(wallet.addr);
+        vm.prank(randomFriendAddress);
         proxy.pull(0);
 
         vm.expectEmit(true, true, true, true);
         emit CallPulled(callObj2, 1);
         emit DummyEvent(val2);
-        vm.prank(wallet.addr);
+        vm.prank(randomFriendAddress);
         proxy.pull(0);
     }
 
@@ -123,8 +123,7 @@ contract LaminatorTest is Test {
         assertEq(sequenceNumber, 0);
 
         // try pulls as a random address, make sure the events were emitted
-        VmSafe.Wallet memory wallet = vm.createWallet("puller");
-        vm.prank(wallet.addr);
+        vm.prank(randomFriendAddress);
         proxy.pull(0);
     }
 
@@ -146,8 +145,7 @@ contract LaminatorTest is Test {
         assertEq(sequenceNumber, 0);
 
         // try pulls as a random address, make sure the events were emitted
-        VmSafe.Wallet memory wallet = vm.createWallet("puller");
-        vm.prank(wallet.addr);
+        vm.prank(randomFriendAddress);
         try proxy.pull(0) {
             assert(false);
         } catch Error(string memory reason) {
@@ -175,8 +173,7 @@ contract LaminatorTest is Test {
         vm.warp(block.number + 1);
 
         // try pulls as a random address, make sure the events were emitted
-        VmSafe.Wallet memory wallet = vm.createWallet("puller");
-        vm.prank(wallet.addr);
+        vm.prank(randomFriendAddress);
         try proxy.pull(0) {
             assert(false);
         } catch Error(string memory reason) {
@@ -197,8 +194,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        VmSafe.Wallet memory wallet = vm.createWallet("pusher");
-        vm.prank(wallet.addr);
+        vm.prank(randomFriendAddress);
         try proxy.push(cData) {
             assert(false);
         } catch Error(string memory reason) {
@@ -244,8 +240,7 @@ contract LaminatorTest is Test {
         assertEq(sequenceNumber, 0);
 
         // pull once
-        VmSafe.Wallet memory wallet = vm.createWallet("puller");
-        vm.prank(wallet.addr);
+        vm.prank(randomFriendAddress);
         proxy.pull(0);
 
         // and try to pull again
@@ -283,8 +278,7 @@ contract LaminatorTest is Test {
 
         vm.warp(block.number + 1);
 
-        VmSafe.Wallet memory wallet = vm.createWallet("puller");
-        vm.prank(wallet.addr);
+        vm.prank(randomFriendAddress);
         try proxy.pull(0) {
             assert(false);
         } catch Error(string memory reason) {
@@ -305,8 +299,7 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
 
         // pretend to be a random address and call directly, should fail
-        VmSafe.Wallet memory wallet = vm.createWallet("pusher");
-        vm.prank(wallet.addr);
+        vm.prank(randomFriendAddress);
         try proxy.execute(cData) {
             assert(false);
         } catch Error(string memory reason) {
@@ -385,8 +378,7 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
 
         // pretend to be a random address and call directly, should fail
-        VmSafe.Wallet memory wallet = vm.createWallet("pusher");
-        vm.prank(wallet.addr);
+        vm.prank(randomFriendAddress);
         try proxy.execute(cData) {
             assert(false);
         } catch Error(string memory reason) {
