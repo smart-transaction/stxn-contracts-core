@@ -50,8 +50,8 @@ Would you like me to create a Notion task for these test cases or delegate any p
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../src/CallBreaker.sol";
-import "../src/FlashPill.sol";
+import "../src/timetravel/CallBreaker.sol";
+import "../src/timetravel/FlashPill.sol";
 
 contract FlashPillTest is Test {
     CallBreaker private callbreaker;

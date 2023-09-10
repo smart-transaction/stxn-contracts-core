@@ -2,8 +2,8 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../src/CallBreaker.sol";
-import "../src/NoopTurner.sol";
+import "../src/timetravel/CallBreaker.sol";
+import "../src/timetravel/NoopTurner.sol";
 
 contract NoopTurnerTest is Test {
     // Counter public counter;
