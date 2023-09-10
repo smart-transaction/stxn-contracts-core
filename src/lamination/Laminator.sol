@@ -37,7 +37,7 @@ contract Laminator {
         if (codeSize == 0) {
             // Create a new proxy contract using create2
             bytes32 salt = keccak256(abi.encodePacked(msg.sender));
-            bytes memory constructorArgs = abi.encode(address(this), msg.sender); // Encode the constructor arguments
+            bytes memory constructorArgs = abi.encode(msg.sender, address(this)); // Encode the constructor arguments
             bytes memory bytecode = abi.encodePacked(type(LaminatedProxy).creationCode, constructorArgs); // Append the constructor arguments to the bytecode
 
             assembly {
@@ -59,7 +59,7 @@ contract Laminator {
     /// @return The computed proxy address.
     function computeProxyAddress(address owner) public view returns (address) {
         bytes32 salt = keccak256(abi.encodePacked(owner));
-        bytes memory constructorArgs = abi.encode(address(this), owner); // Encode the constructor arguments
+        bytes memory constructorArgs = abi.encode(owner, address(this)); // Encode the constructor arguments
         bytes memory bytecode = abi.encodePacked(type(LaminatedProxy).creationCode, constructorArgs); // Append the constructor arguments to the bytecode
 
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(bytecode)));

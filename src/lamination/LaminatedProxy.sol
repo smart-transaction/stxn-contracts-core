@@ -48,7 +48,7 @@ contract LaminatedProxy {
     /// @dev Initializes the contract, setting the owner and laminator addresses.
     /// @param _laminator The address of the laminator contract.
     /// @param _owner The address of the contract's owner.
-    constructor(address _laminator, address _owner) {
+    constructor(address _owner, address _laminator) {
         owner = _owner;
         laminator = _laminator;
     }

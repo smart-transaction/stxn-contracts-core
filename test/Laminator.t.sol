@@ -28,10 +28,14 @@ contract LaminatorTest is Test {
     // proxy when one does not exist for the sender. Verify by checking the ProxyCreated
     // event and comparing the emitted proxy address with the computed proxy address.
     function testProxyCreation() public {
-        vm.expectEmit(true, true, true, true);
-        address proxyAddress = laminator.getOrCreateProxy();
         address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+
+        vm.expectEmit(true, true, true, true);
+        emit ProxyCreated(address(this), expectedProxyAddress);
+        address proxyAddress = laminator.getOrCreateProxy();
+
         assertEq(proxyAddress, expectedProxyAddress);
+        assertGt(address(proxyAddress).code.length, 0);
     }
 
     // - Existing Proxy Test: Test if the getOrCreateProxy function returns the existing proxy address when one already exists for the sender.
