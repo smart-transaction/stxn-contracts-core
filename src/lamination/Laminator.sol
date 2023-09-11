@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^=0.8.20;
+pragma solidity >=0.6.2 <0.9.0;
 
 import "./LaminatedProxy.sol";
 
@@ -12,7 +12,7 @@ contract Laminator {
     // Function to compute the proxy contract address for an owner
     function computeProxyAddress(address owner) public view returns (address) {
         bytes32 salt = keccak256(abi.encodePacked(owner));
-        bytes memory constructorArgs = abi.encode(owner); // Encode the constructor arguments
+        bytes memory constructorArgs = abi.encode(address(this), owner); // Encode the constructor arguments
         bytes memory bytecode = abi.encodePacked(type(LaminatedProxy).creationCode, constructorArgs); // Append the constructor arguments to the bytecode
 
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(bytecode)));
@@ -52,7 +52,7 @@ contract Laminator {
     function pushToProxy(bytes calldata cData, uint256 delay) public returns (uint256 sequenceNumber) {
         address proxyAddress = getOrCreateProxy();
 
-        bytes memory payload = abi.encodeWithSignature("push(bytes, uint256)", cData, delay);
+        bytes memory payload = abi.encodeWithSignature("push(bytes,uint32)", cData, delay);
 
         (bool success, bytes memory returnData) = proxyAddress.delegatecall(payload);
         require(success, "Laminator: Delegatecall to push failed");

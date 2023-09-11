@@ -1,28 +1,32 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^=0.8.20;
+pragma solidity >=0.6.2 <0.9.0;
 
 import "forge-std/Script.sol";
-import "openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "forge-std/Vm.sol";
+
 import "../src/lamination/Laminator.sol";
 import "../src/timetravel/CallBreaker.sol";
+import "../src/examples/SelfCheckout.sol";
+import "../src/examples/MyErc20.sol";
 
 contract WorkedExampleScript is Script {
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY1");
+        uint256 pusherPrivateKey = vm.envUint("PUSHER_PRIVATE_KEY2");
+        uint256 fillerPrivateKey = vm.envUint("FILLER_PRIVATE_KEY3");
+        
+        address pusher = vm.addr(pusherPrivateKey);
+        address filler = vm.addr(fillerPrivateKey);
+
+        // start deployer land
         vm.startBroadcast(deployerPrivateKey);
 
         Laminator laminator = new Laminator();
         CallBreaker callbreaker = new CallBreaker();
 
         // two erc20s for a selfcheckout
-        IERC20 erc20a = new ERC20();
-        IERC20 erc20b = new ERC20();
-
-        // make a dummy address for the pusher who wants to get their order filled
-        address pusher = address(0x1234567890123456789012345678901234567890);
-        // make a dummy address for the filler who wants to fill the order
-        address filler = address(0x0987654321098765432109876543210987654321);
+        MyErc20 erc20a = new MyErc20("A", "A");
+        MyErc20 erc20b = new MyErc20("B", "B");
         
         // give the pusher 10 erc20a
         erc20a.mint(pusher, 10);
@@ -31,33 +35,33 @@ contract WorkedExampleScript is Script {
         erc20b.mint(filler, 20);
 
         // compute the pusher laminated address
-        address pusherLaminated = laminator.computeProxyAddress(pusher);
-
-        // pusher sends its erc20a to the laminated address
-        vm.prank(pusher);
-        erc20a.transfer(pusherLaminated, 10);
+        address payable pusherLaminated = payable(laminator.computeProxyAddress(pusher));
 
         // set up a selfcheckout
-        SelfCheckout selfcheckout = new SelfCheckout(pusherLaminated, erc20a.address, erc20b.address, callbreaker.address);
+        SelfCheckout selfcheckout = new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
 
-        // pusher pushes its call to the selfcheckout
+        vm.stopBroadcast();
+        
         // THIS HAPPENS IN USER LAND
-        CallObject memory pusherCallObj = new CallObject( {
+        vm.startBroadcast(pusherPrivateKey);
+        // laminate your erc20a
+        erc20a.transfer(pusherLaminated, 10);
+        // pusher pushes its call to the selfcheckout
+        CallObject memory pusherCallObj = CallObject( {
             amount: 0,
             addr: address(selfcheckout),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("takeSomeAtokenFromOwner(uint256)", 10)
         });
-        vm.prank(pusher);
-        (bool success, bytes memory returnvalue) = laminator.pushToProxy(abi.encode(pusherCallObj));
-        // get the laminator sequence number from the return value
-        uint256 laminatorSequenceNumber = abi.decode(returnvalue, (uint256));
+        uint256 laminatorSequenceNumber = laminator.pushToProxy(abi.encode(pusherCallObj));
+        vm.stopBroadcast();
         // END USER LAND
 
         // go forward in time
         vm.warp(block.number + 1);
 
         // THIS SHOULD ALL HAPPEN IN SOLVER LAND
+        vm.startBroadcast(fillerPrivateKey);
         // filler fills the order- time warp time.
         // start by setting the selfcheckout to be the filler!
         selfcheckout.setTokenDest(filler);
@@ -98,23 +102,21 @@ contract WorkedExampleScript is Script {
         callObjs[2] = cobj;
         returnObjs[2] = robj;
         
-        vm.prank(filler);
-        (success, returnvalue) = callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs));
+        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs));
+        vm.stopBroadcast();
         // END SOLVER LAND
 
         // check the state of all the contracts now.
         // pusher should have 20 erc20b and 0 erc20a
-        assertEq(erc20a.balanceOf(pusher), 0);
-        assertEq(erc20b.balanceOf(pusher), 20);
+        assert(erc20a.balanceOf(pusher)== 0);
+        assert(erc20b.balanceOf(pusher)== 20);
         // filler should have 0 erc20b and 10 erc20a
-        assertEq(erc20a.balanceOf(filler), 10);
-        assertEq(erc20b.balanceOf(filler), 0);
+        assert(erc20a.balanceOf(filler) == 10);
+        assert (erc20b.balanceOf(filler) == 0);
         // portal should be closed
-        assertEq(laminator.portalIsOpen(), false);
+        assert(!callbreaker.isOpen());
         // nothing should be scheduled in the laminator
-        (bool init, bytes memory bs) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
-        assertEq(init, false);
-
-        vm.stopBroadcast();
+        (bool init, CallObject memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
+        assert(!init);
     }
 }

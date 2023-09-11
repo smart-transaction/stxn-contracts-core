@@ -1,7 +1,7 @@
 // NOTE THAT THIS MAY NOT WORK YET! NO TESTS
 
 // SPDX-License-Identifier: MIT
-pragma solidity ^=0.8.20;
+pragma solidity >=0.6.2 <0.9.0;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "../timetravel/CallBreaker.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^=0.8.20;
+pragma solidity >=0.6.2 <0.9.0;
 
 import "../TimeTypes.sol";
 
@@ -41,12 +41,7 @@ contract LaminatedProxy {
     // push a call to the laminator
     // it can be pulled next block
     function push(bytes calldata input) public onlyOwner returns (uint256) {
-        CallObject memory callObj = abi.decode(input, (CallObject));
-        uint256 currentSequenceNumber = sequenceNumber++;
-        deferredCalls[currentSequenceNumber] =
-            CallObjectHolder({initialized: true, firstCallableBlock: block.number + 1, callObj: callObj});
-        emit CallPushed(callObj, currentSequenceNumber);
-        return currentSequenceNumber;
+        push(input, 1);
     }
 
     /// if you want to push a call with no delay, use this function and use 0 as the delay
