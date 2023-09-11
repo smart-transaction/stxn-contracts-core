@@ -36,8 +36,7 @@ contract SelfCheckout {
     // when a debt is taken out of the protocol, it goes here. should be called right before executing a pull...
     address tokenDest;
 
-
-    constructor(address _owner, address _atoken, address _btoken,address _callbreakerAddress) {
+    constructor(address _owner, address _atoken, address _btoken, address _callbreakerAddress) {
         owner = _owner;
 
         atoken = IERC20(_atoken);

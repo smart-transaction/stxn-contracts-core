@@ -18,7 +18,6 @@ contract MyErc20 is ERC20 {
         _owner = msg.sender;
     }
 
-
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
     }

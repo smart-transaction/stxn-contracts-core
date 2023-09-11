@@ -24,6 +24,7 @@ contract CallBreaker {
         isPortalOpen = false;
     }
     // View function to check the status of the portal
+
     function isOpen() public view returns (bool) {
         return isPortalOpen;
     }

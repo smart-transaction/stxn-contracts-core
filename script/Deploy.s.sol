@@ -13,8 +13,6 @@ contract CounterScript is Script {
         Laminator laminator = new Laminator();
         CallBreaker callbreaker = new CallBreaker();
 
-
-
         vm.stopBroadcast();
     }
 }

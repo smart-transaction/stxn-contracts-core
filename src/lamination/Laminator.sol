@@ -89,7 +89,7 @@ contract Laminator {
     /// @dev Encodes the provided calldata and delegatecalls it into the `execute` function of the proxy contract.
     ///      A new proxy will be created if one does not already exist for the sender.
     /// @param cData The calldata to be executed.
-    function executeInProxy(bytes calldata cData) external returns (bytes memory){
+    function executeInProxy(bytes calldata cData) external returns (bytes memory) {
         address proxyAddress = getOrCreateProxy();
 
         bytes memory payload = abi.encodeWithSignature("execute(bytes)", cData);
