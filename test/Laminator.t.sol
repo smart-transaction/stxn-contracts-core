@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 
 import "../src/lamination/Laminator.sol";
 import "../src/lamination/LaminatedProxy.sol";
-import "../src/examples/Dummy.sol";
+import "./utils/Dummy.sol";
 
 contract LaminatorTest is Test {
     Laminator public laminator;
@@ -30,10 +30,14 @@ contract LaminatorTest is Test {
     // proxy when one does not exist for the sender. Verify by checking the ProxyCreated
     // event and comparing the emitted proxy address with the computed proxy address.
     function testProxyCreation() public {
-        vm.expectEmit(true, true, true, true);
-        address proxyAddress = laminator.getOrCreateProxy();
         address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+
+        vm.expectEmit(true, true, true, true);
+        emit ProxyCreated(address(this), expectedProxyAddress);
+        address proxyAddress = laminator.getOrCreateProxy();
+
         assertEq(proxyAddress, expectedProxyAddress);
+        assertGt(address(proxyAddress).code.length, 0);
     }
 
     // - Existing Proxy Test: Test if the getOrCreateProxy function returns the existing proxy address when one already exists for the sender.
@@ -71,7 +75,7 @@ contract LaminatorTest is Test {
         vm.expectEmit(true, true, true, true);
         emit ProxyPushed(address(proxy), callObj1, 0);
         emit CallPushed(callObj1, 0);
-        uint256 sequenceNumber1 = laminator.pushToProxy(cData);
+        uint256 sequenceNumber1 = laminator.pushToProxy(cData, 1);
         assertEq(sequenceNumber1, 0);
 
         // push sequence number 1. it should emit 43.
@@ -86,7 +90,7 @@ contract LaminatorTest is Test {
         vm.expectEmit(true, true, true, true);
         emit ProxyPushed(address(proxy), callObj2, 1);
         emit CallPushed(callObj2, 1);
-        uint256 sequenceNumber2 = laminator.pushToProxy(cData);
+        uint256 sequenceNumber2 = laminator.pushToProxy(cData, 1);
         assertEq(sequenceNumber2, 1);
 
         // fastforward a block
@@ -216,7 +220,7 @@ contract LaminatorTest is Test {
         });
         bytes memory cData = abi.encode(callObj);
         vm.prank(address(laminator));
-        try proxy.push(cData) {
+        try proxy.push(cData, 1) {
             assert(false);
         } catch Error(string memory reason) {
             assertEq(reason, "Proxy: Not the owner");
@@ -273,7 +277,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("reverter()")
         });
         bytes memory cData = abi.encode(callObj);
-        uint256 sequenceNumber = laminator.pushToProxy(cData);
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 1);
         assertEq(sequenceNumber, 0);
 
         vm.warp(block.number + 1);
