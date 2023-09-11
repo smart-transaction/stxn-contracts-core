@@ -30,10 +30,12 @@ contract LaminatedProxy {
     /// @param callObj The CallObject containing details of the executed function call.
     event CallExecuted(CallObject callObj);
 
-    /// @dev Modifier to make a function callable only by the owner.
-    ///      Reverts the transaction if the sender is not the owner.
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Proxy: Not the owner");
+    event LogCallableBlock(uint32 firstCallableBlock);
+
+    /// @dev Modifier to make a function callable only by the laminator.
+    ///      Reverts the transaction if the sender is not the laminator.
+    modifier onlyLaminator() {
+        require(msg.sender == laminator, "Proxy: Not the laminator");
         _;
     }
 
@@ -61,16 +63,6 @@ contract LaminatedProxy {
     /// @dev The received Ether can be spent via the `execute`, `push`, and `pull` functions.
     receive() external payable {}
 
-    /// @notice Pushes a deferred function call to be executed no sooner than the next block.
-    /// @dev Adds a new CallObject to the `deferredCalls` mapping and emits a CallPushed event.
-    ///      The function can only be called by the contract owner.
-    ///      Calls the `push` function with two arguments, but with a delay of 1 block.
-    /// @param input The encoded CallObject containing information about the function call to defer.
-    /// @return currentSequenceNumber The sequence number assigned to this deferred call.
-    function push(bytes calldata input) external onlyOwner returns (uint256) {
-        push(input, 1);
-    }
-
     /// @notice Pushes a deferred function call to be executed after a certain delay.
     /// @dev Adds a new CallObject to the `deferredCalls` mapping and emits a CallPushed event.
     ///      The function can only be called by the contract owner.
@@ -78,12 +70,13 @@ contract LaminatedProxy {
     /// @param delay The number of blocks to delay before the function call can be executed.
     ///      Use 0 for no delay.
     /// @return currentSequenceNumber The sequence number assigned to this deferred call.
-    function push(bytes calldata input, uint32 delay) public onlyOwner returns (uint256) {
+    function push(bytes calldata input, uint32 delay) public onlyLaminator returns (uint256) {
         CallObject memory callObj = abi.decode(input, (CallObject));
         uint256 currentSequenceNumber = sequenceNumber++;
         deferredCalls[currentSequenceNumber] =
             CallObjectHolder({initialized: true, firstCallableBlock: block.number + delay, callObj: callObj});
 
+        emit LogCallableBlock(uint32(block.number + delay));
         emit CallPushed(callObj, currentSequenceNumber);
         return currentSequenceNumber;
     }
@@ -95,9 +88,11 @@ contract LaminatedProxy {
     ///      the deferred call object from the `deferredCalls` mapping.
     /// @param seqNumber The sequence number of the deferred call to be executed.
     /// @return returnValue The return value of the executed deferred call.
-    function pull(uint256 seqNumber) external onlyOwner returns (bytes memory returnValue) {
+    function pull(uint256 seqNumber) external returns (bytes memory returnValue) {
         CallObjectHolder memory coh = deferredCalls[seqNumber];
         require(coh.initialized, "Proxy: Invalid sequence number");
+        emit LogCallableBlock(uint32(block.number));
+        emit LogCallableBlock(uint32(coh.firstCallableBlock));
         require(block.number >= coh.firstCallableBlock, "Proxy: Too early to pull this sequence number");
 
         returnValue = _execute(coh.callObj);
@@ -111,7 +106,7 @@ contract LaminatedProxy {
     ///      Can only be invoked by the owner of the contract.
     /// @param input The encoded CallObject containing information about the function call to execute.
     /// @return returnValue The return value from the executed function call.
-    function execute(bytes calldata input) external onlyOwner returns (bytes memory) {
+    function execute(bytes calldata input) external onlyLaminator returns (bytes memory) {
         CallObject memory callToMake = abi.decode(input, (CallObject));
         return _execute(callToMake);
     }

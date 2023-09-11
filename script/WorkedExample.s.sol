@@ -18,6 +18,10 @@ contract WorkedExampleScript is Script {
         address pusher = vm.addr(pusherPrivateKey);
         address filler = vm.addr(fillerPrivateKey);
 
+        vm.label(pusher, "pusher");
+        vm.label(address(this), "deployer");
+        vm.label(filler, "filler");
+
         // start deployer land
         vm.startBroadcast(deployerPrivateKey);
 
@@ -36,6 +40,12 @@ contract WorkedExampleScript is Script {
 
         // compute the pusher laminated address
         address payable pusherLaminated = payable(laminator.computeProxyAddress(pusher));
+
+        vm.label(address(laminator), "laminator");
+        vm.label(address(callbreaker), "callbreaker");
+        vm.label(address(erc20a), "erc20a");
+        vm.label(address(erc20b), "erc20b");
+        vm.label(pusherLaminated, "pusherLaminated");
 
         // set up a selfcheckout
         SelfCheckout selfcheckout =
@@ -59,11 +69,11 @@ contract WorkedExampleScript is Script {
         // END USER LAND
 
         // go forward in time
-        vm.warp(block.number + 1);
+        vm.roll(block.number + 1);
 
         // THIS SHOULD ALL HAPPEN IN SOLVER LAND
         vm.startBroadcast(fillerPrivateKey);
-        // filler fills the order- time warp time.
+        // filler fills the order
         // start by setting the selfcheckout to be the filler!
         selfcheckout.setTokenDest(filler);
         // now populate the time turner with calls.

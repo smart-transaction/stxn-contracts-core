@@ -25,8 +25,8 @@ contract Laminator {
     ///      already exist, it will be created using the `create2` Ethereum opcode.
     ///      An event `ProxyCreated` is emitted if a new proxy is created.
     /// @return proxyAddress The address of the proxy contract for the sender.
-    function getOrCreateProxy() public returns (address) {
-        address proxyAddress = computeProxyAddress(msg.sender);
+    function getOrCreateProxy(address sender) internal returns (address) {
+        address proxyAddress = computeProxyAddress(sender);
 
         // Check if the proxy contract already exists
         uint256 codeSize;
@@ -36,8 +36,8 @@ contract Laminator {
 
         if (codeSize == 0) {
             // Create a new proxy contract using create2
-            bytes32 salt = keccak256(abi.encodePacked(msg.sender));
-            bytes memory constructorArgs = abi.encode(address(this), msg.sender); // Encode the constructor arguments
+            bytes32 salt = keccak256(abi.encodePacked(sender));
+            bytes memory constructorArgs = abi.encode(address(this), sender); // Encode the constructor arguments
             bytes memory bytecode = abi.encodePacked(type(LaminatedProxy).creationCode, constructorArgs); // Append the constructor arguments to the bytecode
 
             assembly {
@@ -45,7 +45,7 @@ contract Laminator {
             }
 
             // Emit an event for the creation of a new proxy contract
-            emit ProxyCreated(msg.sender, proxyAddress);
+            emit ProxyCreated(sender, proxyAddress);
         }
 
         return proxyAddress;
@@ -67,38 +67,33 @@ contract Laminator {
         return address(uint160(uint256(hash)));
     }
 
-    /// @notice Delegatecalls the `push` function into the LaminatedProxy associated with the sender.
-    /// @dev Encodes the provided calldata and delegatecalls it into the `push` function of the proxy contract.
+    /// @notice Calls the `push` function into the LaminatedProxy associated with the sender.
+    /// @dev Encodes the provided calldata and calls it into the `push` function of the proxy contract.
     ///      A new proxy will be created if one does not already exist for the sender.
     /// @param cData The calldata to be pushed.
     /// @param delay The delay for when the call can be executed.
     /// @return sequenceNumber The sequence number of the deferred function call.
-    function pushToProxy(bytes calldata cData, uint256 delay) external returns (uint256 sequenceNumber) {
-        address proxyAddress = getOrCreateProxy();
+    function pushToProxy(bytes calldata cData, uint32 delay) external returns (uint256 sequenceNumber) {
+        LaminatedProxy proxy = LaminatedProxy(payable(getOrCreateProxy(msg.sender)));
 
-        bytes memory payload = abi.encodeWithSignature("push(bytes,uint32)", cData, delay);
-        (bool success, bytes memory returnData) = proxyAddress.delegatecall(payload);
-        require(success, "Laminator: Delegatecall to push failed");
-        sequenceNumber = abi.decode(returnData, (uint256));
+        sequenceNumber = proxy.push(cData, delay);
 
         CallObject memory callObj = abi.decode(cData, (CallObject));
-        emit ProxyPushed(proxyAddress, callObj, sequenceNumber);
+        emit ProxyPushed(address(proxy), callObj, sequenceNumber);
     }
 
-    /// @notice Delegatecalls the `execute` function into the LaminatedProxy associated with the sender.
-    /// @dev Encodes the provided calldata and delegatecalls it into the `execute` function of the proxy contract.
+    /// @notice Calls the `execute` function into the LaminatedProxy associated with the sender.
+    /// @dev Encodes the provided calldata and calls it into the `execute` function of the proxy contract.
     ///      A new proxy will be created if one does not already exist for the sender.
     /// @param cData The calldata to be executed.
     function executeInProxy(bytes calldata cData) external returns (bytes memory) {
-        address proxyAddress = getOrCreateProxy();
+        LaminatedProxy proxy = LaminatedProxy(payable(getOrCreateProxy(msg.sender)));
 
-        bytes memory payload = abi.encodeWithSignature("execute(bytes)", cData);
-        (bool success, bytes memory data) = proxyAddress.delegatecall(payload);
-        require(success, "Laminator: Delegatecall to execute failed");
+        bytes memory returnData = proxy.execute(cData);
 
         CallObject memory callObj = abi.decode(cData, (CallObject));
-        emit ProxyExecuted(proxyAddress, callObj);
+        emit ProxyExecuted(address(proxy), callObj);
 
-        return data;
+        return returnData;
     }
 }
