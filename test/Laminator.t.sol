@@ -261,9 +261,7 @@ contract LaminatorTest is Test {
 
     // test that uninitialized sequence numbers cannot be pulled
     function testUninitializedPull() public {
-                address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
-        try proxy.pull(0) {
+        try laminator.pullFromProxy(0) {
             assert(false);
         } catch Error(string memory reason) {
             assertEq(reason, "Proxy: Invalid sequence number");

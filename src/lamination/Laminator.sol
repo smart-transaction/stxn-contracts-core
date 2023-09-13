@@ -15,6 +15,8 @@ contract Laminator {
     /// @param sequenceNumber The sequence number assigned to the deferred function call.
     event ProxyPushed(address indexed proxyAddress, CallObject callObj, uint256 sequenceNumber);
 
+    event ProxyPulled(bytes returnData, uint256 sequenceNumber);
+
     /// @dev Emitted when a function call is executed immediately via a proxy contract.
     /// @param proxyAddress The address of the proxy contract where the function call is executed.
     /// @param callObj The CallObject containing the function call details.
@@ -80,6 +82,14 @@ contract Laminator {
 
         CallObject memory callObj = abi.decode(cData, (CallObject));
         emit ProxyPushed(address(proxy), callObj, sequenceNumber);
+    }
+
+    function pullFromProxy(uint256 sequenceNumber) external {
+        LaminatedProxy proxy = LaminatedProxy(payable(getOrCreateProxy(msg.sender)));
+
+        bytes memory returnData = proxy.pull(sequenceNumber);
+
+        emit ProxyPulled(returnData, sequenceNumber);
     }
 
     /// @notice Calls the `execute` function into the LaminatedProxy associated with the sender.
