@@ -62,16 +62,14 @@ contract SelfCheckout {
 
         // if checking the balance isn't scheduled, schedule it.
         if (!balanceScheduled) {
-            CallObject[] memory callObjs = new CallObject[](1);
             CallObject memory callObj = CallObject({
                 amount: 0,
                 addr: address(this),
                 gas: 1000000,
                 callvalue: abi.encodeWithSignature("checkBalance()")
             });
-            callObjs[0] = callObj;
 
-            (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObjs));
+            (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObj));
 
             if (!success) {
                 revert("turner CallFailed");
@@ -81,7 +79,7 @@ contract SelfCheckout {
         // compute amount owed
         imbalance += atokenamount * exchangeRate;
         // get da tokens
-        require(atoken.transferFrom(owner, tokenDest, atokenamount), "AToken transfer failed");
+        require(atoken.transfer(tokenDest, atokenamount), "AToken transfer failed");
     }
 
     // repay your debts.

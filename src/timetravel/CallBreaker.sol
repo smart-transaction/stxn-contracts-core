@@ -68,7 +68,7 @@ contract CallBreaker {
         ReturnObject memory returnvalue = returnStore[returnStore.length - 1];
         emit ReturnObjectLog("enterportal", returnvalue.returnvalue);
         returnStore.pop();
-
+        
         CallObject memory callobject = abi.decode(input, (CallObject));
         emit CallObjectLog("enterPortal", callobject);
 
