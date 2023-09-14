@@ -6,7 +6,7 @@ import "../TimeTypes.sol";
 struct CallObjectHolder {
     bool initialized;
     uint256 firstCallableBlock;
-    CallObject callObj;
+    CallObject[] callObjs;
 }
 
 contract LaminatedProxy {
@@ -107,15 +107,18 @@ contract LaminatedProxy {
     /// @param input The encoded CallObject containing information about the function call to execute.
     /// @return returnValue The return value from the executed function call.
     function execute(bytes calldata input) external onlyLaminator returns (bytes memory) {
-        CallObject memory callToMake = abi.decode(input, (CallObject));
-        return _execute(callToMake);
+        CallObject[] memory callsToMake = abi.decode(input, (CallObject[]));
+        return _execute(callsToMake);
     }
 
     /// @dev Executes the function call specified by the CallObject `callToMake`.
     ///      Emits a `CallExecuted` event upon successful execution.
     /// @param callToMake The CallObject containing information about the function call to execute.
     /// @return returnValue The return value from the executed function call.
-    function _execute(CallObject memory callToMake) internal returns (bytes memory) {
+    function _execute(CallObject[] memory callToMake) internal returns (bytes memory) {
+        for (uint256 i = 0; i < callToMake.length; i++) {
+            _execute(callToMake[i]);
+        }
         (bool success, bytes memory returnvalue) =
             callToMake.addr.call{gas: callToMake.gas, value: callToMake.amount}(callToMake.callvalue);
         require(success, "Proxy: Immediate call failed");

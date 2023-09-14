@@ -36,6 +36,10 @@ contract SelfCheckout {
     // when a debt is taken out of the protocol, it goes here. should be called right before executing a pull...
     address tokenDest;
 
+    event DebugAddress(string message, address value);
+    event DebugInfo(string message, string value);
+    event DebugUint(string message, uint256 value);
+
     constructor(address _owner, address _atoken, address _btoken, address _callbreakerAddress) {
         owner = _owner;
 
@@ -79,7 +83,17 @@ contract SelfCheckout {
         // compute amount owed
         imbalance += atokenamount * exchangeRate;
         // get da tokens
-        require(atoken.transfer(tokenDest, atokenamount), "AToken transfer failed");
+        // Debugging information
+        emit DebugAddress("Who I am: ", msg.sender);
+        emit DebugAddress("Token Destination: ", tokenDest);
+        emit DebugAddress("AToken Address: ", address(atoken));
+        emit DebugUint("Amount: ", atokenamount);
+        emit DebugUint("my amount", atoken.balanceOf(msg.sender));
+        
+        // allow the atoken to take the atokenamount from the owner
+        require(atoken.approve(address(this), atokenamount), "AToken approval failed");
+
+        require(atoken.transferFrom(msg.sender, tokenDest, atokenamount), "AToken transfer failed");
     }
 
     // repay your debts.
