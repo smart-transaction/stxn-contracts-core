@@ -308,7 +308,7 @@ contract LaminatorTest is Test {
         });
         bytes memory cData = abi.encode(callObjs);
 
-        // pretend to be the laminator and call directly, should work 
+        // pretend to be the laminator and call directly, should work
         vm.prank(address(laminator));
         vm.expectEmit(true, true, true, true);
         emit CallExecuted(callObjs[0]);

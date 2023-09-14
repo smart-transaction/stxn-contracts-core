@@ -102,6 +102,12 @@ contract SelfCheckout {
         imbalance += atokenamount * exchangeRate;
         // get da tokens
         // Debugging information
+        emit DebugAddress("Who I am: ", msg.sender);
+        emit DebugAddress("Token Destination: ", swapPartner);
+        emit DebugAddress("AToken Address: ", address(atoken));
+        emit DebugUint("Amount: ", atokenamount);
+        emit DebugUint("my amount", atoken.balanceOf(msg.sender));
+        emit DebugAddress("my owner", owner);
 
         // ok so the problem is, transfer is transferring from selfcheckout to the swapPartner, not from the owner to the swapPartner.
         // so ... uhhh ... when do we approve?

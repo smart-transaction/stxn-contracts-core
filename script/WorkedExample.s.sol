@@ -63,13 +63,13 @@ contract WorkedExampleScript is Script {
         // pusher pushes its call to the selfcheckout
         // Create a list of CallObjects
         CallObject[] memory pusherCallObjs = new CallObject[](2);
-
+        
         // approve selfcheckout to spend 10 erc20a on behalf of pusher
         pusherCallObjs[0] = CallObject({
-            amount: 0,
-            addr: address(erc20a),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), 10)
+            amount : 0,
+            addr : address(erc20a),
+            gas : 1000000,
+            callvalue : abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), 10)
         });
 
         pusherCallObjs[1] = CallObject({

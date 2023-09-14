@@ -23,7 +23,7 @@ contract LaminatedProxy is LaminatedStorage {
     event CallPulled(CallObject[] callObjs, uint256 sequenceNumber);
 
     /// @dev Emitted when a function call is executed immediately, without being deferred.
-    /// @param callObj The CallObject containing details of the executed function call.
+    /// @param callObj The CallObjects containing details of the executed function calls.
     event CallExecuted(CallObject callObj);
 
     /// @dev The block at which a call becomes executable.
@@ -36,6 +36,17 @@ contract LaminatedProxy is LaminatedStorage {
     modifier onlyLaminator() {
         if(msg.sender != address(laminator())) revert NotLaminator();
         _;
+    }
+
+    /// @notice Views a deferred function call with a given sequence number.
+    /// @dev Returns a tuple containing a boolean indicating whether the deferred call exists,
+    ///      and the CallObject containing details of the deferred function call.
+    /// @param seqNumber The sequence number of the deferred function call to view.
+    /// @return exists A boolean indicating whether the deferred call exists.
+    /// @return callObj The CallObject containing details of the deferred function call.
+    function viewDeferredCall(uint256 seqNumber) public view returns (bool, CallObject[] memory) {
+        CallObjectHolder memory coh = deferredCalls[seqNumber];
+        return (coh.initialized, coh.callObjs);
     }
 
     /// @notice Constructs a new contract instance - usually called by the Laminator contract
@@ -51,17 +62,6 @@ contract LaminatedProxy is LaminatedStorage {
     /// @dev The received Ether can be spent via the `execute`, `push`, and `pull` functions.
     receive() external payable {}
 
-
-    /// @notice Views a deferred function call with a given sequence number.
-    /// @dev Returns a tuple containing a boolean indicating whether the deferred call exists,
-    ///      and the CallObject containing details of the deferred function call.
-    /// @param seqNumber The sequence number of the deferred function call to view.
-    /// @return exists A boolean indicating whether the deferred call exists.
-    /// @return callObj The CallObject containing details of the deferred function call.
-    function viewDeferredCall(uint256 seqNumber) public view returns (bool, CallObject[] memory) {
-        CallObjectHolder memory coh = deferredCalls[seqNumber];
-        return (coh.initialized, coh.callObjs);
-    }
 
     /// @notice Pushes a deferred function call to be executed after a certain delay.
     /// @dev Adds a new CallObject to the `deferredCalls` mapping and emits a CallPushed event.

@@ -37,5 +37,4 @@ contract MyErc20 is ERC20 {
     event DebugInfo(string message, string value);
     event DebugAddress(string message, address value);
     event DebugUint(string message, uint256 value);
-    
 }
