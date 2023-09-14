@@ -8,8 +8,14 @@ import "../src/lamination/Laminator.sol";
 import "../src/lamination/LaminatedProxy.sol";
 import "./utils/Dummy.sol";
 
+contract LaminatorHarness is Laminator {
+    function harness_getOrCreateProxy(address sender) public returns (address) {
+        return getOrCreateProxy(sender);
+    }
+}
+
 contract LaminatorTest is Test {
-    Laminator public laminator;
+    LaminatorHarness public laminator;
 
     address randomFriendAddress = address(0xbeefd3ad);
 
@@ -23,33 +29,17 @@ contract LaminatorTest is Test {
     event DummyEvent(uint256 arg);
 
     function setUp() public {
-        laminator = new Laminator();
+        laminator = new LaminatorHarness();
     }
 
     // - Existing Proxy and creation Test: Test if the getOrCreateProxy function returns the existing proxy address when one already exists for the sender.
     function testExistingProxy() public {
         address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        Dummy dummy = new Dummy();
 
         vm.expectEmit(true, true, true, true);
         emit ProxyCreated(address(this), expectedProxyAddress);
 
-        CallObject memory callObj = CallObject({
-            amount: 0,
-            addr: address(dummy),
-            gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", 42)
-        });
-
-        bytes memory callObjBytes = abi.encode(callObj);
-
-        uint256 seqnum = laminator.pushToProxy(callObjBytes, 0);
-
-        assert(expectedProxyAddress.code.length > 0);
-
-        vm.expectEmit(true, true, true, true);
-        emit ProxyCreated(address(this), expectedProxyAddress);
-        seqnum = laminator.pushToProxy(callObjBytes, 0);
+        assert(laminator.harness_getOrCreateProxy(address(this)) == expectedProxyAddress);
     }
 
     //- Push to Proxy Test: Test if the pushToProxy function correctly delegates a call to the push
@@ -104,7 +94,7 @@ contract LaminatorTest is Test {
         emit CallPulled(callObj2, 1);
         emit DummyEvent(val2);
         vm.prank(randomFriendAddress);
-        proxy.pull(0);
+        proxy.pull(1);
     }
 
     // test delays in pushToProxy- 0 delay is immediately possible
@@ -132,7 +122,7 @@ contract LaminatorTest is Test {
 
     // test delays in pushToProxy- 1 delay with no block rollforward is not possible
     function testDelayedPushToProxy1delayNoRollFails() public {
-               address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
         LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
         Dummy dummy = new Dummy();
 
@@ -159,7 +149,7 @@ contract LaminatorTest is Test {
 
     // test delays in pushToProxy- 3 delay with 1 block rollforward is not possible
     function testDelayedPushToProxy3delay1rollFails() public {
-                address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
         LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
         Dummy dummy = new Dummy();
 
@@ -188,8 +178,9 @@ contract LaminatorTest is Test {
 
     // ensure pushes as a random address when you push directly to someone else's proxy
     function testPushToProxyAsRandomAddress() public {
-                address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
         LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
+        laminator.harness_getOrCreateProxy(address(this));
         Dummy dummy = new Dummy();
 
         uint256 val = 42;
@@ -204,14 +195,16 @@ contract LaminatorTest is Test {
         try proxy.push(cData, 0) {
             assert(false);
         } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Not the owner");
+            assertEq(reason, "Proxy: Not the laminator");
         }
     }
 
-    // ensure pushes as the laminator don't work
+    // ensure pushes as the laminator work
     function testPushToProxyAsLaminator() public {
-                address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
         LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
+        laminator.harness_getOrCreateProxy(address(this));
+
         Dummy dummy = new Dummy();
 
         uint256 val = 42;
@@ -223,16 +216,14 @@ contract LaminatorTest is Test {
         });
         bytes memory cData = abi.encode(callObj);
         vm.prank(address(laminator));
-        try proxy.push(cData, 1) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Not the owner");
-        }
+        vm.expectEmit(true, true, true, true);
+        emit CallPushed(callObj, 0);
+        proxy.push(cData, 1);
     }
 
     // test that double-pulling the same sequence number does not work
     function testDoublePull() public {
-                address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
         LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
         Dummy dummy = new Dummy();
         // push once
@@ -261,9 +252,7 @@ contract LaminatorTest is Test {
 
     // test that uninitialized sequence numbers cannot be pulled
     function testUninitializedPull() public {
-                address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
-        try proxy.pull(0) {
+        try laminator.pullFromProxy(0) {
             assert(false);
         } catch Error(string memory reason) {
             assertEq(reason, "Proxy: Invalid sequence number");
@@ -272,8 +261,9 @@ contract LaminatorTest is Test {
 
     // test that a call that reverts revert the transaction
     function testRevertCall() public {
-                address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
         LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
+        laminator.harness_getOrCreateProxy(address(this));
         Dummy dummy = new Dummy();
 
         CallObject memory callObj = CallObject({
@@ -292,14 +282,15 @@ contract LaminatorTest is Test {
         try proxy.pull(0) {
             assert(false);
         } catch Error(string memory reason) {
-            assertEq(reason, "Dummy: revert");
+            assertEq(reason, "Proxy: Immediate call failed");
         }
     }
 
     // ensure executions called directly to proxy as a random address don't work
     function testExecuteAsRandomAddress() public {
-                address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
         LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
+        laminator.harness_getOrCreateProxy(address(this));
         Dummy dummy = new Dummy();
         CallObject memory callObj = CallObject({
             amount: 0,
@@ -320,8 +311,9 @@ contract LaminatorTest is Test {
 
     // ensure executions called into proxy directly as the laminator do work
     function testExecuteAsLaminator() public {
-                address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
         LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
+        laminator.harness_getOrCreateProxy(address(this));
         Dummy dummy = new Dummy();
         CallObject memory callObj = CallObject({
             amount: 0,
@@ -332,17 +324,18 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
 
         // pretend to be the laminator and call directly, should work 
+        vm.prank(address(laminator));
         vm.expectEmit(true, true, true, true);
         emit CallExecuted(callObj);
-        vm.prank(address(laminator));
         proxy.execute(cData);
     }
 
     // ensure executions as the owner directly into the proxy contract do NOT work
     function testExecuteAsOwner() public {
         address me = address(this);
-                address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
         LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
+        laminator.harness_getOrCreateProxy(address(this));
         Dummy dummy = new Dummy();
         CallObject memory callObj = CallObject({
             amount: 0,
@@ -362,8 +355,9 @@ contract LaminatorTest is Test {
 
     // ensure executions as the owner through the laminator do work
     function testExecuteAsOwnerFromLaminator() public {
-                address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
         LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
+        laminator.harness_getOrCreateProxy(address(this));
         Dummy dummy = new Dummy();
         CallObject memory callObj = CallObject({
             amount: 0,
@@ -377,13 +371,14 @@ contract LaminatorTest is Test {
         vm.expectEmit(true, true, true, true);
         emit CallExecuted(callObj);
         emit ProxyExecuted(address(proxy), callObj);
-        proxy.execute(cData);
+        laminator.executeInProxy(cData);
     }
 
     // ensure executions as random address through the laminator do not work
     function testExecuteAsRandomAddressFromLaminator() public {
-                address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
         LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
+        laminator.harness_getOrCreateProxy(address(this));
         Dummy dummy = new Dummy();
         CallObject memory callObj = CallObject({
             amount: 0,
@@ -398,29 +393,7 @@ contract LaminatorTest is Test {
         try proxy.execute(cData) {
             assert(false);
         } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Not the owner");
-        }
-    }
-
-    // ensure executions as laminator through the laminator do not work
-    function testExecuteAsLaminatorAddressFromLaminator() public {
-                address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
-        Dummy dummy = new Dummy();
-        CallObject memory callObj = CallObject({
-            amount: 0,
-            addr: address(dummy),
-            gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", 42)
-        });
-        bytes memory cData = abi.encode(callObj);
-
-        // pretend to be laminator and call directly, should fail
-        vm.prank(address(laminator));
-        try proxy.execute(cData) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Not the owner");
+            assertEq(reason, "Proxy: Not the laminator");
         }
     }
 }
