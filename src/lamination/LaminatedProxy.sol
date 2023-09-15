@@ -5,8 +5,6 @@ import "../TimeTypes.sol";
 import "./LaminatedStorage.sol";
 
 contract LaminatedProxy is LaminatedStorage {
-    uint256 public sequenceNumber = 0;
-
     mapping(uint256 => CallObjectHolder) public deferredCalls;
 
     error NotLaminator();
@@ -74,13 +72,13 @@ contract LaminatedProxy is LaminatedStorage {
     /// @return callSequenceNumber The sequence number assigned to this deferred call.
     function push(bytes calldata input, uint32 delay) external onlyLaminator returns (uint256 callSequenceNumber) {
         CallObject memory callObj = abi.decode(input, (CallObject));
-        callSequenceNumber = sequenceNumber;
+        callSequenceNumber = count();
         deferredCalls[callSequenceNumber] =
             CallObjectHolder({initialized: true, firstCallableBlock: block.number + delay, callObj: callObj});
 
         emit CallableBlock(block.number + delay, block.number);
         emit CallPushed(callObj, callSequenceNumber);
-        sequenceNumber++;
+        _incrementSequenceNumber();
     }
 
     /// @notice Executes a deferred function call that has been pushed to the contract.

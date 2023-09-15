@@ -10,7 +10,7 @@ import "./utils/Dummy.sol";
 
 contract LaminatorHarness is Laminator {
     function harness_getOrCreateProxy(address sender) public returns (address) {
-        return getOrCreateProxy(sender);
+        return _getOrCreateProxy(sender);
     }
 }
 
@@ -140,11 +140,8 @@ contract LaminatorTest is Test {
 
         // try pulls as a random address, make sure the events were emitted
         vm.prank(randomFriendAddress);
-        try proxy.pull(0) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Too early to pull this sequence number");
-        }
+        vm.expectRevert(LaminatedProxy.TooEarly.selector);
+        proxy.pull(0);
     }
 
     // test delays in pushToProxy- 3 delay with 1 block rollforward is not possible
@@ -169,11 +166,8 @@ contract LaminatorTest is Test {
 
         // try pulls as a random address, make sure the events were emitted
         vm.prank(randomFriendAddress);
-        try proxy.pull(0) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Too early to pull this sequence number");
-        }
+        vm.expectRevert(LaminatedProxy.TooEarly.selector);
+        proxy.pull(0);
     }
 
     // ensure pushes as a random address when you push directly to someone else's proxy
@@ -192,11 +186,8 @@ contract LaminatorTest is Test {
         });
         bytes memory cData = abi.encode(callObj);
         vm.prank(randomFriendAddress);
-        try proxy.push(cData, 0) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Not the laminator");
-        }
+        vm.expectRevert(LaminatedProxy.NotLaminator.selector);
+        proxy.push(cData, 0);
     }
 
     // ensure pushes as the laminator work
@@ -243,20 +234,14 @@ contract LaminatorTest is Test {
         proxy.pull(0);
 
         // and try to pull again
-        try proxy.pull(0) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Invalid sequence number");
-        }
+        vm.expectRevert(LaminatedProxy.Uninitialized.selector);
+        proxy.pull(0);
     }
 
     // test that uninitialized sequence numbers cannot be pulled
     function testUninitializedPull() public {
-        try laminator.pullFromProxy(0) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Invalid sequence number");
-        }
+        vm.expectRevert(LaminatedProxy.Uninitialized.selector);
+        laminator.pullFromProxy(0);
     }
 
     // test that a call that reverts revert the transaction
@@ -279,11 +264,8 @@ contract LaminatorTest is Test {
         vm.roll(block.number + 1);
 
         vm.prank(randomFriendAddress);
-        try proxy.pull(0) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Immediate call failed");
-        }
+        vm.expectRevert(LaminatedProxy.CallFailed.selector);
+        proxy.pull(0);
     }
 
     // ensure executions called directly to proxy as a random address don't work
@@ -302,11 +284,8 @@ contract LaminatorTest is Test {
 
         // pretend to be a random address and call directly, should fail
         vm.prank(randomFriendAddress);
-        try proxy.execute(cData) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Not the laminator");
-        }
+        vm.expectRevert(LaminatedProxy.NotLaminator.selector);
+        proxy.execute(cData);
     }
 
     // ensure executions called into proxy directly as the laminator do work
@@ -346,11 +325,8 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
 
         vm.prank(me);
-        try proxy.execute(cData) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Not the laminator");
-        }
+        vm.expectRevert(LaminatedProxy.NotLaminator.selector);
+        proxy.execute(cData);
     }
 
     // ensure executions as the owner through the laminator do work
@@ -390,10 +366,7 @@ contract LaminatorTest is Test {
 
         // pretend to be a random address and call directly, should fail
         vm.prank(randomFriendAddress);
-        try proxy.execute(cData) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Not the laminator");
-        }
+        vm.expectRevert(LaminatedProxy.NotLaminator.selector);
+        proxy.execute(cData);
     }
 }
