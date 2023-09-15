@@ -16,8 +16,9 @@ contract CallBreaker is CallBreakerStorage {
     error TimeImbalance();
 
     event CallObjectLog(string message, CallObject callObj);
-    event ReturnObjectLog(string message, bytes returnvalue);
+    event ReturnObjectLog(string message, CallObject callObj, bytes returnvalue, bytes32 pairid);
     event CallBalance(string message, bytes32 pairID, int256 callbalance);
+    event LogReturnStoreLength(uint256 length);
 
     constructor() {
         _setPortalClosed();
@@ -53,16 +54,17 @@ contract CallBreaker is CallBreakerStorage {
     /// also: does some accounting that we saw a given pair of call and return values once, and returns a thing off the emulated stack.
     /// called as reentrancy in order to balance the calls of the solution and make things validate.
     function enterPortal(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
+        emit LogReturnStoreLength(returnStore.length);
         require(returnStore.length > 0, "OutOfReturnValues");
+        CallObject memory callobject = abi.decode(input, (CallObject));
 
         ReturnObject memory returnvalue = returnStore[returnStore.length - 1];
-        emit ReturnObjectLog("enterportal", returnvalue.returnvalue);
+                bytes32 pairID = getCallReturnID(callobject, returnvalue);
+
+        emit ReturnObjectLog("enterportal", callobject, returnvalue.returnvalue, pairID);
         returnStore.pop();
 
-        CallObject memory callobject = abi.decode(input, (CallObject));
         emit CallObjectLog("enterPortal", callobject);
-
-        bytes32 pairID = getCallReturnID(callobject, returnvalue);
 
         // todo this may be optimizable
         if (callbalanceStore[pairID] == 0 && callbalanceKeySet[pairID] == false) {
@@ -84,6 +86,8 @@ contract CallBreaker is CallBreakerStorage {
         // uint256 gasAtStart = gasleft();
         CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
         ReturnObject[] memory return_s = abi.decode(returnsBytes, (ReturnObject[]));
+
+        emit LogReturnStoreLength(return_s.length);
 
         require(calls.length == return_s.length, "LengthMismatch");
 
@@ -121,6 +125,9 @@ contract CallBreaker is CallBreakerStorage {
         for (uint256 i = 0; i < return_s.length; i++) {
             returnStore.push(return_s[i]);
         }
+        
+        emit LogReturnStoreLength(return_s.length);
+
 
         // for all the calls, go check that the return value is actually the return value.
         for (uint256 i = 0; i < calls.length; i++) {
@@ -132,10 +139,9 @@ contract CallBreaker is CallBreakerStorage {
                 calls[i].addr.call{gas: calls[i].gas, value: calls[i].amount}(calls[i].callvalue);
 
             require(success, "checking CallFailed");
-
-            emit ReturnObjectLog("verify post-call", returnvalue);
-
             bytes32 pairID = getCallReturnID(calls[i], ReturnObject(returnvalue));
+
+            emit ReturnObjectLog("just called the function in verify.", calls[i], returnvalue, pairID);
 
             // todo write tests for this two-sets-and-a-list situation, and think about optimization.
             if (callbalanceKeySet[pairID] == false) {
