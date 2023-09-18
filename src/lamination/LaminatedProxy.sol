@@ -5,7 +5,7 @@ import "../TimeTypes.sol";
 import "./LaminatedStorage.sol";
 
 contract LaminatedProxy is LaminatedStorage {
-    mapping(uint256 => bytes) public deferredCalls;
+    mapping(uint256 => CallObjectHolder) public deferredCalls;
 
     error NotLaminator();
     error Uninitialized();
@@ -59,7 +59,7 @@ contract LaminatedProxy is LaminatedStorage {
     /// @return exists A boolean indicating whether the deferred call exists.
     /// @return callObj The CallObject containing details of the deferred function call.
     function viewDeferredCall(uint256 seqNumber) public view returns (bool, CallObject[] memory) {
-        CallObjectHolder memory coh = abi.decode(deferredCalls[seqNumber], (CallObjectHolder));
+        CallObjectHolder memory coh = deferredCalls[seqNumber];
         return (coh.initialized, coh.callObjs);
     }
 
@@ -73,8 +73,12 @@ contract LaminatedProxy is LaminatedStorage {
     function push(bytes calldata input, uint32 delay) external onlyLaminator returns (uint256 callSequenceNumber) {
         CallObject[] memory callObjs = abi.decode(input, (CallObject[]));
         callSequenceNumber = count();
-        deferredCalls[callSequenceNumber] =
-            abi.encode(CallObjectHolder({initialized: true, firstCallableBlock: block.number + delay, callObjs: callObjs}));
+        CallObjectHolder storage holder = deferredCalls[callSequenceNumber];
+        holder.initialized = true;
+        holder.firstCallableBlock = block.number + delay;
+        for (uint i = 0; i < callObjs.length; ++i) {
+            holder.callObjs.push(callObjs[i]);
+        }
 
         emit CallableBlock(block.number + delay, block.number);
         emit CallPushed(callObjs, callSequenceNumber);
@@ -89,7 +93,7 @@ contract LaminatedProxy is LaminatedStorage {
     /// @param seqNumber The sequence number of the deferred call to be executed.
     /// @return returnValue The return value of the executed deferred call.
     function pull(uint256 seqNumber) external returns (bytes memory returnValue) {
-        CallObjectHolder memory coh = abi.decode(deferredCalls[seqNumber], (CallObjectHolder));
+        CallObjectHolder memory coh = deferredCalls[seqNumber];
         if (!coh.initialized) revert Uninitialized();
 
         emit CallableBlock(coh.firstCallableBlock, block.number);
@@ -117,8 +121,7 @@ contract LaminatedProxy is LaminatedStorage {
     function _execute(CallObject[] memory callsToMake) internal returns (bytes memory) {
         ReturnObject[] memory returnObjs = new ReturnObject[](callsToMake.length);
         for (uint256 i = 0; i < callsToMake.length; i++) {
-            bytes memory returnvalue = _executeSingle(callsToMake[i]);
-            returnObjs[i] = ReturnObject({returnvalue: returnvalue});
+            returnObjs[i] = ReturnObject({returnvalue: _executeSingle(callsToMake[i])});
         }
         return abi.encode(returnObjs);
     }
@@ -126,7 +129,7 @@ contract LaminatedProxy is LaminatedStorage {
     function _executeSingle(CallObject memory callToMake) internal returns (bytes memory) {
         (bool success, bytes memory returnvalue) =
             callToMake.addr.call{gas: callToMake.gas, value: callToMake.amount}(callToMake.callvalue);
-        require(success, "Proxy: Immediate call failed");
+        if (!success) revert CallFailed();
         emit CallExecuted(callToMake);
         return returnvalue;
     }
