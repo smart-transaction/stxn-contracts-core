@@ -51,17 +51,19 @@ contract CallBreaker is CallBreakerStorage {
     /// this: takes in a call (structured as a CallObj), puts out a return value from the record of return values.
     /// also: does some accounting that we saw a given pair of call and return values once, and returns a thing off the emulated stack.
     /// called as reentrancy in order to balance the calls of the solution and make things validate.
-    function enterPortal(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
+    function enterPortal(bytes calldata input) external payable returns (bytes memory) {
+        require(isPortalOpen, "PortalClosed");
+        emit LogReturnStoreLength(returnStore.length);
         require(returnStore.length > 0, "OutOfReturnValues");
+        CallObject memory callobject = abi.decode(input, (CallObject));
 
         ReturnObject memory returnvalue = returnStore[returnStore.length - 1];
-        emit ReturnObjectLog("enterportal", returnvalue.returnvalue);
-        returnStore.pop();
-        
-        CallObject memory callobject = abi.decode(input, (CallObject));
-        emit CallObjectLog("enterPortal", callobject);
+                bytes32 pairID = getCallReturnID(callobject, returnvalue);
 
-        bytes32 pairID = getCallReturnID(callobject, returnvalue);
+        emit ReturnObjectLog("enterportal", callobject, returnvalue.returnvalue, pairID);
+        returnStore.pop();
+
+        emit CallObjectLog("enterPortal", callobject);
 
         // todo this may be optimizable
         if (callbalanceStore[pairID] == 0 && callbalanceKeySet[pairID] == false) {
