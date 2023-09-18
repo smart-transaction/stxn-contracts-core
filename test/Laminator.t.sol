@@ -24,7 +24,7 @@ contract LaminatorTest is Test {
     event ProxyExecuted(address indexed proxyAddress, CallObject[] callObjs);
     event CallPushed(CallObject[] callObjs, uint256 sequenceNumber);
     event CallPulled(CallObject[] callObjs, uint256 sequenceNumber);
-    event CallExecuted(CallObject[] callObjs);
+    event CallExecuted(CallObject callObj);
 
     event DummyEvent(uint256 arg);
 
@@ -255,7 +255,8 @@ contract LaminatorTest is Test {
         laminator.harness_getOrCreateProxy(address(this));
         Dummy dummy = new Dummy();
 
-        CallObject memory callObj = CallObject({
+        CallObject[] memory callObj = new CallObject[](1);
+        callObj[0] = CallObject({
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
@@ -310,7 +311,7 @@ contract LaminatorTest is Test {
         // pretend to be the laminator and call directly, should work 
         vm.prank(address(laminator));
         vm.expectEmit(true, true, true, true);
-        emit CallExecuted(callObjs);
+        emit CallExecuted(callObjs[0]);
         proxy.execute(cData);
     }
 
@@ -351,7 +352,7 @@ contract LaminatorTest is Test {
 
         // check emissions, should work
         vm.expectEmit(true, true, true, true);
-        emit CallExecuted(callObj);
+        emit CallExecuted(callObj[0]);
         emit ProxyExecuted(address(proxy), callObj);
         laminator.executeInProxy(cData);
     }
