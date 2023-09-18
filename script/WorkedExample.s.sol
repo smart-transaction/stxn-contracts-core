@@ -123,7 +123,7 @@ contract WorkedExampleScript is Script {
         assert(erc20a.balanceOf(filler) == 10);
         assert(erc20b.balanceOf(filler) == 0);
         // portal should be closed
-        assert(!callbreaker.isOpen());
+        assert(!callbreaker.isPortalOpen());
         // nothing should be scheduled in the laminator
         (bool init, CallObject memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
         assert(!init);
