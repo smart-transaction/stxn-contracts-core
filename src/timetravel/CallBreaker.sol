@@ -5,18 +5,19 @@ import "../TimeTypes.sol";
 import "./CallBreakerStorage.sol";
 
 contract CallBreaker is CallBreakerStorage {
-    error OutOfReturnValues();
-    error OutOfEther();
-    error CallFailed();
-    error TimeImbalance();
-    event CallObjectLog(string message, CallObject callObj);
-    event ReturnObjectLog(string message, bytes returnvalue);
-    event CallBalance(string message, bytes32 pairID, int256 callbalance);
-
     ReturnObject[] public returnStore;
     mapping(bytes32 => int256) public callbalanceStore;
     mapping(bytes32 => bool) public callbalanceKeySet;
     bytes32[] public callbalanceKeyList;
+
+    error OutOfReturnValues();
+    error OutOfEther();
+    error CallFailed();
+    error TimeImbalance();
+
+    event CallObjectLog(string message, CallObject callObj);
+    event ReturnObjectLog(string message, bytes returnvalue);
+    event CallBalance(string message, bytes32 pairID, int256 callbalance);
 
     constructor() {
         _setPortalClosed();
@@ -74,10 +75,6 @@ contract CallBreaker is CallBreakerStorage {
 
         emit CallBalance("enterPortal", pairID, callbalanceStore[pairID]);
         return returnvalue.returnvalue;
-    }
-
-    fallback(bytes calldata input) external payable returns (bytes memory) {
-        return this.enterPortal(input);
     }
 
     // this is what the searcher calls to finally execute and then validate everything
@@ -170,5 +167,9 @@ contract CallBreaker is CallBreakerStorage {
         blockBuilder.transfer(address(this).balance);
 
         _setPortalClosed();
+    }
+
+    fallback(bytes calldata input) external payable returns (bytes memory) {
+        return this.enterPortal(input);
     }
 }
