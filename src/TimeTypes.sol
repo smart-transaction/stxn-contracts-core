@@ -26,5 +26,5 @@ struct ReturnObject {
 struct CallObjectHolder {
     bool initialized;
     uint256 firstCallableBlock;
-    CallObject callObj;
+    CallObject[] callObjs;
 }
