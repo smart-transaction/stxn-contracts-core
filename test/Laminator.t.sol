@@ -10,7 +10,7 @@ import "./utils/Dummy.sol";
 
 contract LaminatorHarness is Laminator {
     function harness_getOrCreateProxy(address sender) public returns (address) {
-        return getOrCreateProxy(sender);
+        return _getOrCreateProxy(sender);
     }
 }
 
@@ -20,10 +20,10 @@ contract LaminatorTest is Test {
     address randomFriendAddress = address(0xbeefd3ad);
 
     event ProxyCreated(address indexed owner, address indexed proxyAddress);
-    event ProxyPushed(address indexed proxyAddress, CallObject callObj, uint256 sequenceNumber);
-    event ProxyExecuted(address indexed proxyAddress, CallObject callObj);
-    event CallPushed(CallObject callObj, uint256 sequenceNumber);
-    event CallPulled(CallObject callObj, uint256 sequenceNumber);
+    event ProxyPushed(address indexed proxyAddress, CallObject[] callObjs, uint256 sequenceNumber);
+    event ProxyExecuted(address indexed proxyAddress, CallObject[] callObjs);
+    event CallPushed(CallObject[] callObjs, uint256 sequenceNumber);
+    event CallPulled(CallObject[] callObjs, uint256 sequenceNumber);
     event CallExecuted(CallObject callObj);
 
     event DummyEvent(uint256 arg);
@@ -53,7 +53,8 @@ contract LaminatorTest is Test {
 
         // push sequence number 0. it should emit 42.
         uint256 val1 = 42;
-        CallObject memory callObj1 = CallObject({
+        CallObject[] memory callObj1 = new CallObject[](1);
+        callObj1[0] = CallObject({
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
@@ -68,7 +69,8 @@ contract LaminatorTest is Test {
 
         // push sequence number 1. it should emit 43.
         uint256 val2 = 43;
-        CallObject memory callObj2 = CallObject({
+        CallObject[] memory callObj2 = new CallObject[](1);
+        callObj2[0] = CallObject({
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
@@ -140,11 +142,8 @@ contract LaminatorTest is Test {
 
         // try pulls as a random address, make sure the events were emitted
         vm.prank(randomFriendAddress);
-        try proxy.pull(0) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Too early to pull this sequence number");
-        }
+        vm.expectRevert(LaminatedProxy.TooEarly.selector);
+        proxy.pull(0);
     }
 
     // test delays in pushToProxy- 3 delay with 1 block rollforward is not possible
@@ -169,11 +168,8 @@ contract LaminatorTest is Test {
 
         // try pulls as a random address, make sure the events were emitted
         vm.prank(randomFriendAddress);
-        try proxy.pull(0) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Too early to pull this sequence number");
-        }
+        vm.expectRevert(LaminatedProxy.TooEarly.selector);
+        proxy.pull(0);
     }
 
     // ensure pushes as a random address when you push directly to someone else's proxy
@@ -192,11 +188,8 @@ contract LaminatorTest is Test {
         });
         bytes memory cData = abi.encode(callObj);
         vm.prank(randomFriendAddress);
-        try proxy.push(cData, 0) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Not the laminator");
-        }
+        vm.expectRevert(LaminatedProxy.NotLaminator.selector);
+        proxy.push(cData, 0);
     }
 
     // ensure pushes as the laminator work
@@ -208,7 +201,8 @@ contract LaminatorTest is Test {
         Dummy dummy = new Dummy();
 
         uint256 val = 42;
-        CallObject memory callObj = CallObject({
+        CallObject[] memory callObj = new CallObject[](1);
+        callObj[0] = CallObject({
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
@@ -228,7 +222,8 @@ contract LaminatorTest is Test {
         Dummy dummy = new Dummy();
         // push once
         uint256 val = 42;
-        CallObject memory callObj = CallObject({
+        CallObject[] memory callObj = new CallObject[](1);
+        callObj[0] = CallObject({
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
@@ -243,20 +238,14 @@ contract LaminatorTest is Test {
         proxy.pull(0);
 
         // and try to pull again
-        try proxy.pull(0) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Invalid sequence number");
-        }
+        vm.expectRevert(LaminatedProxy.Uninitialized.selector);
+        proxy.pull(0);
     }
 
     // test that uninitialized sequence numbers cannot be pulled
     function testUninitializedPull() public {
-        try laminator.pullFromProxy(0) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Invalid sequence number");
-        }
+        vm.expectRevert(LaminatedProxy.Uninitialized.selector);
+        laminator.pullFromProxy(0);
     }
 
     // test that a call that reverts revert the transaction
@@ -266,7 +255,8 @@ contract LaminatorTest is Test {
         laminator.harness_getOrCreateProxy(address(this));
         Dummy dummy = new Dummy();
 
-        CallObject memory callObj = CallObject({
+        CallObject[] memory callObj = new CallObject[](1);
+        callObj[0] = CallObject({
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
@@ -279,11 +269,8 @@ contract LaminatorTest is Test {
         vm.roll(block.number + 1);
 
         vm.prank(randomFriendAddress);
-        try proxy.pull(0) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Immediate call failed");
-        }
+        vm.expectRevert(LaminatedProxy.CallFailed.selector);
+        proxy.pull(0);
     }
 
     // ensure executions called directly to proxy as a random address don't work
@@ -302,11 +289,8 @@ contract LaminatorTest is Test {
 
         // pretend to be a random address and call directly, should fail
         vm.prank(randomFriendAddress);
-        try proxy.execute(cData) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Not the laminator");
-        }
+        vm.expectRevert(LaminatedProxy.NotLaminator.selector);
+        proxy.execute(cData);
     }
 
     // ensure executions called into proxy directly as the laminator do work
@@ -315,18 +299,19 @@ contract LaminatorTest is Test {
         LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
         laminator.harness_getOrCreateProxy(address(this));
         Dummy dummy = new Dummy();
-        CallObject memory callObj = CallObject({
+        CallObject[] memory callObjs = new CallObject[](1);
+        callObjs[0] = CallObject({
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
             callvalue: abi.encodeWithSignature("emitArg(uint256)", 42)
         });
-        bytes memory cData = abi.encode(callObj);
+        bytes memory cData = abi.encode(callObjs);
 
         // pretend to be the laminator and call directly, should work 
         vm.prank(address(laminator));
         vm.expectEmit(true, true, true, true);
-        emit CallExecuted(callObj);
+        emit CallExecuted(callObjs[0]);
         proxy.execute(cData);
     }
 
@@ -346,11 +331,8 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
 
         vm.prank(me);
-        try proxy.execute(cData) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Not the laminator");
-        }
+        vm.expectRevert(LaminatedProxy.NotLaminator.selector);
+        proxy.execute(cData);
     }
 
     // ensure executions as the owner through the laminator do work
@@ -359,7 +341,8 @@ contract LaminatorTest is Test {
         LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
         laminator.harness_getOrCreateProxy(address(this));
         Dummy dummy = new Dummy();
-        CallObject memory callObj = CallObject({
+        CallObject[] memory callObj = new CallObject[](1);
+        callObj[0] = CallObject({
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
@@ -369,7 +352,7 @@ contract LaminatorTest is Test {
 
         // check emissions, should work
         vm.expectEmit(true, true, true, true);
-        emit CallExecuted(callObj);
+        emit CallExecuted(callObj[0]);
         emit ProxyExecuted(address(proxy), callObj);
         laminator.executeInProxy(cData);
     }
@@ -390,11 +373,8 @@ contract LaminatorTest is Test {
 
         // pretend to be a random address and call directly, should fail
         vm.prank(randomFriendAddress);
-        try proxy.execute(cData) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Not the laminator");
-        }
+        vm.expectRevert(LaminatedProxy.NotLaminator.selector);
+        proxy.execute(cData);
     }
 
     // ensure executions as laminator through the laminator do not work

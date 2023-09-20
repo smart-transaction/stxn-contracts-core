@@ -2,9 +2,14 @@
 pragma solidity >=0.6.2 <0.9.0;
 
 import "../TimeTypes.sol";
+import "./CallBreakerStorage.sol";
 
-contract CallBreaker {
-    error PortalClosed();
+contract CallBreaker is CallBreakerStorage {
+    ReturnObject[] public returnStore;
+    mapping(bytes32 => int256) public callbalanceStore;
+    mapping(bytes32 => bool) public callbalanceKeySet;
+    bytes32[] public callbalanceKeyList;
+
     error OutOfReturnValues();
     error OutOfEther();
     error CallFailed();
@@ -14,27 +19,13 @@ contract CallBreaker {
     event ReturnObjectLog(string message, bytes returnvalue);
     event CallBalance(string message, bytes32 pairID, int256 callbalance);
 
-    ReturnObject[] public returnStore;
-    mapping(bytes32 => int256) public callbalanceStore;
-    mapping(bytes32 => bool) public callbalanceKeySet;
-    bytes32[] public callbalanceKeyList;
-    bool public isPortalOpen;
-
     constructor() {
-        isPortalOpen = false;
-    }
-    // View function to check the status of the portal
-
-    function isOpen() public view returns (bool) {
-        return isPortalOpen;
+        _setPortalClosed();
     }
 
-    receive() external payable {
+    receive() external onlyPortalOpen payable {
         // what about setting up the stack here? i think it's fine, because the stack is set up before the call is made.
         uint256 gasAtStart = gasleft();
-
-        // revert if the portal is open, we want to be able to send any balance back to the block builder and not get it stuck :)
-        require(isPortalOpen, "PortalClosed");
 
         // inline so that now "fallback" caller is not self but original caller
         // encode myself and my calldata
@@ -61,8 +52,7 @@ contract CallBreaker {
     /// this: takes in a call (structured as a CallObj), puts out a return value from the record of return values.
     /// also: does some accounting that we saw a given pair of call and return values once, and returns a thing off the emulated stack.
     /// called as reentrancy in order to balance the calls of the solution and make things validate.
-    function enterPortal(bytes calldata input) external payable returns (bytes memory) {
-        require(isPortalOpen, "PortalClosed");
+    function enterPortal(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
         require(returnStore.length > 0, "OutOfReturnValues");
 
         ReturnObject memory returnvalue = returnStore[returnStore.length - 1];
@@ -87,10 +77,6 @@ contract CallBreaker {
         return returnvalue.returnvalue;
     }
 
-    fallback(bytes calldata input) external payable returns (bytes memory) {
-        return this.enterPortal(input);
-    }
-
     // this is what the searcher calls to finally execute and then validate everything
     function verify(bytes memory callsBytes, bytes memory returnsBytes) external payable {
         // TODO is this correct- calling convention costs some gas. it could be different before and after the stack setup.
@@ -105,7 +91,7 @@ contract CallBreaker {
         // but then we should also do the rest of the function, which is to check that the return values are correct.
         // TODO this is a probable source of bugs. solidity engineer please check this very very carefully.
         // leaving it as a revert for now.
-        if (isPortalOpen) {
+        if (isPortalOpen()) {
             // // # inline so that now "fallback" caller is not self but original caller
             // // encode myself and my calldata
             // bytes memory callValue = abi.encodeWithSignature("verify(bytes, bytes)", callsBytes, returnsBytes);
@@ -124,7 +110,7 @@ contract CallBreaker {
             revert("PortalOpen");
         }
 
-        isPortalOpen = true;
+        _setPortalOpen();
 
         // todo: see the return statement above. eventually you'll want to have a stack of stacks maybe, with accounting getting resolved on each layer
         // todo: an alternative is to have a bunch of parallel timeturners.
@@ -180,6 +166,10 @@ contract CallBreaker {
         address payable blockBuilder = payable(block.coinbase);
         blockBuilder.transfer(address(this).balance);
 
-        isPortalOpen = false;
+        _setPortalClosed();
+    }
+
+    fallback(bytes calldata input) external payable returns (bytes memory) {
+        return this.enterPortal(input);
     }
 }

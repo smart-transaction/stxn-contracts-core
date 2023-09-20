@@ -34,7 +34,7 @@ contract SelfCheckout {
     bool balanceScheduled = false;
 
     // when a debt is taken out of the protocol, it goes here. should be called right before executing a pull...
-    address tokenDest;
+    address swapPartner;
 
     event DebugAddress(string message, address value);
     event DebugInfo(string message, string value);
@@ -54,15 +54,18 @@ contract SelfCheckout {
         _;
     }
 
-    function setTokenDest(address _tokenDest) public {
-        tokenDest = _tokenDest;
+    function setSwapPartner(address _swapPartner) public {
+        swapPartner = _swapPartner;
     }
+
+        event LogCallObj(CallObject callObj);
+
 
     // take a debt out.
     function takeSomeAtokenFromOwner(uint256 atokenamount) public onlyOwner {
         // if you're calling me, you'd better be giving me some btoken before you finish.
         // let's make sure that happens in the timeturner :)
-        require(CallBreaker(payable(callbreakerAddress)).isOpen(), "CallBreaker is not open");
+        require(CallBreaker(payable(callbreakerAddress)).isPortalOpen(), "CallBreaker is not open");
 
         // if checking the balance isn't scheduled, schedule it.
         if (!balanceScheduled) {
@@ -72,6 +75,7 @@ contract SelfCheckout {
                 gas: 1000000,
                 callvalue: abi.encodeWithSignature("checkBalance()")
             });
+            emit LogCallObj(callObj);
 
             (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObj));
 
@@ -80,28 +84,33 @@ contract SelfCheckout {
             }
             balanceScheduled = true;
         }
+
+        // // balance the timeturner by calling yourself
+        // CallObject memory callObj = CallObject({
+        //     amount: 0,
+        //     addr: address(this),
+        //     gas: 1000000,
+        //     callvalue: abi.encodeWithSignature("takeSomeATokenFromOwner(uint256)", atokenamount)
+        // });
+        // (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObj));
+
+        // if (!success) {
+        //     revert("turner CallFailed");
+        // }
+
         // compute amount owed
         imbalance += atokenamount * exchangeRate;
         // get da tokens
         // Debugging information
-        emit DebugAddress("Who I am: ", msg.sender);
-        emit DebugAddress("Token Destination: ", tokenDest);
-        emit DebugAddress("AToken Address: ", address(atoken));
-        emit DebugUint("Amount: ", atokenamount);
-        emit DebugUint("my amount", atoken.balanceOf(msg.sender));
-        
-        // allow the atoken to take the atokenamount from the owner
-        require(atoken.approve(address(this), atokenamount), "AToken approval failed");
 
-        require(atoken.transferFrom(msg.sender, tokenDest, atokenamount), "AToken transfer failed");
+        // ok so the problem is, transfer is transferring from selfcheckout to the swapPartner, not from the owner to the swapPartner.
+        // so ... uhhh ... when do we approve?
+        require(atoken.transferFrom(owner, swapPartner, atokenamount), "AToken transfer failed");
     }
 
     // repay your debts.
     function giveSomeBtokenToOwner(uint256 btokenamount) public {
-        // you need to authorize me to take your erc20two tokens
-        // and then i'll transfer them to the erc20holder
-        require(btoken.approve(msg.sender, btokenamount), "BToken approval failed");
-        btoken.transferFrom(msg.sender, owner, btokenamount);
+        btoken.transferFrom(swapPartner, owner, btokenamount);
 
         // if you've paid your debt, set imbalance to zero, if not, reduce accordingly
         if (imbalance > btokenamount) {
@@ -109,6 +118,19 @@ contract SelfCheckout {
         } else {
             imbalance = 0;
         }
+
+        // balance the timeturner by calling yourself
+        // CallObject memory callObj = CallObject({
+        //     amount: 0,
+        //     addr: address(this),
+        //     gas: 1000000,
+        //     callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", btokenamount)
+        // });
+        // (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObj));
+
+        // if (!success) {
+        //     revert("turner CallFailed");
+        // }
     }
 
     // check that you don't owe me anything.
