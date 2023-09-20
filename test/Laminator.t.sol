@@ -377,10 +377,11 @@ contract LaminatorTest is Test {
         proxy.execute(cData);
     }
 
-    // ensure executions as laminator through the laminator do not work
+    // ensure executions as laminator through the laminator do work
     function testExecuteAsLaminatorAddressFromLaminator() public {
         address expectedProxyAddress = laminator.computeProxyAddress(address(this));
         LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
+        laminator.harness_getOrCreateProxy(address(this));
         Dummy dummy = new Dummy();
         CallObject memory callObj = CallObject({
             amount: 0,
@@ -390,12 +391,8 @@ contract LaminatorTest is Test {
         });
         bytes memory cData = abi.encode(callObj);
 
-        // pretend to be laminator and call directly, should fail
+        // pretend to be laminator and call directly, should succeed
         vm.prank(address(laminator));
-        try proxy.execute(cData) {
-            assert(false);
-        } catch Error(string memory reason) {
-            assertEq(reason, "Proxy: Not the owner");
-        }
+        proxy.execute(cData);
     }
 }
