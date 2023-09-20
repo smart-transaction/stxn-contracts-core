@@ -58,8 +58,7 @@ contract SelfCheckout {
         swapPartner = _swapPartner;
     }
 
-        event LogCallObj(CallObject callObj);
-
+    event LogCallObj(CallObject callObj);
 
     // take a debt out.
     function takeSomeAtokenFromOwner(uint256 atokenamount) public onlyOwner {

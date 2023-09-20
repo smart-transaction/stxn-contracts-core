@@ -11,8 +11,6 @@ import "../src/examples/MyErc20.sol";
 import "./CleanupContract.sol";
 
 contract WorkedExampleScript is Script {
-
-    event LogCallObj(CallObject callObj);
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY1");
         uint256 pusherPrivateKey = vm.envUint("PUSHER_PRIVATE_KEY2");
@@ -99,58 +97,75 @@ contract WorkedExampleScript is Script {
         // start by setting the selfcheckout to be the filler!
         selfcheckout.setSwapPartner(filler);
         // now populate the time turner with calls.
-        CallObject[] memory callObjs = new CallObject[](4);
-        ReturnObject[] memory returnObjs = new ReturnObject[](4);
-        // before anything else we're going to approve selfcheckout to spend 20 erc20b on behalf of filler
-        // jk we do it higher up :| it comes out of callbreaker instead of address(this), gets fucked up
-        // callObjs[0] = CallObject({
-        //     amount: 0,
-        //     addr: address(erc20b),
-        //     gas: 1000000,
-        //     callvalue: abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), 20)
-        // });
-        // returnObjs[0] = ReturnObject({returnvalue: ""});
+        CallObject[] memory callObjs = new CallObject[](5);
+        ReturnObject[] memory returnObjs = new ReturnObject[](5);
+
+        callObjs[0] = CallObject({
+            amount: 0,
+            addr: address(cleanupContract),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature(
+                "preClean(address,address,address,uint256,uint256)",
+                address(callbreaker),
+                selfcheckout,
+                pusherLaminated,
+                laminatorSequenceNumber,
+                20
+                )
+        });
+        returnObjs[0] = ReturnObject({returnvalue: ""});
 
         // first we're going to call takeSomeAtokenFromOwner by pulling from the laminator
-        callObjs[0] = CallObject({
+        callObjs[1] = CallObject({
             amount: 0,
             addr: pusherLaminated,
             gas: 1000000,
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
-        // should return nothing.
-        returnObjs[0] = ReturnObject({returnvalue: ""});
+        // should return a list of the return value of approve + takesomeatokenfrompusher in a list of returnobjects, abi packed, then stuck into another returnobject.
+        ReturnObject[] memory returnObjsFromPull = new ReturnObject[](2);
+        returnObjsFromPull[0] = ReturnObject({returnvalue: abi.encode(true)});
+        returnObjsFromPull[1] = ReturnObject({returnvalue: ""});
+        // double encoding because first here second in pull()
+        returnObjs[1] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
+
         // then we'll call giveSomeBtokenToOwner and get the imbalance back to zero
-        callObjs[1] = CallObject({
+        callObjs[2] = CallObject({
             amount: 0,
             addr: address(selfcheckout),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", 20)
         });
         // return object is still nothing
-        returnObjs[1] = ReturnObject({returnvalue: ""});
+        returnObjs[2] = ReturnObject({returnvalue: ""});
+
         // then we'll call checkBalance
-        callObjs[2] = CallObject({
+        callObjs[3] = CallObject({
             amount: 0,
             addr: address(selfcheckout),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("checkBalance()")
         });
         // log what this callobject looks like
-        emit LogCallObj(callObjs[2]);
-        
         // return object is still nothing
-        returnObjs[2] = ReturnObject({returnvalue: ""});
+        returnObjs[3] = ReturnObject({returnvalue: ""});
 
         // finally we'll call cleanup
-        callObjs[3] = CallObject({
+        callObjs[4] = CallObject({
             amount: 0,
             addr: address(cleanupContract),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("cleanup(address,address,address,uint256,uint256)", address(callbreaker), address(selfcheckout), pusherLaminated, laminatorSequenceNumber, 20)
+            callvalue: abi.encodeWithSignature(
+                "cleanup(address,address,address,uint256,uint256)",
+                address(callbreaker),
+                address(selfcheckout),
+                pusherLaminated,
+                laminatorSequenceNumber,
+                20
+                )
         });
         // return object is still nothing
-        returnObjs[3] = ReturnObject({returnvalue: ""});
+        returnObjs[4] = ReturnObject({returnvalue: ""});
 
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs));
         vm.stopBroadcast();
@@ -158,8 +173,8 @@ contract WorkedExampleScript is Script {
 
         // check the state of all the contracts now.
         // pusher should have 20 erc20b and 0 erc20a
-        assert(erc20a.balanceOf(pusher) == 0);
-        assert(erc20b.balanceOf(pusher) == 20);
+        assert(erc20a.balanceOf(pusherLaminated) == 0);
+        assert(erc20b.balanceOf(pusherLaminated) == 20);
         // filler should have 0 erc20b and 10 erc20a
         assert(erc20a.balanceOf(filler) == 10);
         assert(erc20b.balanceOf(filler) == 0);

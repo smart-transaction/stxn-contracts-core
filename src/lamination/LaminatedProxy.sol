@@ -34,7 +34,9 @@ contract LaminatedProxy is LaminatedStorage {
     /// @dev Modifier to make a function callable only by the laminator.
     ///      Reverts the transaction if the sender is not the laminator.
     modifier onlyLaminator() {
-        if(msg.sender != address(laminator())) revert NotLaminator();
+        if (msg.sender != address(laminator())) {
+            revert NotLaminator();
+        }
         _;
     }
 
@@ -62,7 +64,6 @@ contract LaminatedProxy is LaminatedStorage {
     /// @dev The received Ether can be spent via the `execute`, `push`, and `pull` functions.
     receive() external payable {}
 
-
     /// @notice Pushes a deferred function call to be executed after a certain delay.
     /// @dev Adds a new CallObject to the `deferredCalls` mapping and emits a CallPushed event.
     ///      The function can only be called by the contract owner.
@@ -76,7 +77,7 @@ contract LaminatedProxy is LaminatedStorage {
         CallObjectHolder storage holder = deferredCalls[callSequenceNumber];
         holder.initialized = true;
         holder.firstCallableBlock = block.number + delay;
-        for (uint i = 0; i < callObjs.length; ++i) {
+        for (uint256 i = 0; i < callObjs.length; ++i) {
             holder.callObjs.push(callObjs[i]);
         }
 
@@ -94,10 +95,14 @@ contract LaminatedProxy is LaminatedStorage {
     /// @return returnValue The return value of the executed deferred call.
     function pull(uint256 seqNumber) external returns (bytes memory returnValue) {
         CallObjectHolder memory coh = deferredCalls[seqNumber];
-        if (!coh.initialized) revert Uninitialized();
+        if (!coh.initialized) {
+            revert Uninitialized();
+        }
 
         emit CallableBlock(coh.firstCallableBlock, block.number);
-        if (coh.firstCallableBlock > block.number) revert TooEarly();
+        if (coh.firstCallableBlock > block.number) {
+            revert TooEarly();
+        }
 
         returnValue = _execute(coh.callObjs);
         emit CallPulled(coh.callObjs, seqNumber);
@@ -129,7 +134,9 @@ contract LaminatedProxy is LaminatedStorage {
     function _executeSingle(CallObject memory callToMake) internal returns (bytes memory) {
         (bool success, bytes memory returnvalue) =
             callToMake.addr.call{gas: callToMake.gas, value: callToMake.amount}(callToMake.callvalue);
-        if (!success) revert CallFailed();
+        if (!success) {
+            revert CallFailed();
+        }
         emit CallExecuted(callToMake);
         return returnvalue;
     }
