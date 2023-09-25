@@ -4,10 +4,14 @@ pragma solidity >=0.6.2 <0.9.0;
 import "../TimeTypes.sol";
 import "./CallBreakerStorage.sol";
 
+struct CallBalance {
+    bool set;
+    int256 balance;
+}
+
 contract CallBreaker is CallBreakerStorage {
     ReturnObject[] public returnStore;
-    mapping(bytes32 => int256) public callbalanceStore;
-    mapping(bytes32 => bool) public callbalanceKeySet;
+    mapping(bytes32 => CallBalance) public callbalanceStore;
     bytes32[] public callbalanceKeyList;
 
     error OutOfReturnValues();
@@ -23,60 +27,55 @@ contract CallBreaker is CallBreakerStorage {
         _setPortalClosed();
     }
 
-    receive() external payable onlyPortalOpen {
-        // what about setting up the stack here? i think it's fine, because the stack is set up before the call is made.
-        uint256 gasAtStart = gasleft();
-
-        // inline so that now "fallback" caller is not self but original caller
-        // encode myself and my calldata
-        CallObject memory callObj = CallObject({
-            amount: msg.value,
-            addr: address(this),
-            // TODO bug potentially??? see first line of this function.
-            gas: gasAtStart,
-            callvalue: ""
-        });
-        (bool success, bytes memory returned_from_fallback) = address(this).delegatecall(abi.encode(callObj));
-
-        require(success, "inside portalopen fallback Call Failed");
-        // returned from fallback should be the return value of the verify function, which is nothing.
-        require(returned_from_fallback.length == 0, "TimeImbalance");
-        // call into enterPortal
-    }
-
     /// NOTE: Expect calls to arrive with non-null msg.data
-    fallback(bytes calldata input) external payable returns (bytes memory) {
-        return this.enterPortal(input);
+    receive() external payable {
+        revert EmptyCalldata();
     }
 
+    /// @notice Generates a unique ID for a pair of CallObject and ReturnObject
+    /// @param callObj The CallObject instance containing details of the call
+    /// @param returnObj The ReturnObject instance containing details of the return value
+    /// @return A unique ID derived from the given callObj and returnObj
+    /// NOTE: This is used in `verify` to check that the return value is actually the return value.
     function getCallReturnID(CallObject memory callObj, ReturnObject memory returnObj) public pure returns (bytes32) {
         // Use keccak256 to generate a unique ID for a pair of CallObject and ReturnObject.
         return keccak256(abi.encode(callObj, returnObj));
+    }
+
+    /// NOTE: Expect calls to arrive with non-null msg.data
+    /// NOTE: Calldata bytes are structured as a CallObject
+    fallback(bytes calldata input) external payable returns (bytes memory) {
+        return this.enterPortal(input);
     }
 
     /// this: takes in a call (structured as a CallObj), puts out a return value from the record of return values.
     /// also: does some accounting that we saw a given pair of call and return values once, and returns a thing off the emulated stack.
     /// called as reentrancy in order to balance the calls of the solution and make things validate.
     function enterPortal(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
+        // Ensure there's at least one return value available
         require(returnStore.length > 0, "OutOfReturnValues");
+
+        // Pop the last ReturnObject after getting its ID
+        ReturnObject memory returnvalue = returnStore[returnStore.length - 1];
+        returnStore.pop();
+        
+        // Decode the input and fetch the last ReturnObject from returnStore in one step
+        bytes32 pairID = getCallReturnID(
+            abi.decode(input, (CallObject)),
+            returnvalue
+        );
+
         CallObject memory callobject = abi.decode(input, (CallObject));
 
-        ReturnObject memory returnvalue = returnStore[returnStore.length - 1];
-        bytes32 pairID = getCallReturnID(callobject, returnvalue);
-
-        returnStore.pop();
-
-
-        // todo this may be optimizable
-        if (callbalanceStore[pairID] == 0 && callbalanceKeySet[pairID] == false) {
-            callbalanceStore[pairID] = 1;
+        if (callbalanceStore[pairID].set == false) {
+            callbalanceStore[pairID].balance = 1;
             callbalanceKeyList.push(pairID);
-            callbalanceKeySet[pairID] = true;
+            callbalanceStore[pairID].set = true;
         } else {
-            callbalanceStore[pairID]++;
+            callbalanceStore[pairID].balance++;
         }
 
-        emit EnterPortal("enterPortal", callobject, returnvalue, pairID, callbalanceStore[pairID]);
+        emit EnterPortal("enterPortal", callobject, returnvalue, pairID, callbalanceStore[pairID].balance);
         return returnvalue.returnvalue;
     }
 
@@ -119,17 +118,17 @@ contract CallBreaker is CallBreakerStorage {
             bytes32 pairID = getCallReturnID(calls[i], ReturnObject(returnvalue));
 
             // todo write tests for this two-sets-and-a-list situation, and think about optimization.
-            if (callbalanceKeySet[pairID] == false) {
-                callbalanceStore[pairID] = -1;
+            if (callbalanceStore[pairID].set == false) {
+                callbalanceStore[pairID].balance = -1;
                 callbalanceKeyList.push(pairID);
-                callbalanceKeySet[pairID] = true;
+                callbalanceStore[pairID].set = true;
             } else {
-                callbalanceStore[pairID]--;
+                callbalanceStore[pairID].balance--;
             }
         }
 
         for (uint256 i = 0; i < callbalanceKeyList.length; i++) {
-            require(callbalanceStore[callbalanceKeyList[i]] == 0, "TimeImbalance: callbalanceStore not zeroed out");
+            require(callbalanceStore[callbalanceKeyList[i]].balance == 0, "TimeImbalance: callbalanceStore not zeroed out");
         }
 
         // free the returnStore
