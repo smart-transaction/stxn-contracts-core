@@ -14,6 +14,7 @@ contract CallBreaker is CallBreakerStorage {
     error OutOfEther();
     error CallFailed();
     error TimeImbalance();
+    error EmptyCalldata();
 
     event EnterPortal(string message, CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance);
     event VerifyStxn();
@@ -41,6 +42,11 @@ contract CallBreaker is CallBreakerStorage {
         // returned from fallback should be the return value of the verify function, which is nothing.
         require(returned_from_fallback.length == 0, "TimeImbalance");
         // call into enterPortal
+    }
+
+    /// NOTE: Expect calls to arrive with non-null msg.data
+    fallback(bytes calldata input) external payable returns (bytes memory) {
+        return this.enterPortal(input);
     }
 
     function getCallReturnID(CallObject memory callObj, ReturnObject memory returnObj) public pure returns (bytes32) {
@@ -140,9 +146,5 @@ contract CallBreaker is CallBreakerStorage {
         blockBuilder.transfer(address(this).balance);
 
         _setPortalClosed();
-    }
-
-    fallback(bytes calldata input) external payable returns (bytes memory) {
-        return this.enterPortal(input);
     }
 }
