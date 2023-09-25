@@ -5,6 +5,7 @@ import "../interfaces/ICallBreaker.sol";
 
 abstract contract CallBreakerStorage {
     error PortalClosed();
+    error PortalOpen();
 
     bytes32 public constant PORTAL_SLOT = bytes32(uint256(keccak256("CallBreakerStorage.PORTAL_SLOT")) - 1);
 
@@ -13,6 +14,15 @@ abstract contract CallBreakerStorage {
             revert PortalClosed();
         }
         _;
+    }
+
+    modifier onlyPortalClosed() {
+        if (isPortalOpen()) {
+            revert PortalOpen();
+        }
+        _setPortalOpen();
+        _;
+        _setPortalClosed();
     }
 
     function isPortalOpen() public view returns (bool status) {

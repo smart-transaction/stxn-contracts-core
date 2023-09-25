@@ -19,6 +19,7 @@ contract CallBreaker is CallBreakerStorage {
     error CallFailed();
     error TimeImbalance();
     error EmptyCalldata();
+    error LengthMismatch();
 
     event EnterPortal(string message, CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance);
     event VerifyStxn();
@@ -81,24 +82,15 @@ contract CallBreaker is CallBreakerStorage {
 
 
     // this is what the searcher calls to finally execute and then validate everything
-    function verify(bytes memory callsBytes, bytes memory returnsBytes) external payable {
-        emit VerifyStxn();
-
+    function verify(bytes memory callsBytes, bytes memory returnsBytes) external payable onlyPortalClosed() {
         // TODO is this correct- calling convention costs some gas. it could be different before and after the stack setup.
         // this is for the isPortalOpen part below.
         // uint256 gasAtStart = gasleft();
         CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
         ReturnObject[] memory return_s = abi.decode(returnsBytes, (ReturnObject[]));
-
-        //emit LogReturnStoreLength(return_s.length);
-
-        require(calls.length == return_s.length, "LengthMismatch");
-
-        if (isPortalOpen()) {
-            revert("PortalOpen");
+        if (calls.length != return_s.length) {
+            revert LengthMismatch();
         }
-
-        _setPortalOpen();
 
         delete returnStore;
 
@@ -142,8 +134,7 @@ contract CallBreaker is CallBreakerStorage {
 
         // later we need to make sure that we wipe ERC20 balances correctly as intended
         address payable blockBuilder = payable(block.coinbase);
+        emit VerifyStxn();
         blockBuilder.transfer(address(this).balance);
-
-        _setPortalClosed();
     }
 }
