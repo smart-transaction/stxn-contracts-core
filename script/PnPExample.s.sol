@@ -8,7 +8,7 @@ import "../src/lamination/Laminator.sol";
 import "../src/timetravel/CallBreaker.sol";
 import "../src/examples/PnP.sol";
 
-contract WorkedExampleScript is Script {
+contract PnPExampleScript is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY1");
         uint256 pusherPrivateKey = vm.envUint("PRIVATE_KEY2");
@@ -38,7 +38,7 @@ contract WorkedExampleScript is Script {
 
         vm.stopBroadcast();
 
-        
+        /*
         // THIS HAPPENS IN USER LAND
         vm.startBroadcast(pusherPrivateKey);
 
@@ -63,7 +63,6 @@ contract WorkedExampleScript is Script {
         vm.stopBroadcast();
         // END USER LAND
 
-        /*
         // go forward in time
         vm.roll(block.number + 1);
 
