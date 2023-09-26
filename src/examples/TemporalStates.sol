@@ -10,8 +10,27 @@ contract TemporalStates {
         _callbreakerAddress = callbreakerLocation;
     }
 
-    function entryPoint(uint256 blockTime, bytes memory input) external pure returns (bool) {
+    function entryPoint(uint256 blockTime, bytes memory input) public pure returns (bool) {
         return _rightTime(blockTime) && _isVulnerable(input);
+    }
+
+    function timeExploit(uint256 blockTime, bytes memory input) external returns (bool) {
+        CallObject memory callObj = CallObject({
+            amount: 0,
+            addr: address(this),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature("timeExploit(uint256,bytes)", blockTime, input)
+        });
+
+        // call, hit the fallback.
+        (bool success, bytes memory returnvalue) = _callbreakerAddress.call(abi.encode(callObj));
+
+        if (!success) {
+            revert("turner CallFailed");
+        }
+
+        // this one just returns whatever it gets from the turner.
+        return abi.decode(returnvalue, (bool));
     }
 
     function _rightTime(uint256 blockTime) internal pure returns (bool) {

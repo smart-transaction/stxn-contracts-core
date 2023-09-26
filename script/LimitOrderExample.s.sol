@@ -17,11 +17,11 @@ import "./CleanupContract.sol";
 // Swapper tries to prove 20B swap, gets reverted because it's not 30B
 // 30B comes along sometime in future, succeeds on trade.
 contract LimitOrderExampleScript is Script {
-    function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY1");
-        uint256 pusherPrivateKey = vm.envUint("PRIVATE_KEY2");
-        uint256 fillerPrivateKey = vm.envUint("PRIVATE_KEY3");
+    uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY1");
+    uint256 pusherPrivateKey = vm.envUint("PRIVATE_KEY2");
+    uint256 fillerPrivateKey = vm.envUint("PRIVATE_KEY3");
 
+    function run() external {
         address pusher = vm.addr(pusherPrivateKey);
         address filler = vm.addr(fillerPrivateKey);
 
@@ -191,11 +191,7 @@ contract LimitOrderExampleScript is Script {
         // this is gonna cost so much gas :|
         erc20b.approve(address(limitorder), 30);
 
-        // now populate the time turner with calls.
-        CallObject[] memory correctCallObjs = new CallObject[](5);
-        ReturnObject[] memory correctReturnObjs = new ReturnObject[](5);
-
-        correctCallObjs[0] = CallObject({
+        callObjs[0] = CallObject({
             amount: 0,
             addr: address(cleanupContract),
             gas: 1000000,
@@ -208,34 +204,33 @@ contract LimitOrderExampleScript is Script {
                 30
             )
         });
-        correctReturnObjs[0] = ReturnObject({returnvalue: ""});
+        returnObjs[0] = ReturnObject({returnvalue: ""});
 
         // first we're going to call takeSomeAtokenFromOwner by pulling from the laminator
-        correctCallObjs[1] = CallObject({
+        callObjs[1] = CallObject({
             amount: 0,
             addr: pusherLaminated,
             gas: 1000000,
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
         // should return a list of the return value of approve + takesomeatokenfrompusher in a list of returnobjects, abi packed, then stuck into another returnobject.
-        ReturnObject[] memory correctReturnObjsFromPull = new ReturnObject[](2);
-        correctReturnObjsFromPull[0] = ReturnObject({returnvalue: abi.encode(true)});
-        correctReturnObjsFromPull[1] = ReturnObject({returnvalue: ""});
+        returnObjsFromPull[0] = ReturnObject({returnvalue: abi.encode(true)});
+        returnObjsFromPull[1] = ReturnObject({returnvalue: ""});
         // double encoding because first here second in pull()
-        correctReturnObjs[1] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
+        returnObjs[1] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
         // then we'll call giveSomeBtokenToOwner and get the imbalance back to zero
-        correctCallObjs[2] = CallObject({
+        callObjs[2] = CallObject({
             amount: 0,
             addr: address(limitorder),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", 30)
         });
         // return object is still nothing
-        correctReturnObjs[2] = ReturnObject({returnvalue: ""});
+        returnObjs[2] = ReturnObject({returnvalue: ""});
 
         // then we'll call checkBalance
-        correctCallObjs[3] = CallObject({
+        callObjs[3] = CallObject({
             amount: 0,
             addr: address(limitorder),
             gas: 1000000,
@@ -243,10 +238,10 @@ contract LimitOrderExampleScript is Script {
         });
         // log what this callobject looks like
         // return object is still nothing
-        correctReturnObjs[3] = ReturnObject({returnvalue: ""});
+        returnObjs[3] = ReturnObject({returnvalue: ""});
 
         // finally we'll call cleanup
-        correctCallObjs[4] = CallObject({
+        callObjs[4] = CallObject({
             amount: 0,
             addr: address(cleanupContract),
             gas: 1000000,
@@ -260,10 +255,10 @@ contract LimitOrderExampleScript is Script {
                 )
         });
         // return object is still nothing
-        correctReturnObjs[4] = ReturnObject({returnvalue: ""});
+        returnObjs[4] = ReturnObject({returnvalue: ""});
 
         // This time, verify should succeed
-        callbreaker.verify(abi.encode(correctCallObjs), abi.encode(correctReturnObjs));
+        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs));
         
         vm.stopBroadcast();
 
