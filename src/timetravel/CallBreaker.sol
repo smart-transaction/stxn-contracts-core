@@ -20,6 +20,7 @@ contract CallBreaker is CallBreakerStorage {
     error TimeImbalance();
     error EmptyCalldata();
     error LengthMismatch();
+    error CallVerificationFailed();
 
     event EnterPortal(string message, CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance);
     event VerifyStxn();
@@ -54,7 +55,9 @@ contract CallBreaker is CallBreakerStorage {
     /// called as reentrancy in order to balance the calls of the solution and make things validate.
     function enterPortal(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
         // Ensure there's at least one return value available
-        require(returnStore.length > 0, "OutOfReturnValues");
+        if (returnStore.length == 0) {
+            revert OutOfReturnValues();
+        }
 
         // Pop the last ReturnObject after getting its ID
         ReturnObject memory returnvalue = returnStore[returnStore.length - 1];
@@ -101,12 +104,16 @@ contract CallBreaker is CallBreakerStorage {
 
         // for all the calls, go check that the return value is actually the return value.
         for (uint256 i = 0; i < calls.length; i++) {
-            require(address(this).balance >= calls[i].amount, "OutOfFunds");
+            if (address(this).balance < calls[i].amount ) {
+                revert OutOfEther();
+            }
 
             (bool success, bytes memory returnvalue) =
                 calls[i].addr.call{gas: calls[i].gas, value: calls[i].amount}(calls[i].callvalue);
 
-            require(success, "checking CallFailed");
+            if (!success) {
+                revert CallFailed();
+            }
             bytes32 pairID = getCallReturnID(calls[i], ReturnObject(returnvalue));
 
             // todo write tests for this two-sets-and-a-list situation, and think about optimization.
@@ -120,12 +127,9 @@ contract CallBreaker is CallBreakerStorage {
         }
 
         for (uint256 i = 0; i < callbalanceKeyList.length; i++) {
-            require(callbalanceStore[callbalanceKeyList[i]].balance == 0, "TimeImbalance: callbalanceStore not zeroed out");
-        }
-
-        // free the returnStore
-        for (uint256 i = 0; i < returnStore.length; i++) {
-            delete returnStore[i];
+            if (callbalanceStore[callbalanceKeyList[i]].balance != 0) {
+                revert TimeImbalance();
+            }
         }
 
         delete returnStore;
