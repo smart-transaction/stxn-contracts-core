@@ -6,11 +6,17 @@ import "forge-std/Vm.sol";
 
 import "../src/lamination/Laminator.sol";
 import "../src/timetravel/CallBreaker.sol";
-import "../src/examples/SelfCheckout.sol";
+import "../src/examples/LimitOrder.sol";
 import "../src/examples/MyErc20.sol";
 import "./CleanupContract.sol";
 
-contract WorkedExampleScript is Script {
+// Call order:
+// User approves for protocol to take 10A
+// User provides protocol for 10A; wants 30B
+// High slippage causes 10A to be worth 20B
+// Swapper tries to prove 20B swap, gets reverted because it's not 30B
+// 30B comes along sometime in future, succeeds on trade.
+contract LimitOrderExampleScript is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY1");
         uint256 pusherPrivateKey = vm.envUint("PRIVATE_KEY2");
@@ -36,8 +42,8 @@ contract WorkedExampleScript is Script {
         // give the pusher 10 erc20a
         erc20a.mint(pusher, 10);
 
-        // give the filler 20 erc20b
-        erc20b.mint(filler, 20);
+        // give the filler 30 erc20b
+        erc20b.mint(filler, 30);
 
         // compute the pusher laminated address
         address payable pusherLaminated = payable(laminator.computeProxyAddress(pusher));
@@ -49,8 +55,8 @@ contract WorkedExampleScript is Script {
         vm.label(pusherLaminated, "pusherLaminated");
 
         // set up a selfcheckout
-        SelfCheckout selfcheckout =
-            new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
+        LimitOrder limitorder =
+            new LimitOrder(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
 
         vm.stopBroadcast();
 
@@ -67,14 +73,15 @@ contract WorkedExampleScript is Script {
             amount: 0,
             addr: address(erc20a),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), 10)
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(limitorder), 10)
         });
 
+        // specify that each token A should be worth 3 B tokens
         pusherCallObjs[1] = CallObject({
             amount: 0,
-            addr: address(selfcheckout),
+            addr: address(limitorder),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("takeSomeAtokenFromOwner(uint256)", 10)
+            callvalue: abi.encodeWithSignature("takeSomeAtokenFromOwner(uint256,uint256)", 10, 3)
         });
         uint256 laminatorSequenceNumber = laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
         vm.stopBroadcast();
@@ -83,23 +90,25 @@ contract WorkedExampleScript is Script {
         // go forward in time
         vm.roll(block.number + 1);
 
+        
         // THIS SHOULD ALL HAPPEN IN SOLVER LAND
         vm.startBroadcast(fillerPrivateKey);
         // todo: do a quick approval- how are we going to wrap these up together in the future :|
         // todo: my concept is that the callbreaker .... allows you to execute code as yourself? idk?
         // this is gonna cost so much gas :|
-        erc20b.approve(address(selfcheckout), 20);
+        erc20b.approve(address(limitorder), 30);
 
         // deploy a cleanup contract to clean up the time turner
         CleanupContract cleanupContract = new CleanupContract();
 
         // filler fills the order
         // start by setting the selfcheckout to be the filler!
-        selfcheckout.setSwapPartner(filler);
+        limitorder.setSwapPartner(filler);
         // now populate the time turner with calls.
         CallObject[] memory callObjs = new CallObject[](5);
         ReturnObject[] memory returnObjs = new ReturnObject[](5);
 
+        // Should expect pre-clean call with 20 to revert
         callObjs[0] = CallObject({
             amount: 0,
             addr: address(cleanupContract),
@@ -107,7 +116,7 @@ contract WorkedExampleScript is Script {
             callvalue: abi.encodeWithSignature(
                 "preClean(address,address,address,uint256,uint256)",
                 address(callbreaker),
-                selfcheckout,
+                limitorder,
                 pusherLaminated,
                 laminatorSequenceNumber,
                 20
@@ -132,7 +141,7 @@ contract WorkedExampleScript is Script {
         // then we'll call giveSomeBtokenToOwner and get the imbalance back to zero
         callObjs[2] = CallObject({
             amount: 0,
-            addr: address(selfcheckout),
+            addr: address(limitorder),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", 20)
         });
@@ -142,7 +151,7 @@ contract WorkedExampleScript is Script {
         // then we'll call checkBalance
         callObjs[3] = CallObject({
             amount: 0,
-            addr: address(selfcheckout),
+            addr: address(limitorder),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("checkBalance()")
         });
@@ -158,7 +167,7 @@ contract WorkedExampleScript is Script {
             callvalue: abi.encodeWithSignature(
                 "cleanup(address,address,address,uint256,uint256)",
                 address(callbreaker),
-                address(selfcheckout),
+                address(limitorder),
                 pusherLaminated,
                 laminatorSequenceNumber,
                 20
@@ -167,14 +176,103 @@ contract WorkedExampleScript is Script {
         // return object is still nothing
         returnObjs[4] = ReturnObject({returnvalue: ""});
 
+        // Verify should revert here
+        vm.expectRevert();
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs));
+        
         vm.stopBroadcast();
+
+        // Progress in time
+        vm.roll(block.number + 1);
+
+        vm.startBroadcast(fillerPrivateKey);
+        // todo: do a quick approval- how are we going to wrap these up together in the future :|
+        // todo: my concept is that the callbreaker .... allows you to execute code as yourself? idk?
+        // this is gonna cost so much gas :|
+        erc20b.approve(address(limitorder), 30);
+
+        // now populate the time turner with calls.
+        CallObject[] memory correctCallObjs = new CallObject[](5);
+        ReturnObject[] memory correctReturnObjs = new ReturnObject[](5);
+
+        correctCallObjs[0] = CallObject({
+            amount: 0,
+            addr: address(cleanupContract),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature(
+                "preClean(address,address,address,uint256,uint256)",
+                address(callbreaker),
+                limitorder,
+                pusherLaminated,
+                laminatorSequenceNumber,
+                30
+            )
+        });
+        correctReturnObjs[0] = ReturnObject({returnvalue: ""});
+
+        // first we're going to call takeSomeAtokenFromOwner by pulling from the laminator
+        correctCallObjs[1] = CallObject({
+            amount: 0,
+            addr: pusherLaminated,
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
+        });
+        // should return a list of the return value of approve + takesomeatokenfrompusher in a list of returnobjects, abi packed, then stuck into another returnobject.
+        ReturnObject[] memory correctReturnObjsFromPull = new ReturnObject[](2);
+        correctReturnObjsFromPull[0] = ReturnObject({returnvalue: abi.encode(true)});
+        correctReturnObjsFromPull[1] = ReturnObject({returnvalue: ""});
+        // double encoding because first here second in pull()
+        correctReturnObjs[1] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
+
+        // then we'll call giveSomeBtokenToOwner and get the imbalance back to zero
+        correctCallObjs[2] = CallObject({
+            amount: 0,
+            addr: address(limitorder),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", 30)
+        });
+        // return object is still nothing
+        correctReturnObjs[2] = ReturnObject({returnvalue: ""});
+
+        // then we'll call checkBalance
+        correctCallObjs[3] = CallObject({
+            amount: 0,
+            addr: address(limitorder),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature("checkBalance()")
+        });
+        // log what this callobject looks like
+        // return object is still nothing
+        correctReturnObjs[3] = ReturnObject({returnvalue: ""});
+
+        // finally we'll call cleanup
+        correctCallObjs[4] = CallObject({
+            amount: 0,
+            addr: address(cleanupContract),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature(
+                "cleanup(address,address,address,uint256,uint256)",
+                address(callbreaker),
+                address(limitorder),
+                pusherLaminated,
+                laminatorSequenceNumber,
+                30
+                )
+        });
+        // return object is still nothing
+        correctReturnObjs[4] = ReturnObject({returnvalue: ""});
+
+        // This time, verify should succeed
+        callbreaker.verify(abi.encode(correctCallObjs), abi.encode(correctReturnObjs));
+        
+        vm.stopBroadcast();
+
         // END SOLVER LAND
 
         // check the state of all the contracts now.
-        // pusher should have 20 erc20b and 0 erc20a
+        // pusher should have 30 erc20b and 0 erc20a
         assert(erc20a.balanceOf(pusherLaminated) == 0);
-        assert(erc20b.balanceOf(pusherLaminated) == 20);
+        assert(erc20b.balanceOf(pusherLaminated) == 30);
         // filler should have 0 erc20b and 10 erc20a
         assert(erc20a.balanceOf(filler) == 10);
         assert(erc20b.balanceOf(filler) == 0);

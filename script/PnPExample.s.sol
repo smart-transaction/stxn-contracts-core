@@ -6,11 +6,9 @@ import "forge-std/Vm.sol";
 
 import "../src/lamination/Laminator.sol";
 import "../src/timetravel/CallBreaker.sol";
-import "../src/examples/SelfCheckout.sol";
-import "../src/examples/MyErc20.sol";
-import "./CleanupContract.sol";
+import "../src/examples/PnP.sol";
 
-contract WorkedExampleScript is Script {
+contract PnPExampleScript is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY1");
         uint256 pusherPrivateKey = vm.envUint("PRIVATE_KEY2");
@@ -28,51 +26,36 @@ contract WorkedExampleScript is Script {
 
         Laminator laminator = new Laminator();
         CallBreaker callbreaker = new CallBreaker();
-
-        // two erc20s for a selfcheckout
-        MyErc20 erc20a = new MyErc20("A", "A");
-        MyErc20 erc20b = new MyErc20("B", "B");
-
-        // give the pusher 10 erc20a
-        erc20a.mint(pusher, 10);
-
-        // give the filler 20 erc20b
-        erc20b.mint(filler, 20);
+        PnP pnp = new PnP(address(callbreaker), pusherPrivateKey);
 
         // compute the pusher laminated address
         address payable pusherLaminated = payable(laminator.computeProxyAddress(pusher));
 
         vm.label(address(laminator), "laminator");
         vm.label(address(callbreaker), "callbreaker");
-        vm.label(address(erc20a), "erc20a");
-        vm.label(address(erc20b), "erc20b");
+        vm.label(address(pnp), "pnp");
         vm.label(pusherLaminated, "pusherLaminated");
-
-        // set up a selfcheckout
-        SelfCheckout selfcheckout =
-            new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
 
         vm.stopBroadcast();
 
+        /*
         // THIS HAPPENS IN USER LAND
         vm.startBroadcast(pusherPrivateKey);
-        // laminate your erc20a
-        erc20a.transfer(pusherLaminated, 10);
+
         // pusher pushes its call to the selfcheckout
         // Create a list of CallObjects
         CallObject[] memory pusherCallObjs = new CallObject[](2);
 
-        // approve selfcheckout to spend 10 erc20a on behalf of pusher
         pusherCallObjs[0] = CallObject({
             amount: 0,
-            addr: address(erc20a),
+            addr: address(pnp),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), 10)
         });
 
         pusherCallObjs[1] = CallObject({
             amount: 0,
-            addr: address(selfcheckout),
+            addr: address(pnp),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("takeSomeAtokenFromOwner(uint256)", 10)
         });
@@ -85,17 +68,7 @@ contract WorkedExampleScript is Script {
 
         // THIS SHOULD ALL HAPPEN IN SOLVER LAND
         vm.startBroadcast(fillerPrivateKey);
-        // todo: do a quick approval- how are we going to wrap these up together in the future :|
-        // todo: my concept is that the callbreaker .... allows you to execute code as yourself? idk?
-        // this is gonna cost so much gas :|
-        erc20b.approve(address(selfcheckout), 20);
 
-        // deploy a cleanup contract to clean up the time turner
-        CleanupContract cleanupContract = new CleanupContract();
-
-        // filler fills the order
-        // start by setting the selfcheckout to be the filler!
-        selfcheckout.setSwapPartner(filler);
         // now populate the time turner with calls.
         CallObject[] memory callObjs = new CallObject[](5);
         ReturnObject[] memory returnObjs = new ReturnObject[](5);
@@ -171,17 +144,11 @@ contract WorkedExampleScript is Script {
         vm.stopBroadcast();
         // END SOLVER LAND
 
-        // check the state of all the contracts now.
-        // pusher should have 20 erc20b and 0 erc20a
-        assert(erc20a.balanceOf(pusherLaminated) == 0);
-        assert(erc20b.balanceOf(pusherLaminated) == 20);
-        // filler should have 0 erc20b and 10 erc20a
-        assert(erc20a.balanceOf(filler) == 10);
-        assert(erc20b.balanceOf(filler) == 0);
         // portal should be closed
         assert(!callbreaker.isPortalOpen());
         // nothing should be scheduled in the laminator
         (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
         assert(!init);
+        */
     }
 }

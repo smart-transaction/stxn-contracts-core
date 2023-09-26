@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-// NOTE THAT THIS MAY NOT WORK YET! NO TESTS
 pragma solidity >=0.6.2 <0.9.0;
 
 import "../timetravel/CallBreaker.sol";
@@ -14,7 +13,7 @@ contract PnP {
         _callbreakerAddress = callbreakerLocation;
         // populate addrlist with a hash chain to look "random"
         addrlist.push(address(uint160(uint256(keccak256(abi.encodePacked(input))))));
-        for (uint256 i = 1; i < 1000000; i++) {
+        for (uint256 i = 1; i < 100000; i++) {
             addrlist.push(address(uint160(uint256(keccak256(abi.encodePacked(addrlist[i - 1]))))));
         }
     }
@@ -29,7 +28,7 @@ contract PnP {
     // obviously not np but linear rather than constant time
     function np(address input) external view returns (uint256, bool) {
         uint256 index = 0;
-        for (uint256 i = 0; i < 1000000; i++) {
+        for (uint256 i = 0; i < 100000; i++) {
             if (addrlist[i] == input) {
                 return (index, true);
             }
