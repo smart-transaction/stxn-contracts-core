@@ -15,7 +15,9 @@ contract CallBreaker is CallBreakerStorage {
     error CallFailed();
     error TimeImbalance();
 
-    event EnterPortal(string message, CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance);
+    event EnterPortal(
+        string message, CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance
+    );
     event VerifyStxn();
 
     constructor() {
@@ -60,7 +62,6 @@ contract CallBreaker is CallBreakerStorage {
 
         returnStore.pop();
 
-
         // todo this may be optimizable
         if (callbalanceStore[pairID] == 0 && callbalanceKeySet[pairID] == false) {
             callbalanceStore[pairID] = 1;
@@ -73,7 +74,6 @@ contract CallBreaker is CallBreakerStorage {
         emit EnterPortal("enterPortal", callobject, returnvalue, pairID, callbalanceStore[pairID]);
         return returnvalue.returnvalue;
     }
-
 
     // this is what the searcher calls to finally execute and then validate everything
     function verify(bytes memory callsBytes, bytes memory returnsBytes) external payable {
