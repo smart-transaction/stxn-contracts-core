@@ -185,3 +185,19 @@ contract WorkedExampleScript is Script {
         assert(!init);
     }
 }
+
+// some vm bullshit + startBroadcast(deployer)
+// callDeployerSection() // HOLY
+// some more vm bullshit + stopBroadcast(deployer)
+// startBroadcast(sender)
+// callSenderSection() // ALSO HOLY
+// vm bullshit
+// stopBroadcast(sender)
+// vm bullshit
+// startBroadcast(solver)
+// vm bullshit
+// callSolverSection() // ALSO PURE UNTOUCHED AND HOLY
+// vm bullshit
+// stopBroadcast(solver)
+
+// also: they may want special funky variable names for input and output variables- figure this out later

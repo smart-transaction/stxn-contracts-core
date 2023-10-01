@@ -5,6 +5,7 @@ import "../TimeTypes.sol";
 
 interface ICallBreaker {
     function enterPortal(bytes calldata input) external payable returns (bytes memory);
+    // TODO (xiangan): add payable/fallback functions
 
     function verify(bytes memory callObjs, bytes memory returnObjs) external;
 }
