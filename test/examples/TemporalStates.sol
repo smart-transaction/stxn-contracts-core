@@ -84,7 +84,9 @@ contract MEVTimeOracle {
     event LogBytesReceived(bytes data);
 
     // Returns 'some arbitrary amount' to withdraw
-    function returnArbitraryData(bytes memory seed) public returns (bytes memory) {
+    function returnArbitraryData(uint256 fee, bytes memory seed) public returns (bytes memory) {
+        // Oracle takes fee, returns some arbitrary data
+
         // Arbitrary data processing happens here
         emit LogBytesReceived(seed);
         return seed;

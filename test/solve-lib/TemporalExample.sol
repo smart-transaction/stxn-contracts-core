@@ -62,15 +62,13 @@ contract TemporalExampleLib {
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
 
-    event Log(uint256);
     // The solver will pull the 10 erc20a from the temporal honeypot at the right time.
-
     function solverLand(uint256 laminatorSequenceNumber, address filler) public {
         // Grab some value from the MEV time oracle using partial function application
         // TODO: This should be eventually refactored into the verify call flow.
         // Block.timestamp is a dynamic value provided at MEV time
         bytes memory seed = abi.encode(uint256(10));
-        bytes memory returnData = mevTimeOracle.returnArbitraryData(seed);
+        bytes memory returnData = mevTimeOracle.returnArbitraryData(uint256(1), seed);
 
         uint256 x;
         // Just a fancy way of doing x = returnData lol
