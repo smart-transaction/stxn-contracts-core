@@ -30,15 +30,21 @@ contract WorkedExampleTest is Script, WorkedExampleLib {
         uint256 laminatorSequenceNumber;
 
         // start deployer land
-        vm.startBroadcast(deployerPrivateKey); deployerLand(pusher, filler); vm.stopBroadcast();
+        vm.startBroadcast(deployerPrivateKey);
+        deployerLand(pusher, filler);
+        vm.stopBroadcast();
 
-        vm.startBroadcast(pusherPrivateKey); laminatorSequenceNumber = userLand(); vm.stopBroadcast();
+        vm.startBroadcast(pusherPrivateKey);
+        laminatorSequenceNumber = userLand();
+        vm.stopBroadcast();
 
         // go forward in time
         vm.roll(block.number + 1);
 
-        vm.startBroadcast(fillerPrivateKey); solverLand(laminatorSequenceNumber, filler, 20); vm.stopBroadcast();
-        
+        vm.startBroadcast(fillerPrivateKey);
+        solverLand(laminatorSequenceNumber, filler, 20);
+        vm.stopBroadcast();
+
         assert(erc20a.balanceOf(pusherLaminated) == 0);
         assert(erc20b.balanceOf(pusherLaminated) == 20);
         assert(erc20a.balanceOf(filler) == 10);

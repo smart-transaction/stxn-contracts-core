@@ -37,10 +37,8 @@ contract WorkedExampleLib {
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
 
         // set up a selfcheckout
-        selfcheckout =
-            new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
+        selfcheckout = new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
     }
-
 
     function userLand() public returns (uint256) {
         // Userland operations
@@ -71,7 +69,7 @@ contract WorkedExampleLib {
         // TODO: Refactor these parts further if necessary.
         CallObject[] memory callObjs = new CallObject[](5);
         ReturnObject[] memory returnObjs = new ReturnObject[](5);
-        
+
         callObjs[0] = CallObject({
             amount: 0,
             addr: address(cleanupContract),

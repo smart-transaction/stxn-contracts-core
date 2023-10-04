@@ -22,7 +22,9 @@ contract CallBreaker is CallBreakerStorage {
     error LengthMismatch();
     error CallVerificationFailed();
 
-    event EnterPortal(string message, CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance);
+    event EnterPortal(
+        string message, CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance
+    );
     event VerifyStxn();
 
     constructor() {
@@ -62,12 +64,9 @@ contract CallBreaker is CallBreakerStorage {
         // Pop the last ReturnObject after getting its ID
         ReturnObject memory returnvalue = returnStore[returnStore.length - 1];
         returnStore.pop();
-        
+
         // Decode the input and fetch the last ReturnObject from returnStore in one step
-        bytes32 pairID = getCallReturnID(
-            abi.decode(input, (CallObject)),
-            returnvalue
-        );
+        bytes32 pairID = getCallReturnID(abi.decode(input, (CallObject)), returnvalue);
 
         CallObject memory callobject = abi.decode(input, (CallObject));
 
@@ -83,9 +82,8 @@ contract CallBreaker is CallBreakerStorage {
         return returnvalue.returnvalue;
     }
 
-
     // this is what the searcher calls to finally execute and then validate everything
-    function verify(bytes memory callsBytes, bytes memory returnsBytes) external payable onlyPortalClosed() {
+    function verify(bytes memory callsBytes, bytes memory returnsBytes) external payable onlyPortalClosed {
         // TODO is this correct- calling convention costs some gas. it could be different before and after the stack setup.
         // this is for the isPortalOpen part below.
         // uint256 gasAtStart = gasleft();
@@ -104,7 +102,7 @@ contract CallBreaker is CallBreakerStorage {
 
         // for all the calls, go check that the return value is actually the return value.
         for (uint256 i = 0; i < calls.length; i++) {
-            if (address(this).balance < calls[i].amount ) {
+            if (address(this).balance < calls[i].amount) {
                 revert OutOfEther();
             }
 

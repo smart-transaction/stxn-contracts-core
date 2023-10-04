@@ -12,9 +12,7 @@ contract CleanupUtility {
         address pusherLaminated,
         uint256 laminatorSequenceNumber,
         bytes calldata callValue
-    )
-        public
-    {
+    ) public {
         CallBreaker cb = CallBreaker(payable(callBreaker));
 
         CallObject memory callObj = CallObject({
@@ -39,9 +37,7 @@ contract CleanupUtility {
         address pusherLaminated,
         uint256 laminatorSequenceNumber,
         bytes calldata callValue
-    )
-        public
-    {
+    ) public {
         // this one should call enterportal and throw out the result 3 times.
         // this fixes the accounting for all the extra things we called.
         // i don't think there need to be any permissions here but i could be wrong.
@@ -49,12 +45,8 @@ contract CleanupUtility {
 
         CallBreaker cb = CallBreaker(payable(callBreaker));
 
-        CallObject memory callObj = CallObject({
-            amount: 0,
-            addr: address(selfcheckout),
-            gas: 1000000,
-            callvalue: callValue
-        });
+        CallObject memory callObj =
+            CallObject({amount: 0, addr: address(selfcheckout), gas: 1000000, callvalue: callValue});
         bytes memory ret = cb.enterPortal(abi.encode(callObj));
 
         // next with pull.

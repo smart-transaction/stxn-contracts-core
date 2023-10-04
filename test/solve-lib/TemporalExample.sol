@@ -12,7 +12,7 @@ import "../examples/MyErc20.sol";
 contract TemporalExampleLib {
     address payable public pusherLaminated;
     MyErc20 public erc20a;
-    
+
     CallBreaker public callbreaker;
     TemporalHoneypot public temporalHoneypot;
     MEVTimeOracle public mevTimeOracle;
@@ -25,6 +25,7 @@ contract TemporalExampleLib {
         // Initializing contracts
         laminator = new Laminator();
         callbreaker = new CallBreaker();
+        mevTimeOracle = new MEVTimeOracle();
         erc20a = new MyErc20("A", "A");
 
         // give the pusher 10 erc20a
@@ -61,23 +62,29 @@ contract TemporalExampleLib {
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
 
+    event Log(uint256);
     // The solver will pull the 10 erc20a from the temporal honeypot at the right time.
+
     function solverLand(uint256 laminatorSequenceNumber, address filler) public {
         // Grab some value from the MEV time oracle using partial function application
         // TODO: This should be eventually refactored into the verify call flow.
         // Block.timestamp is a dynamic value provided at MEV time
-        // bytes memory seed = abi.encodePacked(uint256(10));
-        // bytes memory returnData = mevTimeOracle.returnArbitraryData(seed);
+        bytes memory seed = abi.encode(uint256(10));
+        bytes memory returnData = mevTimeOracle.returnArbitraryData(seed);
 
-        // uint256 x = abi.decode(returnData, (uint256));
-        uint256 x = 10;
+        uint256 x;
+        // Just a fancy way of doing x = returnData lol
+        assembly {
+            x := mload(add(returnData, 0x20))
+        }
+
         // Analogous to `setSwapPartner` except it sets the withdrawer at MEV time
         temporalHoneypot.setWithdrawer(filler);
 
         // TODO: Refactor these parts further if necessary.
         CallObject[] memory callObjs = new CallObject[](5);
         ReturnObject[] memory returnObjs = new ReturnObject[](5);
-        
+
         callObjs[0] = CallObject({
             amount: 0,
             addr: address(cleanupContract),

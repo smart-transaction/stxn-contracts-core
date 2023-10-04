@@ -55,8 +55,7 @@ contract LimitOrderExampleScript is Script {
         vm.label(pusherLaminated, "pusherLaminated");
 
         // set up a selfcheckout
-        LimitOrder limitorder =
-            new LimitOrder(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
+        LimitOrder limitorder = new LimitOrder(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
 
         vm.stopBroadcast();
 
@@ -90,7 +89,6 @@ contract LimitOrderExampleScript is Script {
         // go forward in time
         vm.roll(block.number + 1);
 
-        
         // THIS SHOULD ALL HAPPEN IN SOLVER LAND
         vm.startBroadcast(fillerPrivateKey);
         // todo: do a quick approval- how are we going to wrap these up together in the future :|
@@ -179,7 +177,7 @@ contract LimitOrderExampleScript is Script {
         // Verify should revert here
         vm.expectRevert();
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs));
-        
+
         vm.stopBroadcast();
 
         // Progress in time
@@ -202,7 +200,7 @@ contract LimitOrderExampleScript is Script {
                 pusherLaminated,
                 laminatorSequenceNumber,
                 30
-            )
+                )
         });
         returnObjs[0] = ReturnObject({returnvalue: ""});
 
@@ -259,7 +257,7 @@ contract LimitOrderExampleScript is Script {
 
         // This time, verify should succeed
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs));
-        
+
         vm.stopBroadcast();
 
         // END SOLVER LAND

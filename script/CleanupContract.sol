@@ -12,9 +12,7 @@ contract CleanupContract {
         address pusherLaminated,
         uint256 laminatorSequenceNumber,
         uint256 btokenamount
-    )
-        public
-    {
+    ) public {
         CallBreaker cb = CallBreaker(payable(callBreaker));
 
         CallObject memory callObj = CallObject({
@@ -39,9 +37,7 @@ contract CleanupContract {
         address pusherLaminated,
         uint256 laminatorSequenceNumber,
         uint256 btokenamount
-    )
-        public
-    {
+    ) public {
         // this one should call enterportal and throw out the result 3 times.
         // this fixes the accounting for all the extra things we called.
         // i don't think there need to be any permissions here but i could be wrong.

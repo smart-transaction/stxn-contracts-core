@@ -8,7 +8,7 @@ import "../../src/timetravel/CallBreaker.sol";
 contract TemporalHoneypot {
     address private _callbreakerAddress;
     IERC20 atoken;
-    
+
     error NotEmpty();
 
     bool withdrawalScheduled;
@@ -29,7 +29,7 @@ contract TemporalHoneypot {
     function deposit(uint256 atokenamount) public {
         // if you're calling me, you'd better be pulling my funds out before you finish.
         // let's make sure that happens in the timeturner :)
-        // ... we don't check who pulls out the funds... that's the fun part ;) 
+        // ... we don't check who pulls out the funds... that's the fun part ;)
         require(CallBreaker(payable(_callbreakerAddress)).isPortalOpen(), "CallBreaker is not open");
 
         // if checking the balance isn't scheduled, schedule it.
@@ -81,8 +81,12 @@ contract TemporalHoneypot {
 contract MEVTimeOracle {
     constructor() {}
 
+    event LogBytesReceived(bytes data);
+
     // Returns 'some arbitrary amount' to withdraw
-    function returnArbitraryData(bytes memory seed) public pure returns (bytes memory) {
+    function returnArbitraryData(bytes memory seed) public returns (bytes memory) {
+        // Arbitrary data processing happens here
+        emit LogBytesReceived(seed);
         return seed;
     }
 }
