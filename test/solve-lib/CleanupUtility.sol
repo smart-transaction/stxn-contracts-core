@@ -5,13 +5,13 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "../../src/TimeTypes.sol";
 import "../../src/timetravel/CallBreaker.sol";
 
-contract CleanupContract {
+contract CleanupUtility {
     function preClean(
         address callBreaker,
         address selfcheckout,
         address pusherLaminated,
         uint256 laminatorSequenceNumber,
-        uint256 btokenamount
+        bytes calldata callValue
     )
         public
     {
@@ -22,12 +22,12 @@ contract CleanupContract {
             addr: address(this),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
-                "cleanup(address,address,address,uint256,uint256)",
+                "cleanup(address,address,address,uint256,bytes)",
                 callBreaker,
                 selfcheckout,
                 pusherLaminated,
                 laminatorSequenceNumber,
-                btokenamount
+                callValue
                 )
         });
         bytes memory ret = cb.enterPortal(abi.encode(callObj));
@@ -38,7 +38,7 @@ contract CleanupContract {
         address selfcheckout,
         address pusherLaminated,
         uint256 laminatorSequenceNumber,
-        uint256 btokenamount
+        bytes calldata callValue
     )
         public
     {
@@ -54,7 +54,7 @@ contract CleanupContract {
             amount: 0,
             addr: address(selfcheckout),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", btokenamount)
+            callvalue: callValue
         });
         bytes memory ret = cb.enterPortal(abi.encode(callObj));
 
@@ -74,12 +74,12 @@ contract CleanupContract {
             addr: address(this),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
-                "preClean(address,address,address,uint256,uint256)",
+                "preClean(address,address,address,uint256,bytes)",
                 callBreaker,
                 selfcheckout,
                 pusherLaminated,
                 laminatorSequenceNumber,
-                btokenamount
+                callValue
                 )
         });
         ret = cb.enterPortal(abi.encode(callObj));

@@ -7,7 +7,7 @@ import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../../src/examples/SelfCheckout.sol";
 import "../../src/examples/MyErc20.sol";
-import "./CleanupContract.sol";
+import "./CleanupUtility.sol";
 
 contract WorkedExampleLib {
     CallBreaker public callbreaker;
@@ -16,7 +16,7 @@ contract WorkedExampleLib {
     Laminator public laminator;
     MyErc20 public erc20a;
     MyErc20 public erc20b;
-    CleanupContract public cleanupContract;
+    CleanupUtility public cleanupContract;
 
     function deployerLand(address pusher, address filler) public {
         // Initializing contracts
@@ -31,7 +31,7 @@ contract WorkedExampleLib {
         // give the filler 20 erc20b
         erc20b.mint(filler, 20);
 
-        cleanupContract = new CleanupContract();
+        cleanupContract = new CleanupUtility();
 
         // compute the pusher laminated address
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
@@ -43,7 +43,6 @@ contract WorkedExampleLib {
 
 
     function userLand() public returns (uint256) {
-
         // Userland operations
         erc20a.transfer(pusherLaminated, 10);
         CallObject[] memory pusherCallObjs = new CallObject[](2);
@@ -78,12 +77,12 @@ contract WorkedExampleLib {
             addr: address(cleanupContract),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
-                "preClean(address,address,address,uint256,uint256)",
+                "preClean(address,address,address,uint256,bytes)",
                 address(callbreaker),
                 selfcheckout,
                 pusherLaminated,
                 laminatorSequenceNumber,
-                x
+                abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
                 )
         });
         returnObjs[0] = ReturnObject({returnvalue: ""});
@@ -129,12 +128,12 @@ contract WorkedExampleLib {
             addr: address(cleanupContract),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
-                "cleanup(address,address,address,uint256,uint256)",
+                "cleanup(address,address,address,uint256,bytes)",
                 address(callbreaker),
                 address(selfcheckout),
                 pusherLaminated,
                 laminatorSequenceNumber,
-                x
+                abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
                 )
         });
         // return object is still nothing

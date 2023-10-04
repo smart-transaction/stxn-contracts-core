@@ -9,6 +9,8 @@ import "../src/examples/TemporalStates.sol";
 // The user should push a call to the laminated mempool that has a temporal state
 // At different blocktimes, the callbreaker should return different values
 // The callbreaker should return the correct value at the correct time using a partial function
+// Takes a value at MEV time similar to the flow in setSwapPartner, but with arbitrary bytes
+// Whatever gets pulled in the example will take from contract, decode and use the thing
 contract TemporalTest is Test {
     CallBreaker public callbreaker;
     TemporalStates public temporalstates;
