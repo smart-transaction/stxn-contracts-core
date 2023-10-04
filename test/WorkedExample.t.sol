@@ -4,12 +4,12 @@ pragma solidity >=0.6.2 <0.9.0;
 import "forge-std/Script.sol";
 import "forge-std/Vm.sol";
 
-import "./solve-lib/WorkedExample.lib.sol";
+import "./solve-lib/WorkedExample.sol";
 
 import "../src/lamination/Laminator.sol";
 import "../src/timetravel/CallBreaker.sol";
-import "../src/examples/SelfCheckout.sol";
-import "../src/examples/MyErc20.sol";
+import "../test/examples/SelfCheckout.sol";
+import "../test/examples/MyErc20.sol";
 
 contract WorkedExampleTest is Script, WorkedExampleLib {
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY1");

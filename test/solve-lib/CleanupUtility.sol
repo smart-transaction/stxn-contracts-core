@@ -49,7 +49,6 @@ contract CleanupUtility {
 
         CallBreaker cb = CallBreaker(payable(callBreaker));
 
-        // btoken
         CallObject memory callObj = CallObject({
             amount: 0,
             addr: address(selfcheckout),

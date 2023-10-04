@@ -5,43 +5,40 @@ import "forge-std/Vm.sol";
 
 import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
-import "../../src/examples/SelfCheckout.sol";
-import "../../src/examples/MyErc20.sol";
+import "../examples/TemporalStates.sol";
 import "./CleanupUtility.sol";
+import "../examples/MyErc20.sol";
 
-contract WorkedExampleLib {
-    CallBreaker public callbreaker;
-    SelfCheckout public selfcheckout;
+contract TemporalExampleLib {
     address payable public pusherLaminated;
-    Laminator public laminator;
     MyErc20 public erc20a;
-    MyErc20 public erc20b;
+    
+    CallBreaker public callbreaker;
+    TemporalHoneypot public temporalHoneypot;
+    MEVTimeOracle public mevTimeOracle;
+    Laminator public laminator;
     CleanupUtility public cleanupContract;
 
-    function deployerLand(address pusher, address filler) public {
+    // Deploy all contracts, provide the user with 10 ERC20A tokens to deposit into the honeypot
+    // The attacker will later attempt to pull the 10 ERC20A tokens from the honeypot
+    function deployerLand(address pusher) public {
         // Initializing contracts
         laminator = new Laminator();
         callbreaker = new CallBreaker();
         erc20a = new MyErc20("A", "A");
-        erc20b = new MyErc20("B", "B");
 
         // give the pusher 10 erc20a
         erc20a.mint(pusher, 10);
 
-        // give the filler 20 erc20b
-        erc20b.mint(filler, 20);
+        temporalHoneypot = new TemporalHoneypot(address(callbreaker), address(erc20a));
 
         cleanupContract = new CleanupUtility();
 
         // compute the pusher laminated address
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
-
-        // set up a selfcheckout
-        selfcheckout =
-            new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
     }
 
-
+    // The user will now deposit 10 ERC20A tokens into the honeypot
     function userLand() public returns (uint256) {
         // Userland operations
         erc20a.transfer(pusherLaminated, 10);
@@ -50,23 +47,32 @@ contract WorkedExampleLib {
             amount: 0,
             addr: address(erc20a),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), 10)
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(temporalHoneypot), 10)
         });
 
         pusherCallObjs[1] = CallObject({
             amount: 0,
-            addr: address(selfcheckout),
+            addr: address(temporalHoneypot),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("takeSomeAtokenFromOwner(uint256)", 10)
+            callvalue: abi.encodeWithSignature("deposit(uint256)", 10)
         });
         laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
 
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
 
-    function solverLand(uint256 laminatorSequenceNumber, address filler, uint256 x) public {
-        erc20b.approve(address(selfcheckout), x);
-        selfcheckout.setSwapPartner(filler);
+    // The solver will pull the 10 erc20a from the temporal honeypot at the right time.
+    function solverLand(uint256 laminatorSequenceNumber, address filler) public {
+        // Grab some value from the MEV time oracle using partial function application
+        // TODO: This should be eventually refactored into the verify call flow.
+        // Block.timestamp is a dynamic value provided at MEV time
+        // bytes memory seed = abi.encodePacked(uint256(10));
+        // bytes memory returnData = mevTimeOracle.returnArbitraryData(seed);
+
+        // uint256 x = abi.decode(returnData, (uint256));
+        uint256 x = 10;
+        // Analogous to `setSwapPartner` except it sets the withdrawer at MEV time
+        temporalHoneypot.setWithdrawer(filler);
 
         // TODO: Refactor these parts further if necessary.
         CallObject[] memory callObjs = new CallObject[](5);
@@ -79,10 +85,10 @@ contract WorkedExampleLib {
             callvalue: abi.encodeWithSignature(
                 "preClean(address,address,address,uint256,bytes)",
                 address(callbreaker),
-                selfcheckout,
+                temporalHoneypot,
                 pusherLaminated,
                 laminatorSequenceNumber,
-                abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
+                abi.encodeWithSignature("withdraw(uint256)", x)
                 )
         });
         returnObjs[0] = ReturnObject({returnvalue: ""});
@@ -94,6 +100,7 @@ contract WorkedExampleLib {
             gas: 1000000,
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
+
         // should return a list of the return value of approve + takesomeatokenfrompusher in a list of returnobjects, abi packed, then stuck into another returnobject.
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](2);
         returnObjsFromPull[0] = ReturnObject({returnvalue: abi.encode(true)});
@@ -104,9 +111,9 @@ contract WorkedExampleLib {
         // then we'll call giveSomeBtokenToOwner and get the imbalance back to zero
         callObjs[2] = CallObject({
             amount: 0,
-            addr: address(selfcheckout),
+            addr: address(temporalHoneypot),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
+            callvalue: abi.encodeWithSignature("withdraw(uint256)", x)
         });
         // return object is still nothing
         returnObjs[2] = ReturnObject({returnvalue: ""});
@@ -114,9 +121,9 @@ contract WorkedExampleLib {
         // then we'll call checkBalance
         callObjs[3] = CallObject({
             amount: 0,
-            addr: address(selfcheckout),
+            addr: address(temporalHoneypot),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("checkBalance()")
+            callvalue: abi.encodeWithSignature("ensureFundless()")
         });
         // log what this callobject looks like
         // return object is still nothing
@@ -130,10 +137,10 @@ contract WorkedExampleLib {
             callvalue: abi.encodeWithSignature(
                 "cleanup(address,address,address,uint256,bytes)",
                 address(callbreaker),
-                address(selfcheckout),
+                address(temporalHoneypot),
                 pusherLaminated,
                 laminatorSequenceNumber,
-                abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
+                abi.encodeWithSignature("withdraw(uint256)", x)
                 )
         });
         // return object is still nothing

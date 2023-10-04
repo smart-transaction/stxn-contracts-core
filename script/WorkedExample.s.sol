@@ -6,8 +6,8 @@ import "forge-std/Vm.sol";
 
 import "../src/lamination/Laminator.sol";
 import "../src/timetravel/CallBreaker.sol";
-import "../src/examples/SelfCheckout.sol";
-import "../src/examples/MyErc20.sol";
+import "../test/examples/SelfCheckout.sol";
+import "../test/examples/MyErc20.sol";
 import "./CleanupContract.sol";
 
 contract WorkedExampleScript is Script {

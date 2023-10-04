@@ -2,7 +2,7 @@
 
 pragma solidity >=0.6.2 <0.9.0;
 
-import "../timetravel/CallBreaker.sol";
+import "../../src/timetravel/CallBreaker.sol";
 
 contract NoopTurner {
     address private _callbreakerAddress;
