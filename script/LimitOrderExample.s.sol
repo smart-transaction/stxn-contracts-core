@@ -8,7 +8,7 @@ import "../src/lamination/Laminator.sol";
 import "../src/timetravel/CallBreaker.sol";
 import "../test/examples/LimitOrder.sol";
 import "../test/examples/MyErc20.sol";
-import "./CleanupContract.sol";
+import "./CleanupUtility.sol";
 
 // Call order:
 // User approves for protocol to take 10A
@@ -97,7 +97,7 @@ contract LimitOrderExampleScript is Script {
         erc20b.approve(address(limitorder), 30);
 
         // deploy a cleanup contract to clean up the time turner
-        CleanupContract cleanupContract = new CleanupContract();
+        CleanupUtility cleanupUtility = new CleanupUtility();
 
         // filler fills the order
         // start by setting the selfcheckout to be the filler!
@@ -109,7 +109,7 @@ contract LimitOrderExampleScript is Script {
         // Should expect pre-clean call with 20 to revert
         callObjs[0] = CallObject({
             amount: 0,
-            addr: address(cleanupContract),
+            addr: address(cleanupUtility),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
                 "preClean(address,address,address,uint256,uint256)",
@@ -160,7 +160,7 @@ contract LimitOrderExampleScript is Script {
         // finally we'll call cleanup
         callObjs[4] = CallObject({
             amount: 0,
-            addr: address(cleanupContract),
+            addr: address(cleanupUtility),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
                 "cleanup(address,address,address,uint256,uint256)",
@@ -191,7 +191,7 @@ contract LimitOrderExampleScript is Script {
 
         callObjs[0] = CallObject({
             amount: 0,
-            addr: address(cleanupContract),
+            addr: address(cleanupUtility),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
                 "preClean(address,address,address,uint256,uint256)",
@@ -241,7 +241,7 @@ contract LimitOrderExampleScript is Script {
         // finally we'll call cleanup
         callObjs[4] = CallObject({
             amount: 0,
-            addr: address(cleanupContract),
+            addr: address(cleanupUtility),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
                 "cleanup(address,address,address,uint256,uint256)",
