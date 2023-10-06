@@ -5,11 +5,23 @@ import "../TimeTypes.sol";
 import "./LaminatedStorage.sol";
 
 contract LaminatedProxy is LaminatedStorage {
+    /// @notice The map from sequence number to calls held in the mempool.
     mapping(uint256 => CallObjectHolder) public deferredCalls;
 
+    /// @notice Some functions must be called by the laminator only.
+    /// @dev Selector 0x91c58dcd
     error NotLaminator();
+
+    /// @notice Calls pulled from the mempool must have been previously pushed and initialized.
+    /// @dev Selector 0x1c72fad4
     error Uninitialized();
+
+    /// @notice Calls pulled from the mempool must be after a certain user-specified delay.
+    /// @dev Selector 0x085de625
     error TooEarly();
+
+    /// @notice Call pulled from the mempool failed to execute.
+    /// @dev Selector 0x3204506f
     error CallFailed();
 
     /// @dev Emitted when a function call is deferred and added to the queue.

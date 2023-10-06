@@ -22,11 +22,10 @@ contract CallBreaker is CallBreakerStorage {
     error LengthMismatch();
     error CallVerificationFailed();
 
-    event EnterPortal(
-        string message, CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance
-    );
+    event EnterPortal(CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance);
     event VerifyStxn();
 
+    /// @notice Initializes the contract; sets the initial portal status to closed
     constructor() {
         _setPortalClosed();
     }
@@ -61,82 +60,112 @@ contract CallBreaker is CallBreakerStorage {
             revert OutOfReturnValues();
         }
 
-        // Pop the last ReturnObject after getting its ID
-        ReturnObject memory returnvalue = returnStore[returnStore.length - 1];
+        // Fetch and remove the last ReturnObject from storage
+        ReturnObject memory lastReturn = popLastReturn();
+
+        // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
+        CallObject memory callObj = abi.decode(input, (CallObject));
+        bytes32 pairID = getCallReturnID(callObj, lastReturn);
+
+        // Update or initialize the balance of the call-return pair
+        incrementCallBalance(pairID);
+
+        emit EnterPortal(callObj, lastReturn, pairID, callbalanceStore[pairID].balance);
+        return lastReturn.returnvalue;
+    }
+
+    /// @notice Verifies that the given calls, when executed, gives the correct return values
+    function verify(bytes memory callsBytes, bytes memory returnsBytes) external payable onlyPortalClosed {
+        CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
+        ReturnObject[] memory return_s = abi.decode(returnsBytes, (ReturnObject[]));
+
+        if (calls.length != return_s.length) {
+            revert LengthMismatch();
+        }
+
+        resetReturnStoreWith(return_s);
+
+        for (uint256 i = 0; i < calls.length; i++) {
+            executeAndVerifyCall(calls[i]);
+        }
+
+        ensureAllPairsAreBalanced();
+
+        cleanUpStorage();
+        
+        // Transfer remaining ETH balance to the block builder
+        address payable blockBuilder = payable(block.coinbase);
+        emit VerifyStxn();
+        blockBuilder.transfer(address(this).balance);
+    }
+
+    /// @dev Resets the returnStore with the given ReturnObject array
+    function resetReturnStoreWith(ReturnObject[] memory return_s) internal {
+        delete returnStore;
+        for (uint256 i = 0; i < return_s.length; i++) {
+            returnStore.push(return_s[i]);
+        }
+    }
+
+    /// @dev Executes a single call and verifies the result by generating the call-return pair ID
+    function executeAndVerifyCall(CallObject memory callObj) internal {
+        if (callObj.amount > address(this).balance) {
+            revert OutOfEther();
+        }
+
+        (bool success, bytes memory returnvalue) = callObj.addr.call{gas: callObj.gas, value: callObj.amount}(callObj.callvalue);
+        if (!success) {
+            revert CallFailed();
+        }
+
+        bytes32 pairID = getCallReturnID(callObj, ReturnObject(returnvalue));
+        decrementCallBalance(pairID);
+    }
+
+    /// @dev Ensures all call-return pairs have balanced counts.
+    function ensureAllPairsAreBalanced() internal view {
+        for (uint256 i = 0; i < callbalanceKeyList.length; i++) {
+            if (callbalanceStore[callbalanceKeyList[i]].balance != 0) {
+                revert TimeImbalance();
+            }
+        }
+    }
+
+    /// @dev Cleans up storage by resetting returnStore and callbalanceKeyList
+    function cleanUpStorage() internal {
+        delete returnStore;
+        delete callbalanceKeyList;
+    }
+
+    // Helper function to fetch and remove the last ReturnObject from the storage
+    function popLastReturn() internal returns (ReturnObject memory) {
+        ReturnObject memory lastReturn = returnStore[returnStore.length - 1];
         returnStore.pop();
-
-        // Decode the input and fetch the last ReturnObject from returnStore in one step
-        bytes32 pairID = getCallReturnID(abi.decode(input, (CallObject)), returnvalue);
-
-        CallObject memory callobject = abi.decode(input, (CallObject));
-
-        if (callbalanceStore[pairID].set == false) {
+        return lastReturn;
+    }
+    
+    /// @dev Helper function to increment the balance of a call-return pair in the storage.
+    /// @param pairID The unique identifier for a call-return pair.
+    function incrementCallBalance(bytes32 pairID) internal {
+        if (!callbalanceStore[pairID].set) {
             callbalanceStore[pairID].balance = 1;
             callbalanceKeyList.push(pairID);
             callbalanceStore[pairID].set = true;
         } else {
             callbalanceStore[pairID].balance++;
         }
-
-        emit EnterPortal("enterPortal", callobject, returnvalue, pairID, callbalanceStore[pairID].balance);
-        return returnvalue.returnvalue;
     }
-
-    // this is what the searcher calls to finally execute and then validate everything
-    function verify(bytes memory callsBytes, bytes memory returnsBytes) external payable onlyPortalClosed {
-        // TODO is this correct- calling convention costs some gas. it could be different before and after the stack setup.
-        // this is for the isPortalOpen part below.
-        // uint256 gasAtStart = gasleft();
-        CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
-        ReturnObject[] memory return_s = abi.decode(returnsBytes, (ReturnObject[]));
-        if (calls.length != return_s.length) {
-            revert LengthMismatch();
+    
+    /// @dev Helper function to decrement the balance of a call-return pair in the storage.
+    /// @param pairID The unique identifier for a call-return pair.
+    ///
+    function decrementCallBalance(bytes32 pairID) internal {
+        if (!callbalanceStore[pairID].set) {
+            callbalanceStore[pairID].balance = -1;
+            callbalanceKeyList.push(pairID);
+            callbalanceStore[pairID].set = true;
+        } else {
+            callbalanceStore[pairID].balance--;
         }
-
-        delete returnStore;
-
-        // if that EIP that comes through for temporary storage (within-transactional) ever gets approved, we can save some gas here :)
-        for (uint256 i = 0; i < return_s.length; i++) {
-            returnStore.push(return_s[i]);
-        }
-
-        // for all the calls, go check that the return value is actually the return value.
-        for (uint256 i = 0; i < calls.length; i++) {
-            if (address(this).balance < calls[i].amount) {
-                revert OutOfEther();
-            }
-
-            (bool success, bytes memory returnvalue) =
-                calls[i].addr.call{gas: calls[i].gas, value: calls[i].amount}(calls[i].callvalue);
-
-            if (!success) {
-                revert CallFailed();
-            }
-            bytes32 pairID = getCallReturnID(calls[i], ReturnObject(returnvalue));
-
-            // todo write tests for this two-sets-and-a-list situation, and think about optimization.
-            if (callbalanceStore[pairID].set == false) {
-                callbalanceStore[pairID].balance = -1;
-                callbalanceKeyList.push(pairID);
-                callbalanceStore[pairID].set = true;
-            } else {
-                callbalanceStore[pairID].balance--;
-            }
-        }
-
-        for (uint256 i = 0; i < callbalanceKeyList.length; i++) {
-            if (callbalanceStore[callbalanceKeyList[i]].balance != 0) {
-                revert TimeImbalance();
-            }
-        }
-
-        delete returnStore;
-        delete callbalanceKeyList;
-        // TODO is there any more storage to clear out?
-
-        // later we need to make sure that we wipe ERC20 balances correctly as intended
-        address payable blockBuilder = payable(block.coinbase);
-        emit VerifyStxn();
-        blockBuilder.transfer(address(this).balance);
     }
 }

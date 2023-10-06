@@ -28,7 +28,7 @@ contract CleanupUtility {
                 callValue
                 )
         });
-        bytes memory ret = cb.enterPortal(abi.encode(callObj));
+        cb.enterPortal(abi.encode(callObj));
     }
 
     function cleanup(
