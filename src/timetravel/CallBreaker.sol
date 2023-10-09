@@ -92,7 +92,7 @@ contract CallBreaker is CallBreakerStorage {
         ensureAllPairsAreBalanced();
 
         cleanUpStorage();
-        
+
         // Transfer remaining ETH balance to the block builder
         address payable blockBuilder = payable(block.coinbase);
         emit VerifyStxn();
@@ -113,7 +113,8 @@ contract CallBreaker is CallBreakerStorage {
             revert OutOfEther();
         }
 
-        (bool success, bytes memory returnvalue) = callObj.addr.call{gas: callObj.gas, value: callObj.amount}(callObj.callvalue);
+        (bool success, bytes memory returnvalue) =
+            callObj.addr.call{gas: callObj.gas, value: callObj.amount}(callObj.callvalue);
         if (!success) {
             revert CallFailed();
         }
@@ -134,7 +135,7 @@ contract CallBreaker is CallBreakerStorage {
         returnStore.pop();
         return lastReturn;
     }
-    
+
     /// @dev Helper function to increment the balance of a call-return pair in the storage.
     /// @param pairID The unique identifier for a call-return pair.
     function incrementCallBalance(bytes32 pairID) internal {
@@ -146,7 +147,7 @@ contract CallBreaker is CallBreakerStorage {
             callbalanceStore[pairID].balance++;
         }
     }
-    
+
     /// @dev Helper function to decrement the balance of a call-return pair in the storage.
     /// @param pairID The unique identifier for a call-return pair.
     ///
