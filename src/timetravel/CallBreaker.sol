@@ -122,15 +122,6 @@ contract CallBreaker is CallBreakerStorage {
         decrementCallBalance(pairID);
     }
 
-    /// @dev Ensures all call-return pairs have balanced counts.
-    function ensureAllPairsAreBalanced() internal view {
-        for (uint256 i = 0; i < callbalanceKeyList.length; i++) {
-            if (callbalanceStore[callbalanceKeyList[i]].balance != 0) {
-                revert TimeImbalance();
-            }
-        }
-    }
-
     /// @dev Cleans up storage by resetting returnStore and callbalanceKeyList
     function cleanUpStorage() internal {
         delete returnStore;
@@ -166,6 +157,15 @@ contract CallBreaker is CallBreakerStorage {
             callbalanceStore[pairID].set = true;
         } else {
             callbalanceStore[pairID].balance--;
+        }
+    }
+
+    /// @dev Ensures all call-return pairs have balanced counts.
+    function ensureAllPairsAreBalanced() internal view {
+        for (uint256 i = 0; i < callbalanceKeyList.length; i++) {
+            if (callbalanceStore[callbalanceKeyList[i]].balance != 0) {
+                revert TimeImbalance();
+            }
         }
     }
 }

@@ -8,11 +8,10 @@ import "../../src/timetravel/CallBreaker.sol";
 contract TemporalHoneypot {
     address private _callbreakerAddress;
     IERC20 atoken;
-
-    error NotEmpty();
-
     bool withdrawalScheduled;
     address withdrawer;
+
+    error NotEmpty();
 
     event Transfer(address indexed from, address indexed to, uint256 value);
 
@@ -82,11 +81,12 @@ contract MEVTimeOracle {
     constructor() {}
 
     event LogBytesReceived(bytes data);
+    event LogFeeReceived(uint256 fee);
 
     // Returns 'some arbitrary amount' to withdraw
     function returnArbitraryData(uint256 fee, bytes memory seed) public returns (bytes memory) {
         // Oracle takes fee, returns some arbitrary data
-
+        emit LogFeeReceived(fee);
         // Arbitrary data processing happens here
         emit LogBytesReceived(seed);
         return seed;
