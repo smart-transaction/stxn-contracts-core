@@ -60,6 +60,10 @@ contract DeployerScript is Script {
             new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
         emit LogAddressWithMessage(address(selfcheckout), "selfcheckout");
 
+        // set up a CleanupContract
+        CleanupContract cleanupContract = new CleanupContract();
+        emit LogAddressWithMessage(address(cleanupContract), "cleanupContract");
+
         vm.stopBroadcast();
     }
 }

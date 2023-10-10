@@ -54,6 +54,21 @@ contract SelfCheckout {
         _;
     }
 
+    function getAtoken() public view returns (address) {
+        return address(atoken);
+    }
+
+    function getBtoken() public view returns (address) {
+        return address(btoken);
+    }
+
+    function getExchangeRate() public view returns (uint256) {
+        return exchangeRate;
+    }
+    function getCallBreaker() public view returns (address) {
+        return callbreakerAddress;
+    }
+
     function setSwapPartner(address _swapPartner) public {
         swapPartner = _swapPartner;
     }
