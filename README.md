@@ -36,10 +36,10 @@ The user queues up a call to the `approve` function to approve some arbitrary ex
 ### Execution of the smart transaction by the miner
 
 At a high level, the executor orchestrates a sequence of contract interactions and ensures their validity by calling the `verify` function at the end. Here, in order to fulfill the swap, the solver specifically first prepares calls and expected response states: 
-    - preClean Call
-    - Setting up Approval and Swapping Partner
-    - Performing the swap (Taking 10 Token A, giving 20 Token B)
-    - Checking balances (Ensuring that the swap was successful)
-    - Cleanup Call
+  - preClean Call
+  - Setting up Approval and Swapping Partner
+  - Performing the swap (Taking 10 Token A, giving 20 Token B)
+  - Checking balances (Ensuring that the swap was successful)
+  - Cleanup Call
 
 Then, verification of correct call execution takes place to conclude the transaction
