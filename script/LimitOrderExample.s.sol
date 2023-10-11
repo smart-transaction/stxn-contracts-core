@@ -6,9 +6,9 @@ import "forge-std/Vm.sol";
 
 import "../src/lamination/Laminator.sol";
 import "../src/timetravel/CallBreaker.sol";
-import "../src/examples/LimitOrder.sol";
-import "../src/examples/MyErc20.sol";
-import "./CleanupContract.sol";
+import "../test/examples/LimitOrder.sol";
+import "../test/examples/MyErc20.sol";
+import "./CleanupUtility.sol";
 
 // Call order:
 // User approves for protocol to take 10A
@@ -55,8 +55,7 @@ contract LimitOrderExampleScript is Script {
         vm.label(pusherLaminated, "pusherLaminated");
 
         // set up a selfcheckout
-        LimitOrder limitorder =
-            new LimitOrder(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
+        LimitOrder limitorder = new LimitOrder(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
 
         vm.stopBroadcast();
 
@@ -90,7 +89,6 @@ contract LimitOrderExampleScript is Script {
         // go forward in time
         vm.roll(block.number + 1);
 
-        
         // THIS SHOULD ALL HAPPEN IN SOLVER LAND
         vm.startBroadcast(fillerPrivateKey);
         // todo: do a quick approval- how are we going to wrap these up together in the future :|
@@ -99,7 +97,7 @@ contract LimitOrderExampleScript is Script {
         erc20b.approve(address(limitorder), 30);
 
         // deploy a cleanup contract to clean up the time turner
-        CleanupContract cleanupContract = new CleanupContract();
+        CleanupUtility cleanupUtility = new CleanupUtility();
 
         // filler fills the order
         // start by setting the selfcheckout to be the filler!
@@ -111,7 +109,7 @@ contract LimitOrderExampleScript is Script {
         // Should expect pre-clean call with 20 to revert
         callObjs[0] = CallObject({
             amount: 0,
-            addr: address(cleanupContract),
+            addr: address(cleanupUtility),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
                 "preClean(address,address,address,uint256,uint256)",
@@ -162,7 +160,7 @@ contract LimitOrderExampleScript is Script {
         // finally we'll call cleanup
         callObjs[4] = CallObject({
             amount: 0,
-            addr: address(cleanupContract),
+            addr: address(cleanupUtility),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
                 "cleanup(address,address,address,uint256,uint256)",
@@ -179,7 +177,7 @@ contract LimitOrderExampleScript is Script {
         // Verify should revert here
         vm.expectRevert();
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs));
-        
+
         vm.stopBroadcast();
 
         // Progress in time
@@ -193,7 +191,7 @@ contract LimitOrderExampleScript is Script {
 
         callObjs[0] = CallObject({
             amount: 0,
-            addr: address(cleanupContract),
+            addr: address(cleanupUtility),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
                 "preClean(address,address,address,uint256,uint256)",
@@ -202,7 +200,7 @@ contract LimitOrderExampleScript is Script {
                 pusherLaminated,
                 laminatorSequenceNumber,
                 30
-            )
+                )
         });
         returnObjs[0] = ReturnObject({returnvalue: ""});
 
@@ -243,7 +241,7 @@ contract LimitOrderExampleScript is Script {
         // finally we'll call cleanup
         callObjs[4] = CallObject({
             amount: 0,
-            addr: address(cleanupContract),
+            addr: address(cleanupUtility),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
                 "cleanup(address,address,address,uint256,uint256)",
@@ -259,7 +257,7 @@ contract LimitOrderExampleScript is Script {
 
         // This time, verify should succeed
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs));
-        
+
         vm.stopBroadcast();
 
         // END SOLVER LAND

@@ -13,8 +13,8 @@
 pragma solidity >=0.6.2 <0.9.0;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
-import "../TimeTypes.sol";
-import "../timetravel/CallBreaker.sol";
+import "../../src/TimeTypes.sol";
+import "../../src/timetravel/CallBreaker.sol";
 
 contract SelfCheckout {
     address owner;
@@ -79,11 +79,11 @@ contract SelfCheckout {
             (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObj));
 
             // note see comments below on checkBalance- you could also just assert on the returnvalue here.
-            // note you can also do some computation based on the returnvalue of that future call 
+            // note you can also do some computation based on the returnvalue of that future call
             // note (like maybe revert on the uniswap price after you did something in the future, if you moved the price too much?) (not all that useful)
             // note another way you can use this: consider a problem checkable in O(1), but solvable only in O(n).
             // note have the solver solve it, then just check it using the callbreaker (or otherwise on chain)
-            // what the callbreaker basically serves to do, is that you're inviting people to front/backrun you with the laminator, 
+            // what the callbreaker basically serves to do, is that you're inviting people to front/backrun you with the laminator,
             // then using the callbreaker to make sure they behave themselves.
 
             if (!success) {

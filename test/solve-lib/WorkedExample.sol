@@ -1,75 +1,72 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.6.2 <0.9.0;
 
-import "forge-std/Script.sol";
 import "forge-std/Vm.sol";
 
-import "../src/lamination/Laminator.sol";
-import "../src/timetravel/CallBreaker.sol";
-import "../test/examples/PnP.sol";
+import "../../src/lamination/Laminator.sol";
+import "../../src/timetravel/CallBreaker.sol";
+import "../../test/examples/SelfCheckout.sol";
+import "../../test/examples/MyErc20.sol";
+import "./CleanupUtility.sol";
 
-contract PnPExampleScript is Script {
-    function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY1");
-        uint256 pusherPrivateKey = vm.envUint("PRIVATE_KEY2");
-        uint256 fillerPrivateKey = vm.envUint("PRIVATE_KEY3");
+contract WorkedExampleLib {
+    CallBreaker public callbreaker;
+    SelfCheckout public selfcheckout;
+    address payable public pusherLaminated;
+    Laminator public laminator;
+    MyErc20 public erc20a;
+    MyErc20 public erc20b;
+    CleanupUtility public cleanupContract;
 
-        address pusher = vm.addr(pusherPrivateKey);
-        address filler = vm.addr(fillerPrivateKey);
+    function deployerLand(address pusher, address filler) public {
+        // Initializing contracts
+        laminator = new Laminator();
+        callbreaker = new CallBreaker();
+        erc20a = new MyErc20("A", "A");
+        erc20b = new MyErc20("B", "B");
 
-        vm.label(pusher, "pusher");
-        vm.label(address(this), "deployer");
-        vm.label(filler, "filler");
+        // give the pusher 10 erc20a
+        erc20a.mint(pusher, 10);
 
-        // start deployer land
-        vm.startBroadcast(deployerPrivateKey);
+        // give the filler 20 erc20b
+        erc20b.mint(filler, 20);
 
-        Laminator laminator = new Laminator();
-        CallBreaker callbreaker = new CallBreaker();
-        PnP pnp = new PnP(address(callbreaker), pusherPrivateKey);
+        cleanupContract = new CleanupUtility();
 
         // compute the pusher laminated address
-        address payable pusherLaminated = payable(laminator.computeProxyAddress(pusher));
+        pusherLaminated = payable(laminator.computeProxyAddress(pusher));
 
-        vm.label(address(laminator), "laminator");
-        vm.label(address(callbreaker), "callbreaker");
-        vm.label(address(pnp), "pnp");
-        vm.label(pusherLaminated, "pusherLaminated");
+        // set up a selfcheckout
+        selfcheckout = new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
+    }
 
-        vm.stopBroadcast();
-
-        /*
-        // THIS HAPPENS IN USER LAND
-        vm.startBroadcast(pusherPrivateKey);
-
-        // pusher pushes its call to the selfcheckout
-        // Create a list of CallObjects
+    function userLand() public returns (uint256) {
+        // Userland operations
+        erc20a.transfer(pusherLaminated, 10);
         CallObject[] memory pusherCallObjs = new CallObject[](2);
-
         pusherCallObjs[0] = CallObject({
             amount: 0,
-            addr: address(pnp),
+            addr: address(erc20a),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), 10)
         });
 
         pusherCallObjs[1] = CallObject({
             amount: 0,
-            addr: address(pnp),
+            addr: address(selfcheckout),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("takeSomeAtokenFromOwner(uint256)", 10)
         });
-        uint256 laminatorSequenceNumber = laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
-        vm.stopBroadcast();
-        // END USER LAND
+        laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
 
-        // go forward in time
-        vm.roll(block.number + 1);
+        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
+    }
 
-        // THIS SHOULD ALL HAPPEN IN SOLVER LAND
-        vm.startBroadcast(fillerPrivateKey);
+    function solverLand(uint256 laminatorSequenceNumber, address filler, uint256 x) public {
+        erc20b.approve(address(selfcheckout), x);
+        selfcheckout.setSwapPartner(filler);
 
-        // now populate the time turner with calls.
+        // TODO: Refactor these parts further if necessary.
         CallObject[] memory callObjs = new CallObject[](5);
         ReturnObject[] memory returnObjs = new ReturnObject[](5);
 
@@ -78,12 +75,12 @@ contract PnPExampleScript is Script {
             addr: address(cleanupContract),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
-                "preClean(address,address,address,uint256,uint256)",
+                "preClean(address,address,address,uint256,bytes)",
                 address(callbreaker),
                 selfcheckout,
                 pusherLaminated,
                 laminatorSequenceNumber,
-                20
+                abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
                 )
         });
         returnObjs[0] = ReturnObject({returnvalue: ""});
@@ -107,7 +104,7 @@ contract PnPExampleScript is Script {
             amount: 0,
             addr: address(selfcheckout),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", 20)
+            callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
         });
         // return object is still nothing
         returnObjs[2] = ReturnObject({returnvalue: ""});
@@ -129,26 +126,17 @@ contract PnPExampleScript is Script {
             addr: address(cleanupContract),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
-                "cleanup(address,address,address,uint256,uint256)",
+                "cleanup(address,address,address,uint256,bytes)",
                 address(callbreaker),
                 address(selfcheckout),
                 pusherLaminated,
                 laminatorSequenceNumber,
-                20
+                abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
                 )
         });
         // return object is still nothing
         returnObjs[4] = ReturnObject({returnvalue: ""});
 
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs));
-        vm.stopBroadcast();
-        // END SOLVER LAND
-
-        // portal should be closed
-        assert(!callbreaker.isPortalOpen());
-        // nothing should be scheduled in the laminator
-        (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
-        assert(!init);
-        */
     }
 }

@@ -56,6 +56,9 @@ contract Laminator is ILaminator {
         emit ProxyPushed(address(proxy), callObjs, sequenceNumber);
     }
 
+    /// @notice Calls the `pull` function into the LaminatedProxy associated with the sender
+    /// with the provided sequence number.
+    /// @param sequenceNumber The sequence number of the deferred function call.
     function pullFromProxy(uint256 sequenceNumber) external {
         LaminatedProxy proxy = LaminatedProxy(payable(_getOrCreateProxy(msg.sender)));
 
