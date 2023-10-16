@@ -22,8 +22,9 @@ contract TemporalExampleTest is Script, TemporalExampleLib {
 
     function setUp() external {
         // start deployer land
-        vm.prank(deployer);
+        vm.startPrank(deployer);
         deployerLand(pusher);
+        vm.stopPrank();
 
         // Label operations in the run function.
         vm.label(pusher, "pusher");
@@ -34,14 +35,16 @@ contract TemporalExampleTest is Script, TemporalExampleLib {
     function test_temporal_run() external {
         uint256 laminatorSequenceNumber;
 
-        vm.prank(pusher);
+        vm.startPrank(pusher);
         laminatorSequenceNumber = userLand();
+        vm.stopPrank();
 
         // go forward in time
         vm.roll(block.number + 2);
 
-        vm.prank(filler);
+        vm.startPrank(filler);
         solverLand(laminatorSequenceNumber, filler);
+        vm.stopPrank();
 
         assert(erc20a.balanceOf(filler) == 10);
         assert(!callbreaker.isPortalOpen());

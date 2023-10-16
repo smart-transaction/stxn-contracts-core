@@ -5,16 +5,16 @@ import "forge-std/Vm.sol";
 
 import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
-import "../examples/TemporalStates.sol";
+import "../examples/CronDeposits.sol";
 import "./CleanupUtility.sol";
 import "../examples/MyErc20.sol";
 
-contract TemporalExampleLib {
+contract CronExampleLib {
     address payable public pusherLaminated;
     MyErc20 public erc20a;
 
     CallBreaker public callbreaker;
-    TemporalHoneypot public temporalHoneypot;
+    CronDeposits public temporalHoneypot;
     MEVTimeOracle public mevTimeOracle;
     Laminator public laminator;
     CleanupUtility public cleanupContract;
@@ -29,7 +29,7 @@ contract TemporalExampleLib {
         // give the pusher 10 erc20a
         erc20a.mint(pusher, 10);
 
-        temporalHoneypot = new TemporalHoneypot(address(callbreaker), address(erc20a));
+        temporalHoneypot = new CronDeposits(address(callbreaker), address(erc20a));
 
         cleanupContract = new CleanupUtility();
 
@@ -38,7 +38,7 @@ contract TemporalExampleLib {
     }
 
     // The user will now deposit 10 ERC20A tokens into the honeypot for 2 intervals (to represent subscription payment)
-    function userLand() public returns (uint256) {
+    function userLand() public returns (uint256, uint256) {
         // Userland operations
         erc20a.transfer(pusherLaminated, 10);
         CallObject[] memory pusherCallObjs = new CallObject[](2);
@@ -55,29 +55,13 @@ contract TemporalExampleLib {
             gas: 1000000,
             callvalue: abi.encodeWithSignature("deposit(uint256)", 5)
         });
-        laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
-
-        // Userland operations
-        erc20a.transfer(pusherLaminated, 10);
-        CallObject[] memory laterCallOBjs = new CallObject[](2);
-        pusherCallObjs[0] = CallObject({
-            amount: 0,
-            addr: address(erc20a),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(temporalHoneypot), 5)
-        });
-
-        pusherCallObjs[1] = CallObject({
-            amount: 0,
-            addr: address(temporalHoneypot),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("deposit(uint256)", 5)
-        });
-
         // We can also do 2 pushToProxy instances (where we push the first deposit in one with delay 2)
-        // then push the second deposit in another with delay 4 (for example).
-        // For now though we can just do it in one pushToProxy call.
-        return laminator.pushToProxy(abi.encode(laterCallOBjs), 2);
+        // then push the second deposit in another with delay 6 (for example).
+        // For now though we can just do it in two pushToProxy calls.
+        uint256 sequenceNumberFirstPush = laminator.pushToProxy(abi.encode(pusherCallObjs), 2);
+        uint256 sequenceNumberSecondPush = laminator.pushToProxy(abi.encode(pusherCallObjs), 6);
+
+        return (sequenceNumberFirstPush, sequenceNumberSecondPush);
     }
 
     // The solver will pull the 10 erc20a from the temporal honeypot at the right time.
@@ -85,7 +69,7 @@ contract TemporalExampleLib {
         // Grab some value from the MEV time oracle using partial function application
         // TODO: This should be eventually refactored into the verify call flow.
         // Block.timestamp is a dynamic value provided at MEV time
-        bytes memory seed = abi.encode(uint256(10));
+        bytes memory seed = abi.encode(uint256(5));
         bytes memory returnData = mevTimeOracle.returnArbitraryData(uint256(1), seed);
 
         uint256 x;

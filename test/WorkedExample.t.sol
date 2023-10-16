@@ -22,8 +22,9 @@ contract WorkedExampleTest is Script, WorkedExampleLib {
 
     function setUp() external {
         // start deployer land
-        vm.prank(deployer);
+        vm.startPrank(deployer);
         deployerLand(pusher, filler);
+        vm.stopPrank();
 
         // Label operations in the run function.
         vm.label(pusher, "pusher");
@@ -34,14 +35,16 @@ contract WorkedExampleTest is Script, WorkedExampleLib {
     function test_run() external {
         uint256 laminatorSequenceNumber;
 
-        vm.prank(pusher);
+        vm.startPrank(pusher);
         laminatorSequenceNumber = userLand();
+        vm.stopPrank();
 
         // go forward in time
         vm.roll(block.number + 1);
 
-        vm.prank(filler);
+        vm.startPrank(filler);
         solverLand(laminatorSequenceNumber, filler, 20);
+        vm.stopPrank();
 
         assert(erc20a.balanceOf(pusherLaminated) == 0);
         assert(erc20b.balanceOf(pusherLaminated) == 20);
