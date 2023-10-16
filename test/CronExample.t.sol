@@ -18,6 +18,7 @@ contract CronExampleTest is Script, TemporalExampleLib {
 
     address pusher = vm.addr(pusherPrivateKey);
     address filler = vm.addr(fillerPrivateKey);
+    address deployer = vm.addr(deployerPrivateKey);
 
     function setUp() external {
         // start deployer land

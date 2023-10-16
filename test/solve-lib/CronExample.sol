@@ -19,8 +19,6 @@ contract TemporalExampleLib {
     Laminator public laminator;
     CleanupUtility public cleanupContract;
 
-    // Deploy all contracts, provide the user with 10 ERC20A tokens to deposit into the honeypot
-    // The attacker will later attempt to pull the 10 ERC20A tokens from the honeypot
     function deployerLand(address pusher) public {
         // Initializing contracts
         laminator = new Laminator();
@@ -39,7 +37,7 @@ contract TemporalExampleLib {
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
     }
 
-    // The user will now deposit 10 ERC20A tokens into the honeypot
+    // The user will now deposit 10 ERC20A tokens into the honeypot for 2 intervals (to represent subscription payment)
     function userLand() public returns (uint256) {
         // Userland operations
         erc20a.transfer(pusherLaminated, 10);
@@ -48,14 +46,14 @@ contract TemporalExampleLib {
             amount: 0,
             addr: address(erc20a),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(temporalHoneypot), 10)
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(temporalHoneypot), 5)
         });
 
         pusherCallObjs[1] = CallObject({
             amount: 0,
             addr: address(temporalHoneypot),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("deposit(uint256)", 10)
+            callvalue: abi.encodeWithSignature("deposit(uint256)", 5)
         });
         laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
 
@@ -66,16 +64,19 @@ contract TemporalExampleLib {
             amount: 0,
             addr: address(erc20a),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(temporalHoneypot), 10)
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(temporalHoneypot), 5)
         });
 
         pusherCallObjs[1] = CallObject({
             amount: 0,
             addr: address(temporalHoneypot),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("deposit(uint256)", 10)
+            callvalue: abi.encodeWithSignature("deposit(uint256)", 5)
         });
 
+        // We can also do 2 pushToProxy instances (where we push the first deposit in one with delay 2)
+        // then push the second deposit in another with delay 4 (for example).
+        // For now though we can just do it in one pushToProxy call.
         return laminator.pushToProxy(abi.encode(laterCallOBjs), 2);
     }
 
