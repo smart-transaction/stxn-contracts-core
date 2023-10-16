@@ -18,8 +18,13 @@ contract WorkedExampleTest is Script, WorkedExampleLib {
 
     address pusher = vm.addr(pusherPrivateKey);
     address filler = vm.addr(fillerPrivateKey);
+    address deployer = vm.addr(deployerPrivateKey);
 
     function setUp() external {
+        // start deployer land
+        vm.prank(deployer);
+        deployerLand(pusher, filler);
+
         // Label operations in the run function.
         vm.label(pusher, "pusher");
         vm.label(address(this), "deployer");
@@ -29,21 +34,14 @@ contract WorkedExampleTest is Script, WorkedExampleLib {
     function test_run() external {
         uint256 laminatorSequenceNumber;
 
-        // start deployer land
-        vm.startBroadcast(deployerPrivateKey);
-        deployerLand(pusher, filler);
-        vm.stopBroadcast();
-
-        vm.startBroadcast(pusherPrivateKey);
+        vm.prank(pusher);
         laminatorSequenceNumber = userLand();
-        vm.stopBroadcast();
 
         // go forward in time
         vm.roll(block.number + 1);
 
-        vm.startBroadcast(fillerPrivateKey);
+        vm.prank(filler);
         solverLand(laminatorSequenceNumber, filler, 20);
-        vm.stopBroadcast();
 
         assert(erc20a.balanceOf(pusherLaminated) == 0);
         assert(erc20b.balanceOf(pusherLaminated) == 20);

@@ -22,9 +22,8 @@ contract CronExampleTest is Script, TemporalExampleLib {
 
     function setUp() external {
         // start deployer land
-        vm.startBroadcast(deployerPrivateKey);
+        vm.prank(deployer);
         deployerLand(pusher);
-        vm.stopBroadcast();
 
         // Label operations in the run function.
         vm.label(pusher, "pusher");
@@ -35,16 +34,14 @@ contract CronExampleTest is Script, TemporalExampleLib {
     function test_temporal_run() external {
         uint256 laminatorSequenceNumber;
 
-        vm.startBroadcast(pusherPrivateKey);
+        vm.prank(pusher);
         laminatorSequenceNumber = userLand();
-        vm.stopBroadcast();
 
         // go forward in time
         vm.roll(block.number + 2);
 
-        vm.startBroadcast(fillerPrivateKey);
+        vm.prank(filler);
         solverLand(laminatorSequenceNumber, filler);
-        vm.stopBroadcast();
 
         assert(erc20a.balanceOf(filler) == 10);
         assert(!callbreaker.isPortalOpen());
