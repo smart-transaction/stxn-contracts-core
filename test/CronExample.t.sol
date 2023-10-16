@@ -31,7 +31,7 @@ contract CronExampleTest is Script, TemporalExampleLib {
         vm.label(filler, "filler");
     }
 
-    function test_temporal_run() external {
+    function test_cron_run() external {
         uint256 laminatorSequenceNumber;
 
         vm.prank(pusher);
