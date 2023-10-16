@@ -4,14 +4,14 @@ pragma solidity >=0.6.2 <0.9.0;
 import "forge-std/Script.sol";
 import "forge-std/Vm.sol";
 
-import "./solve-lib/TemporalExample.sol";
+import "./solve-lib/CronExample.sol";
 
 import "../src/lamination/Laminator.sol";
 import "../src/timetravel/CallBreaker.sol";
 import "../test/examples/SelfCheckout.sol";
 import "../test/examples/MyErc20.sol";
 
-contract TemporalExampleTest is Script, TemporalExampleLib {
+contract CronExampleTest is Script, CronExampleLib {
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY1");
     uint256 pusherPrivateKey = vm.envUint("PRIVATE_KEY2");
     uint256 fillerPrivateKey = vm.envUint("PRIVATE_KEY3");
@@ -32,38 +32,36 @@ contract TemporalExampleTest is Script, TemporalExampleLib {
         vm.label(filler, "filler");
     }
 
-    function test_temporal_run() external {
-        uint256 laminatorSequenceNumber;
+    function test_cron_run() external {
+        uint256 laminatorSequenceNumberFirst;
+        uint256 laminatorSequenceNumberSecond;
 
         vm.startPrank(pusher);
-        laminatorSequenceNumber = userLand();
+        (laminatorSequenceNumberFirst, laminatorSequenceNumberSecond) = userLand();
         vm.stopPrank();
 
         // go forward in time
-        vm.roll(block.number + 2);
+        vm.roll(block.number + 3);
 
         vm.startPrank(filler);
-        solverLand(laminatorSequenceNumber, filler);
+        solverLand(laminatorSequenceNumberFirst, filler);
+        vm.stopPrank();
+
+        // go forward in time
+        vm.roll(block.number + 7);
+
+        // Sequence number
+        vm.startPrank(filler);
+        solverLand(laminatorSequenceNumberSecond, filler);
         vm.stopPrank();
 
         assert(erc20a.balanceOf(filler) == 10);
         assert(!callbreaker.isPortalOpen());
 
-        (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
+        (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumberFirst);
         assert(!init);
+
+        (bool initSecond, CallObject[] memory coSecond) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumberSecond);
+        assert(!initSecond);
     }
-
-    /*
-    // Test works, but vm.expectRevert() is kinda being weird with not expecting the right call to revert.
-    function test_run_at_wrong_time() external {
-        uint256 laminatorSequenceNumber;
-
-        vm.startBroadcast(pusherPrivateKey); laminatorSequenceNumber = userLand(); vm.stopBroadcast();
-
-        // go forward in time
-        vm.roll(block.number + 1);
-
-        vm.startBroadcast(fillerPrivateKey); solverLand(laminatorSequenceNumber, filler); vm.stopBroadcast();
-    }
-    */
 }
