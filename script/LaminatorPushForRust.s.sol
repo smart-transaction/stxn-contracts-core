@@ -63,8 +63,5 @@ contract WorkedExampleScript is Script {
 
         // go forward in time
         vm.roll(block.number + 1);
-
-        // THIS SHOULD ALL HAPPEN IN SOLVER LAND
-        vm.startBroadcast(fillerPrivateKey);
     }
 }

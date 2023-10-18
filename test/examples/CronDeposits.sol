@@ -72,7 +72,7 @@ contract CronDeposits {
     }
 }
 
-contract MEVTimeOracle {
+contract Oracle {
     constructor() {}
 
     event LogBytesReceived(bytes data);
