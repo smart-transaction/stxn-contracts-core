@@ -15,7 +15,7 @@ contract CronExampleLib {
 
     CallBreaker public callbreaker;
     CronDeposits public temporalHoneypot;
-    MEVTimeOracle public mevTimeOracle;
+    Oracle public mevTimeOracle;
     Laminator public laminator;
     CleanupUtility public cleanupContract;
 
@@ -23,7 +23,7 @@ contract CronExampleLib {
         // Initializing contracts
         laminator = new Laminator();
         callbreaker = new CallBreaker();
-        mevTimeOracle = new MEVTimeOracle();
+        mevTimeOracle = new Oracle();
         erc20a = new MyErc20("A", "A");
 
         // give the pusher 10 erc20a
