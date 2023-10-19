@@ -53,6 +53,7 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         assertFalse(callbreaker.isPortalOpen());
 
         (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
-        assertFalse(init);
+        // Test should fail here because we already solved and cleared the tx!
+        assertTrue(init);
     }
 }
