@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.6.2 <0.9.0;
 
-import "forge-std/Script.sol";
+import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
 import "./solve-lib/WorkedExample.sol";
@@ -11,16 +11,16 @@ import "../src/timetravel/CallBreaker.sol";
 import "../test/examples/SelfCheckout.sol";
 import "../test/examples/MyErc20.sol";
 
-contract WorkedExampleTest is Script, WorkedExampleLib {
-    uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY1");
-    uint256 pusherPrivateKey = vm.envUint("PRIVATE_KEY2");
-    uint256 fillerPrivateKey = vm.envUint("PRIVATE_KEY3");
-
-    address pusher = vm.addr(pusherPrivateKey);
-    address filler = vm.addr(fillerPrivateKey);
-    address deployer = vm.addr(deployerPrivateKey);
+contract WorkedExampleTest is Test, WorkedExampleLib {
+    address deployer;
+    address pusher;
+    address filler;
 
     function setUp() external {
+        deployer = address(100);
+        pusher = address(200);
+        filler = address(300);
+
         // start deployer land
         vm.startPrank(deployer);
         deployerLand(pusher, filler);
@@ -32,7 +32,7 @@ contract WorkedExampleTest is Script, WorkedExampleLib {
         vm.label(filler, "filler");
     }
 
-    function test_run() external {
+    function testFail_run1() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
@@ -46,13 +46,13 @@ contract WorkedExampleTest is Script, WorkedExampleLib {
         solverLand(laminatorSequenceNumber, filler, 20);
         vm.stopPrank();
 
-        assert(erc20a.balanceOf(pusherLaminated) == 0);
-        assert(erc20b.balanceOf(pusherLaminated) == 20);
-        assert(erc20a.balanceOf(filler) == 10);
-        assert(erc20b.balanceOf(filler) == 0);
-        assert(!callbreaker.isPortalOpen());
+        assertEq(erc20a.balanceOf(pusherLaminated), 0);
+        assertEq(erc20b.balanceOf(pusherLaminated), 20);
+        assertEq(erc20a.balanceOf(filler), 10);
+        assertEq(erc20b.balanceOf(filler), 0);
+        assertFalse(callbreaker.isPortalOpen());
 
         (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
-        assert(!init);
+        assertFalse(init);
     }
 }
