@@ -21,18 +21,22 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         pusher = address(200);
         filler = address(300);
 
+        vm.deal(deployer, 1 ether);
+        vm.deal(pusher, 1 ether);
+        vm.deal(filler, 1 ether);
+
+        // Label operations in the run function.
+        vm.label(deployer, "deployer");
+        vm.label(pusher, "pusher");
+        vm.label(filler, "filler");
+    }
+
+    function testFail_run1() external {
         // start deployer land
         vm.startPrank(deployer);
         deployerLand(pusher, filler);
         vm.stopPrank();
 
-        // Label operations in the run function.
-        vm.label(pusher, "pusher");
-        vm.label(address(this), "deployer");
-        vm.label(filler, "filler");
-    }
-
-    function testFail_run1() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
