@@ -15,7 +15,7 @@ contract TemporalExampleLib {
 
     CallBreaker public callbreaker;
     TemporalHoneypot public temporalHoneypot;
-    MEVTimeOracle public mevTimeOracle;
+    MEVTimeOracleTemporal public mevTimeOracle;
     Laminator public laminator;
     CleanupUtility public cleanupContract;
 
@@ -25,7 +25,7 @@ contract TemporalExampleLib {
         // Initializing contracts
         laminator = new Laminator();
         callbreaker = new CallBreaker();
-        mevTimeOracle = new MEVTimeOracle();
+        mevTimeOracle = new MEVTimeOracleTemporal();
         erc20a = new MyErc20("A", "A");
 
         // give the pusher 10 erc20a

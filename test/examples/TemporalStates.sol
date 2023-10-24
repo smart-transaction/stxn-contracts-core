@@ -77,7 +77,7 @@ contract TemporalHoneypot {
     }
 }
 
-contract MEVTimeOracle {
+contract MEVTimeOracleTemporal {
     constructor() {}
 
     event LogBytesReceived(bytes data);
