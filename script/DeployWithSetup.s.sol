@@ -4,9 +4,9 @@ pragma solidity >=0.6.2 <0.9.0;
 import "forge-std/Script.sol";
 import "../src/lamination/Laminator.sol";
 import "../src/timetravel/CallBreaker.sol";
+import "../src/CleanupUtility.sol";
 import "../test/examples/SelfCheckout.sol";
 import "../test/examples/MyErc20.sol";
-import "./CleanupUtility.sol";
 
 contract DeployerScript is Script {
     event LogAddressWithMessage(address addr, string message);

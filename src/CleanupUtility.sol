@@ -2,8 +2,8 @@
 pragma solidity >=0.6.2 <0.9.0;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
-import "../src/TimeTypes.sol";
-import "../src/timetravel/CallBreaker.sol";
+import "./TimeTypes.sol";
+import "./timetravel/CallBreaker.sol";
 
 contract CleanupUtility {
     function preClean(
