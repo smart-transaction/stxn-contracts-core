@@ -14,12 +14,19 @@ contract CallBreaker is CallBreakerStorage {
     mapping(bytes32 => CallBalance) public callbalanceStore;
     bytes32[] public callbalanceKeyList;
 
+    // @dev Selector 0xc8acbe62
     error OutOfReturnValues();
+    // @dev Selector 0x75483b53
     error OutOfEther();
+    // @dev Selector 0x3204506f
     error CallFailed();
+    // @dev Selector 0x8489203a
     error TimeImbalance();
+    // @dev Selector 0xc047a184
     error EmptyCalldata();
+    // @dev Selector 0xff633a38
     error LengthMismatch();
+    // @dev Selector 0xcc68b8ba
     error CallVerificationFailed();
 
     event EnterPortal(CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance);

@@ -81,7 +81,7 @@ contract WorkedExampleLib {
                 pusherLaminated,
                 laminatorSequenceNumber,
                 abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
-                )
+            )
         });
         returnObjs[0] = ReturnObject({returnvalue: ""});
 
