@@ -146,6 +146,10 @@ contract CallBreaker is CallBreakerStorage {
 
     /// @notice Verifies that the given calls, when executed, gives the correct return values
     function verify(bytes memory callsBytes, bytes memory returnsBytes, bytes memory associatedData) external payable onlyPortalClosed {
+        // pretty sure the first check isn't necessary?
+        //require(tx.origin == msg.sender, "Caller must be an EOA");
+        require(msg.sender.code.length == 0, "msg.sender must be an EOA");
+        
         CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
         ReturnObject[] memory return_s = abi.decode(returnsBytes, (ReturnObject[]));
 
