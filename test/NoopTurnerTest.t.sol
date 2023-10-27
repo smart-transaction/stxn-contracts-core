@@ -48,6 +48,7 @@ contract NoopTurnerTest is Test {
         bytes memory encodedData = abi.encode(keys, values);
 
         // call verify
+        vm.prank(address(0xdeadbeef));
         callbreaker.verify(callObjsBytes, returnObjsBytes, encodedData);
     }
 }
