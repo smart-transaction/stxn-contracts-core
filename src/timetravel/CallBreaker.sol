@@ -9,10 +9,23 @@ struct CallBalance {
     int256 balance;
 }
 
+struct ReturnObjectWithIndex {
+    ReturnObject returnObj;
+    uint256 index;
+}
+
+struct AssociatedData {
+    bool set;
+    bytes value;
+}
+
 contract CallBreaker is CallBreakerStorage {
-    ReturnObject[] public returnStore;
+    ReturnObjectWithIndex[] public returnStore;
     mapping(bytes32 => CallBalance) public callbalanceStore;
     bytes32[] public callbalanceKeyList;
+
+    bytes32[] public associatedDataKeyList;
+    mapping(bytes32 => AssociatedData) public associatedDataStore;
 
     // @dev Selector 0xc8acbe62
     error OutOfReturnValues();
@@ -28,8 +41,10 @@ contract CallBreaker is CallBreakerStorage {
     error LengthMismatch();
     // @dev Selector 0xcc68b8ba
     error CallVerificationFailed();
+    // @dev Selector ??????????
+    error IndexMismatch(uint256, uint256);
 
-    event EnterPortal(CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance);
+    event EnterPortal(CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance, uint256 index);
     event VerifyStxn();
 
     /// @notice Initializes the contract; sets the initial portal status to closed
@@ -52,6 +67,49 @@ contract CallBreaker is CallBreakerStorage {
         return keccak256(abi.encode(callObj, returnObj));
     }
 
+    /// @notice Inserts a pair of bytes32 into the associatedDataStore and associatedDataKeyList
+    /// @param key The key to be inserted into the associatedDataStore
+    /// @param value The value to be associated with the key in the associatedDataStore
+    function insertIntoAssociatedDataStore(bytes32 key, bytes memory value) internal {
+        // Check if the key already exists in the associatedDataStore
+        require(!associatedDataStore[key].set, "Key already exists in the associatedDataStore");
+
+        // Insert the key-value pair into the associatedDataStore
+        associatedDataStore[key].set = true;
+        associatedDataStore[key].value = value;
+
+        // Add the key to the associatedDataKeyList
+        associatedDataKeyList.push(key);
+    }
+
+    /// @notice Fetches the value associated with a given key from the associatedDataStore
+    /// @param key The key whose associated value is to be fetched
+    /// @return The value associated with the given key
+    function fetchFromAssociatedDataStore(bytes32 key) public view returns (bytes memory) {
+        AssociatedData memory associatedData = associatedDataStore[key];
+
+        // Check if the key exists in the associatedDataStore
+        require(associatedData.set, "Key does not exist in the associatedDataStore");
+
+        // Return the value associated with the key
+        return associatedData.value;
+    }
+
+    /// @notice Populates the associatedDataStore with a list of key-value pairs
+    /// @param encodedData The abi-encoded list of (bytes32, bytes32) key-value pairs
+    function populateAssociatedDataStore(bytes memory encodedData) internal {
+        // Decode the input data into an array of (bytes32, bytes32) pairs
+        (bytes32[] memory keys, bytes[] memory values) = abi.decode(encodedData, (bytes32[], bytes[]));
+
+        // Check that the keys and values arrays have the same length
+        require(keys.length == values.length, "Mismatch in keys and values array lengths");
+
+        // Iterate over the keys and values arrays and insert each pair into the associatedDataStore
+        for (uint256 i = 0; i < keys.length; i++) {
+            insertIntoAssociatedDataStore(keys[i], values[i]);
+        }
+    }
+
     /// NOTE: Expect calls to arrive with non-null msg.data
     /// NOTE: Calldata bytes are structured as a CallObject
     fallback(bytes calldata input) external payable returns (bytes memory) {
@@ -68,21 +126,26 @@ contract CallBreaker is CallBreakerStorage {
         }
 
         // Fetch and remove the last ReturnObject from storage
-        ReturnObject memory lastReturn = popLastReturn();
+        ReturnObjectWithIndex memory lastReturn = popLastReturn();
 
         // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
-        CallObject memory callObj = abi.decode(input, (CallObject));
-        bytes32 pairID = getCallReturnID(callObj, lastReturn);
+        CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
+
+        // Check that the index of the callObj matches the index of the returnObj
+        if (callObjWithIndex.index != lastReturn.index) {
+            revert IndexMismatch(callObjWithIndex.index, lastReturn.index);
+        }
+        bytes32 pairID = getCallReturnID(callObjWithIndex.callObj, lastReturn.returnObj);
 
         // Update or initialize the balance of the call-return pair
         incrementCallBalance(pairID);
 
-        emit EnterPortal(callObj, lastReturn, pairID, callbalanceStore[pairID].balance);
-        return lastReturn.returnvalue;
+        emit EnterPortal(callObjWithIndex.callObj, lastReturn.returnObj, pairID, callbalanceStore[pairID].balance, callObjWithIndex.index);
+        return lastReturn.returnObj.returnvalue;
     }
 
     /// @notice Verifies that the given calls, when executed, gives the correct return values
-    function verify(bytes memory callsBytes, bytes memory returnsBytes) external payable onlyPortalClosed {
+    function verify(bytes memory callsBytes, bytes memory returnsBytes, bytes memory associatedData) external payable onlyPortalClosed {
         CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
         ReturnObject[] memory return_s = abi.decode(returnsBytes, (ReturnObject[]));
 
@@ -91,6 +154,7 @@ contract CallBreaker is CallBreakerStorage {
         }
 
         resetReturnStoreWith(return_s);
+        populateAssociatedDataStore(associatedData);
 
         for (uint256 i = 0; i < calls.length; i++) {
             executeAndVerifyCall(calls[i]);
@@ -110,7 +174,8 @@ contract CallBreaker is CallBreakerStorage {
     function resetReturnStoreWith(ReturnObject[] memory return_s) internal {
         delete returnStore;
         for (uint256 i = 0; i < return_s.length; i++) {
-            returnStore.push(return_s[i]);
+            ReturnObjectWithIndex memory returnObjWithIndex = ReturnObjectWithIndex({returnObj: return_s[i], index: i});
+            returnStore.push(returnObjWithIndex);
         }
     }
 
@@ -134,11 +199,15 @@ contract CallBreaker is CallBreakerStorage {
     function cleanUpStorage() internal {
         delete returnStore;
         delete callbalanceKeyList;
+        for (uint256 i = 0; i < associatedDataKeyList.length; i++) {
+            delete associatedDataStore[associatedDataKeyList[i]];
+        }
+        delete associatedDataKeyList;
     }
 
     // Helper function to fetch and remove the last ReturnObject from the storage
-    function popLastReturn() internal returns (ReturnObject memory) {
-        ReturnObject memory lastReturn = returnStore[returnStore.length - 1];
+    function popLastReturn() internal returns (ReturnObjectWithIndex memory) {
+        ReturnObjectWithIndex memory lastReturn = returnStore[returnStore.length - 1];
         returnStore.pop();
         return lastReturn;
     }

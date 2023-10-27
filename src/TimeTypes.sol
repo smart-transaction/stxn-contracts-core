@@ -12,6 +12,13 @@ struct CallObject {
     uint256 gas;
     bytes callvalue;
 }
+/// @dev Struct for holding a CallObject with an associated index
+/// @param callObj The actual CallObject instance
+/// @param index The index we expect to be associated with the CallObject
+struct CallObjectWithIndex {
+    CallObject callObj;
+    uint256 index;
+}
 
 /// @dev Struct for holding return object details
 /// @param returnvalue The ABI-encoded data payload returned from the call

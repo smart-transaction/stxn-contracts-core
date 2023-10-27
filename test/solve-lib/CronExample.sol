@@ -153,6 +153,13 @@ contract CronExampleLib {
         // return object is still nothing
         returnObjs[4] = ReturnObject({returnvalue: ""});
 
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs));
+        // Constructing something that'll decode happily
+        bytes32[] memory keys = new bytes32[](0);
+        //keys[0] = keccak256(abi.encodePacked("key"));
+        bytes[] memory values = new bytes[](0);
+        //values[0] = abi.encode("value");
+        bytes memory encodedData = abi.encode(keys, values);
+
+        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData);
     }
 }

@@ -64,7 +64,6 @@ contract WorkedExampleLib {
 
     function solverLand(uint256 laminatorSequenceNumber, address filler, uint256 x) public {
         erc20b.approve(address(selfcheckout), x);
-        selfcheckout.setSwapPartner(filler);
 
         // TODO: Refactor these parts further if necessary.
         CallObject[] memory callObjs = new CallObject[](5);
@@ -136,7 +135,14 @@ contract WorkedExampleLib {
         });
         // return object is still nothing
         returnObjs[4] = ReturnObject({returnvalue: ""});
+        
+        // Constructing something that'll decode happily
+        bytes32[] memory keys = new bytes32[](1);
+        keys[0] = keccak256(abi.encodePacked("swapPartner"));
+        bytes[] memory values = new bytes[](1);
+        values[0] = abi.encode(filler);
+        bytes memory encodedData = abi.encode(keys, values);
 
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs));
+        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData);
     }
 }
