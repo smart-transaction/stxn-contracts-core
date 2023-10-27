@@ -32,7 +32,7 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         vm.label(filler, "filler");
     }
 
-    function testFail_run1() external {
+    function test_run1() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
@@ -53,7 +53,6 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         assertFalse(callbreaker.isPortalOpen());
 
         (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
-        // Test should fail here because we already solved and cleared the tx!
-        assertTrue(init);
+        assertEq(init, false);
     }
 }

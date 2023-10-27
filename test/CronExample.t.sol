@@ -32,7 +32,7 @@ contract CronExampleTest is Test, CronExampleLib {
         vm.label(filler, "filler");
     }
 
-    function testFail_cron_run() external {
+    function test_cron_run() external {
         uint256 laminatorSequenceNumberFirst;
         uint256 laminatorSequenceNumberSecond;
 
@@ -60,9 +60,9 @@ contract CronExampleTest is Test, CronExampleLib {
 
         // Both of the following should be false since we already solved and cleared the tx!
         (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumberFirst);
-        assertTrue(init);
+        assertEq(init, false);
 
         (bool initSecond, CallObject[] memory coSecond) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumberSecond);
-        assertTrue(initSecond);
+        assertEq(initSecond, false);
     }
 }
