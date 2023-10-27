@@ -89,8 +89,12 @@ contract SelfCheckout {
                 callvalue: abi.encodeWithSignature("checkBalance()")
             });
             emit LogCallObj(callObj);
+            CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({
+                callObj: callObj,
+                index: 3
+            });
 
-            (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObj));
+            (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObjectWithIndex));
 
             if (!success) {
                 revert("turner CallFailed");
