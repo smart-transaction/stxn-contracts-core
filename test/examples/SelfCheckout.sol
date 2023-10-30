@@ -62,13 +62,15 @@ contract SelfCheckout {
     function getExchangeRate() public view returns (uint256) {
         return exchangeRate;
     }
+
     function getCallBreaker() public view returns (address) {
         return callbreakerAddress;
     }
 
     function getSwapPartner() public view returns (address) {
         bytes32 swapPartnerKey = keccak256(abi.encodePacked("swapPartner"));
-        bytes memory swapPartnerBytes = CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(swapPartnerKey);
+        bytes memory swapPartnerBytes =
+            CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(swapPartnerKey);
         return abi.decode(swapPartnerBytes, (address));
     }
 
@@ -89,10 +91,7 @@ contract SelfCheckout {
                 callvalue: abi.encodeWithSignature("checkBalance()")
             });
             emit LogCallObj(callObj);
-            CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({
-                callObj: callObj,
-                index: 3
-            });
+            CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 3});
 
             (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObjectWithIndex));
 
@@ -102,26 +101,8 @@ contract SelfCheckout {
             balanceScheduled = true;
         }
 
-        // // balance the timeturner by calling yourself
-        // CallObject memory callObj = CallObject({
-        //     amount: 0,
-        //     addr: address(this),
-        //     gas: 1000000,
-        //     callvalue: abi.encodeWithSignature("takeSomeATokenFromOwner(uint256)", atokenamount)
-        // });
-        // (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObj));
-
-        // if (!success) {
-        //     revert("turner CallFailed");
-        // }
-
         // compute amount owed
         imbalance += atokenamount * exchangeRate;
-        // get da tokens
-        // Debugging information
-
-        // ok so the problem is, transfer is transferring from selfcheckout to the swapPartner, not from the owner to the swapPartner.
-        // so ... uhhh ... when do we approve?
         require(atoken.transferFrom(owner, getSwapPartner(), atokenamount), "AToken transfer failed");
     }
 

@@ -12,7 +12,9 @@ contract CleanupUtility {
         address pusherLaminated,
         uint256 laminatorSequenceNumber,
         bytes calldata callValue
-    ) public {
+    )
+        public
+    {
         CallBreaker cb = CallBreaker(payable(callBreaker));
 
         CallObject memory callObj = CallObject({
@@ -28,10 +30,7 @@ contract CleanupUtility {
                 callValue
                 )
         });
-        CallObjectWithIndex memory callObjWithIndex = CallObjectWithIndex( {
-            callObj: callObj,
-            index: 4
-        });
+        CallObjectWithIndex memory callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 4});
         bytes memory ret = cb.enterPortal(abi.encode(callObjWithIndex));
     }
 
@@ -41,7 +40,9 @@ contract CleanupUtility {
         address pusherLaminated,
         uint256 laminatorSequenceNumber,
         bytes calldata callValue
-    ) public {
+    )
+        public
+    {
         // this one should call enterportal and throw out the result 3 times.
         // this fixes the accounting for all the extra things we called.
         // i don't think there need to be any permissions here but i could be wrong.
@@ -51,10 +52,7 @@ contract CleanupUtility {
 
         CallObject memory callObj =
             CallObject({amount: 0, addr: address(selfcheckout), gas: 1000000, callvalue: callValue});
-        CallObjectWithIndex memory callObjWithIndex = CallObjectWithIndex({
-            callObj: callObj,
-            index: 2
-        });
+        CallObjectWithIndex memory callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 2});
         bytes memory ret = cb.enterPortal(abi.encode(callObjWithIndex));
 
         // next with pull.
@@ -64,10 +62,7 @@ contract CleanupUtility {
             gas: 1000000,
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
-        callObjWithIndex = CallObjectWithIndex({
-            callObj: callObj,
-            index: 1
-        });
+        callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 1});
 
         ret = cb.enterPortal(abi.encode(callObjWithIndex));
 
@@ -85,10 +80,7 @@ contract CleanupUtility {
                 callValue
                 )
         });
-        callObjWithIndex = CallObjectWithIndex({
-            callObj: callObj,
-            index: 0
-        });
+        callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 0});
         ret = cb.enterPortal(abi.encode(callObjWithIndex));
     }
 }

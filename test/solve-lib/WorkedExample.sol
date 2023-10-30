@@ -80,7 +80,7 @@ contract WorkedExampleLib {
                 pusherLaminated,
                 laminatorSequenceNumber,
                 abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
-            )
+                )
         });
         returnObjs[0] = ReturnObject({returnvalue: ""});
 
@@ -135,7 +135,7 @@ contract WorkedExampleLib {
         });
         // return object is still nothing
         returnObjs[4] = ReturnObject({returnvalue: ""});
-        
+
         // Constructing something that'll decode happily
         bytes32[] memory keys = new bytes32[](1);
         keys[0] = keccak256(abi.encodePacked("swapPartner"));

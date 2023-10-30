@@ -18,7 +18,7 @@ contract CronDeposits {
     // check that something is EOA perhaps by checking that no code is deployed
     // what if something creates and selfdestructs before you run
     // CAN'T do that- selfdestruct halts execution
-    // you 
+    // you
 
     // ok. kick the callbreaker off with an EOA wallet check
     // this means verify is the first damn call
@@ -29,8 +29,6 @@ contract CronDeposits {
     //
     //
     //
-
-
     error NotEmpty();
 
     event Transfer(address indexed from, address indexed to, uint256 value);

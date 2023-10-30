@@ -12,6 +12,15 @@ struct CallObject {
     uint256 gas;
     bytes callvalue;
 }
+
+/// @dev Struct for holding call object details with delegatecall
+/// @param callObj The actual CallObject instance
+/// @param delegatecall Flag indicating if the call should be made using delegatecall
+struct CallObjectWithDelegateCall {
+    CallObject callObj;
+    bool delegatecall;
+}
+
 /// @dev Struct for holding a CallObject with an associated index
 /// @param callObj The actual CallObject instance
 /// @param index The index we expect to be associated with the CallObject
@@ -26,12 +35,12 @@ struct ReturnObject {
     bytes returnvalue;
 }
 
-/// @dev Struct for holding a CallObject with additional metadata
+/// @dev Struct for holding a delegateable CallObject with additional metadata
 /// @param initialized Flag indicating if the CallObject has been pushed as a deferred call
 /// @param firstCallableBlock The first block where the CallObject is callable
 /// @param callObj The actual CallObject instance
 struct CallObjectHolder {
     bool initialized;
     uint256 firstCallableBlock;
-    CallObject[] callObjs;
+    CallObjectWithDelegateCall[] callObjs;
 }

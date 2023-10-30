@@ -4,26 +4,29 @@ pragma solidity >=0.6.2 <0.9.0;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
-import "./solve-lib/WorkedExample.sol";
+import "./solve-lib/CronTwo.sol";
 
 import "../src/lamination/Laminator.sol";
 import "../src/timetravel/CallBreaker.sol";
-import "../test/examples/SelfCheckout.sol";
-import "../test/examples/MyErc20.sol";
 
-contract WorkedExampleTest is Test, WorkedExampleLib {
+contract CronTwoTest is Test, CronTwoLib {
     address deployer;
     address pusher;
     address filler;
+
+    event DebugLog(string message);
 
     function setUp() external {
         deployer = address(100);
         pusher = address(200);
         filler = address(300);
 
+        // Mint ether to the deployer
+        payable(deployer).transfer(10000000000000000000);
+
         // start deployer land
         vm.startPrank(deployer);
-        deployerLand(pusher, filler);
+        deployerLand(pusher);
         vm.stopPrank();
 
         // Label operations in the run function.
@@ -32,27 +35,41 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         vm.label(filler, "filler");
     }
 
-    function test_run1() external {
+    function test_run1CronTwo() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
+        emit DebugLog("kms0");
         laminatorSequenceNumber = userLand();
+        emit DebugLog("kms0.5");
         vm.stopPrank();
+
+        uint256 initialFillerBalance = address(filler).balance;
 
         // go forward in time
         vm.roll(block.number + 1);
 
         vm.startPrank(filler);
-        solverLand(laminatorSequenceNumber, filler, 20);
+                emit DebugLog("kms1");
+
+        solverLand(laminatorSequenceNumber, filler);
+                emit DebugLog("kms2");
+
         vm.stopPrank();
 
-        assertEq(erc20a.balanceOf(pusherLaminated), 0);
-        assertEq(erc20b.balanceOf(pusherLaminated), 20);
-        assertEq(erc20a.balanceOf(filler), 10);
-        assertEq(erc20b.balanceOf(filler), 0);
+        vm.roll(block.number + 8000);
+
+        vm.startPrank(filler);
+        solverLand(laminatorSequenceNumber, filler);
+        vm.stopPrank();
+
+        assertEq(counter.getCount(pusherLaminated), 2);
+        assertEq(address(filler).balance, initialFillerBalance + 2 * 100000000000000000);
+
         assertFalse(callbreaker.isPortalOpen());
 
-        (bool init, CallObjectWithDelegateCall[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
+        (bool init, CallObjectWithDelegateCall[] memory co) =
+            LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
         assertEq(init, false);
     }
 }

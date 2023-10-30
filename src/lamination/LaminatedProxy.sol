@@ -3,10 +3,14 @@ pragma solidity >=0.6.2 <0.9.0;
 
 import "../TimeTypes.sol";
 import "./LaminatedStorage.sol";
+import "openzeppelin/security/ReentrancyGuard.sol";
 
-contract LaminatedProxy is LaminatedStorage {
+contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @notice The map from sequence number to calls held in the mempool.
     mapping(uint256 => CallObjectHolder) public deferredCalls;
+
+    uint256 _executingSequenceNumber;
+    bool _executingSequenceNumberSet;
 
     /// @notice Some functions must be called by the laminator only.
     /// @dev Selector 0x91c58dcd
@@ -27,16 +31,16 @@ contract LaminatedProxy is LaminatedStorage {
     /// @dev Emitted when a function call is deferred and added to the queue.
     /// @param callObjs The CallObject[] containing details of the deferred function call.
     /// @param sequenceNumber The sequence number assigned to the deferred function call.
-    event CallPushed(CallObject[] callObjs, uint256 sequenceNumber);
+    event CallPushed(CallObjectWithDelegateCall[] callObjs, uint256 sequenceNumber);
 
     /// @dev Emitted when a deferred function call is executed from the queue.
     /// @param callObjs The CallObject[] containing details of the executed function call.
     /// @param sequenceNumber The sequence number of the executed function call.
-    event CallPulled(CallObject[] callObjs, uint256 sequenceNumber);
+    event CallPulled(CallObjectWithDelegateCall[] callObjs, uint256 sequenceNumber);
 
     /// @dev Emitted when a function call is executed immediately, without being deferred.
     /// @param callObj The CallObjects containing details of the executed function calls.
-    event CallExecuted(CallObject callObj);
+    event CallExecuted(CallObjectWithDelegateCall callObj);
 
     /// @dev The block at which a call becomes executable.
     /// @param callableBlock The block number that is now callable.
@@ -58,7 +62,7 @@ contract LaminatedProxy is LaminatedStorage {
     /// @param seqNumber The sequence number of the deferred function call to view.
     /// @return exists A boolean indicating whether the deferred call exists.
     /// @return callObj The CallObject containing details of the deferred function call.
-    function viewDeferredCall(uint256 seqNumber) public view returns (bool, CallObject[] memory) {
+    function viewDeferredCall(uint256 seqNumber) public view returns (bool, CallObjectWithDelegateCall[] memory) {
         CallObjectHolder memory coh = deferredCalls[seqNumber];
         return (coh.initialized, coh.callObjs);
     }
@@ -78,13 +82,19 @@ contract LaminatedProxy is LaminatedStorage {
 
     /// @notice Pushes a deferred function call to be executed after a certain delay.
     /// @dev Adds a new CallObject to the `deferredCalls` mapping and emits a CallPushed event.
-    ///      The function can only be called by the contract owner.
+    ///      The function can only be called by the contract owner or the contract itself.
+    ///      This means it can get called from the Laminator contract.
+    ///      It can also be called re-entrantly to enable the contract to do cronjobs with tail recursion.
     /// @param input The encoded CallObject containing information about the function call to defer.
     /// @param delay The number of blocks to delay before the function call can be executed.
     ///      Use 0 for no delay.
     /// @return callSequenceNumber The sequence number assigned to this deferred call.
-    function push(bytes calldata input, uint32 delay) external onlyLaminator returns (uint256 callSequenceNumber) {
-        CallObject[] memory callObjs = abi.decode(input, (CallObject[]));
+    function push(bytes calldata input, uint32 delay) external returns (uint256 callSequenceNumber) {
+        require(
+            msg.sender == address(this) || msg.sender == address(laminator()),
+            "Only the laminated proxy or the laminator can call this function"
+        );
+        CallObjectWithDelegateCall[] memory callObjs = abi.decode(input, (CallObjectWithDelegateCall[]));
         callSequenceNumber = count();
         CallObjectHolder storage holder = deferredCalls[callSequenceNumber];
         holder.initialized = true;
@@ -98,6 +108,11 @@ contract LaminatedProxy is LaminatedStorage {
         _incrementSequenceNumber();
     }
 
+    function getExecutingSequenceNumber() external view returns (uint256) {
+        require(_executingSequenceNumberSet, "No executing sequence number set");
+        return _executingSequenceNumber;
+    }
+
     /// @notice Executes a deferred function call that has been pushed to the contract.
     /// @dev Executes the deferred call specified by the sequence number `seqNumber`.
     ///      This function performs a series of checks before calling `_execute` to
@@ -105,8 +120,10 @@ contract LaminatedProxy is LaminatedStorage {
     ///      the deferred call object from the `deferredCalls` mapping.
     /// @param seqNumber The sequence number of the deferred call to be executed.
     /// @return returnValue The return value of the executed deferred call.
-    function pull(uint256 seqNumber) external returns (bytes memory returnValue) {
+    function pull(uint256 seqNumber) external nonReentrant returns (bytes memory returnValue) {
         CallObjectHolder memory coh = deferredCalls[seqNumber];
+        _executingSequenceNumber = seqNumber;
+        _executingSequenceNumberSet = true;
         if (!coh.initialized) {
             revert Uninitialized();
         }
@@ -119,6 +136,7 @@ contract LaminatedProxy is LaminatedStorage {
         returnValue = _execute(coh.callObjs);
         emit CallPulled(coh.callObjs, seqNumber);
         delete deferredCalls[seqNumber];
+        _executingSequenceNumberSet = false;
     }
 
     /// @notice Executes a function call immediately.
@@ -126,8 +144,8 @@ contract LaminatedProxy is LaminatedStorage {
     ///      Can only be invoked by the owner of the contract.
     /// @param input The encoded CallObject containing information about the function call to execute.
     /// @return returnValue The return value from the executed function call.
-    function execute(bytes calldata input) external onlyLaminator returns (bytes memory) {
-        CallObject[] memory callsToMake = abi.decode(input, (CallObject[]));
+    function execute(bytes calldata input) external onlyLaminator nonReentrant returns (bytes memory) {
+        CallObjectWithDelegateCall[] memory callsToMake = abi.decode(input, (CallObjectWithDelegateCall[]));
         return _execute(callsToMake);
     }
 
@@ -135,7 +153,7 @@ contract LaminatedProxy is LaminatedStorage {
     ///      Emits a `CallExecuted` event upon successful execution.
     /// @param callsToMake The CallObject containing information about the function call to execute.
     /// @return returnValue The return value from the executed function call.
-    function _execute(CallObject[] memory callsToMake) internal returns (bytes memory) {
+    function _execute(CallObjectWithDelegateCall[] memory callsToMake) internal returns (bytes memory) {
         ReturnObject[] memory returnObjs = new ReturnObject[](callsToMake.length);
         for (uint256 i = 0; i < callsToMake.length; i++) {
             returnObjs[i] = ReturnObject({returnvalue: _executeSingle(callsToMake[i])});
@@ -143,9 +161,18 @@ contract LaminatedProxy is LaminatedStorage {
         return abi.encode(returnObjs);
     }
 
-    function _executeSingle(CallObject memory callToMake) internal returns (bytes memory) {
-        (bool success, bytes memory returnvalue) =
-            callToMake.addr.call{gas: callToMake.gas, value: callToMake.amount}(callToMake.callvalue);
+    function _executeSingle(CallObjectWithDelegateCall memory callToMake) internal returns (bytes memory) {
+        bool success;
+        bytes memory returnvalue;
+        if (callToMake.delegatecall) {
+            (success, returnvalue) =
+                callToMake.callObj.addr.delegatecall{gas: callToMake.callObj.gas}(callToMake.callObj.callvalue);
+        } else {
+            (success, returnvalue) = callToMake.callObj.addr.call{
+                gas: callToMake.callObj.gas,
+                value: callToMake.callObj.amount
+            }(callToMake.callObj.callvalue);
+        }
         if (!success) {
             revert CallFailed();
         }

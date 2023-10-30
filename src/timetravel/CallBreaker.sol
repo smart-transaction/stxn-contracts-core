@@ -44,7 +44,9 @@ contract CallBreaker is CallBreakerStorage {
     // @dev Selector ??????????
     error IndexMismatch(uint256, uint256);
 
-    event EnterPortal(CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance, uint256 index);
+    event EnterPortal(
+        CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance, uint256 index
+    );
     event VerifyStxn();
 
     /// @notice Initializes the contract; sets the initial portal status to closed
@@ -140,16 +142,26 @@ contract CallBreaker is CallBreakerStorage {
         // Update or initialize the balance of the call-return pair
         incrementCallBalance(pairID);
 
-        emit EnterPortal(callObjWithIndex.callObj, lastReturn.returnObj, pairID, callbalanceStore[pairID].balance, callObjWithIndex.index);
+        emit EnterPortal(
+            callObjWithIndex.callObj,
+            lastReturn.returnObj,
+            pairID,
+            callbalanceStore[pairID].balance,
+            callObjWithIndex.index
+            );
         return lastReturn.returnObj.returnvalue;
     }
 
     /// @notice Verifies that the given calls, when executed, gives the correct return values
-    function verify(bytes memory callsBytes, bytes memory returnsBytes, bytes memory associatedData) external payable onlyPortalClosed {
+    function verify(bytes memory callsBytes, bytes memory returnsBytes, bytes memory associatedData)
+        external
+        payable
+        onlyPortalClosed
+    {
         // pretty sure the first check isn't necessary?
         //require(tx.origin == msg.sender, "Caller must be an EOA");
         require(msg.sender.code.length == 0, "msg.sender must be an EOA");
-        
+
         CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
         ReturnObject[] memory return_s = abi.decode(returnsBytes, (ReturnObject[]));
 
