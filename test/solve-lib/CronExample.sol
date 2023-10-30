@@ -108,14 +108,12 @@ contract CronExampleLib {
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
 
-        // should return a list of the return value of approve + takesomeatokenfrompusher in a list of returnobjects, abi packed, then stuck into another returnobject.
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](2);
         returnObjsFromPull[0] = ReturnObject({returnvalue: abi.encode(true)});
         returnObjsFromPull[1] = ReturnObject({returnvalue: ""});
         // double encoding because first here second in pull()
         returnObjs[1] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
-        // then we'll call giveSomeBtokenToOwner and get the imbalance back to zero
         callObjs[2] = CallObject({
             amount: 0,
             addr: address(temporalHoneypot),

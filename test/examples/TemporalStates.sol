@@ -11,6 +11,7 @@ contract TemporalHoneypot {
     bool withdrawalScheduled;
     address withdrawer;
 
+    // @dev Selector 0x32e78793
     error NotEmpty();
 
     event Transfer(address indexed from, address indexed to, uint256 value);
@@ -39,8 +40,12 @@ contract TemporalHoneypot {
                 gas: 1000000,
                 callvalue: abi.encodeWithSignature("ensureFundless()")
             });
+            CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({
+                callObj: callObj,
+                index: 3
+            });
 
-            (bool success, bytes memory returnValue) = _callbreakerAddress.call(abi.encode(callObj));
+            (bool success, ) = _callbreakerAddress.call(abi.encode(callObjectWithIndex));
 
             if (!success) {
                 revert("turner CallFailed");

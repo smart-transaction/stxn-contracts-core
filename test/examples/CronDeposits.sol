@@ -11,24 +11,6 @@ contract CronDeposits {
     bool withdrawalScheduled;
     address withdrawer;
 
-    // we can make sure that we have end to end control over the execution of the transaction by
-    // 1. making sure that the callbreaker is open
-    // could we check that the laminatorpull was the second call out of the callbreaker...?
-    // no, you can do some shit right before in a contract
-    // check that something is EOA perhaps by checking that no code is deployed
-    // what if something creates and selfdestructs before you run
-    // CAN'T do that- selfdestruct halts execution
-    // you
-
-    // ok. kick the callbreaker off with an EOA wallet check
-    // this means verify is the first damn call
-    // also, add an index to the timeturner. you have to ensure you're in the right order- there will be indices "counting from the top" of the order things showed up in verify
-    // pull: first, you go straight into the "cleanup" code. you have no choice
-    // ok but what if you wrap INSIDE verify? how do you prevent this? push can clean itself up... the only way to do this is to ensure you're at the top of the verify call
-    //
-    //
-    //
-    //
     error NotEmpty();
 
     event Transfer(address indexed from, address indexed to, uint256 value);
@@ -39,9 +21,6 @@ contract CronDeposits {
     }
 
     function deposit(uint256 atokenamount) public {
-        // if you're calling me, you'd better be pulling my funds out before you finish.
-        // let's make sure that happens in the timeturner :)
-        // ... we don't check who pulls out the funds... that's the fun part ;)
         require(CallBreaker(payable(_callbreakerAddress)).isPortalOpen(), "CallBreaker is not open");
 
         // if checking the balance isn't scheduled, schedule it.
@@ -53,7 +32,12 @@ contract CronDeposits {
                 callvalue: abi.encodeWithSignature("ensureFundless()")
             });
 
-            (bool success, bytes memory returnValue) = _callbreakerAddress.call(abi.encode(callObj));
+            CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({
+                callObj: callObj,
+                index: 3
+            });
+
+            (bool success, ) = _callbreakerAddress.call(abi.encode(callObjectWithIndex));
 
             if (!success) {
                 revert("turner CallFailed");
