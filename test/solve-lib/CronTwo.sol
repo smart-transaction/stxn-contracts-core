@@ -7,6 +7,7 @@ import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../../test/examples/CronTwoCounter.sol";
 import "../../test/examples/CronTwoLogic.sol";
+import "../../src/tips/Tips.sol";
 
 // for the next year, every day:
 // tip the pusher with a little eth
@@ -20,6 +21,7 @@ contract CronTwoLib {
     Laminator public laminator;
     CronTwoCounter public counter;
     CronTwoLogic public cronTwoLogic;
+    Tips public tips;
     uint32 blocksInADay = 7150;
     uint256 tipWei = 100000000000000000;
 
@@ -31,7 +33,7 @@ contract CronTwoLib {
         callbreaker = new CallBreaker();
 
         counter = new CronTwoCounter();
-        cronTwoLogic = new CronTwoLogic(address(callbreaker), address(pusherLaminated), tipWei, blocksInADay);
+        cronTwoLogic = new CronTwoLogic(address(callbreaker), address(pusherLaminated));
 
         // compute the pusher laminated address
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
@@ -42,7 +44,7 @@ contract CronTwoLib {
 
     function userLand() public returns (uint256) {
         // Userland operations
-        CallObject[] memory pusherCallObjs = new CallObject[](3);
+        CallObject[] memory pusherCallObjs = new CallObject[](4);
         pusherCallObjs[0] = CallObject({
             amount: 0,
             addr: address(counter),
@@ -50,17 +52,26 @@ contract CronTwoLib {
             callvalue: abi.encodeWithSignature("increment()")
         });
 
-        pusherCallObjs[1] = CallObject({
+        pusherCallObjs[1] = CallObject({amount: 100000000000000000, addr: address(tips), gas: 10000000, callvalue: ""});
+
+        CallObject memory callObjectContinueFunctionPointer = CallObject( {
             amount: 0,
-            addr: address(cronTwoLogic),
+            addr: address(counter),
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("cronTrailer()")
+            callvalue: abi.encodeWithSignature("shouldContinue()")
         });
+        bytes memory callObjectContinueFnPtr = abi.encode(callObjectContinueFunctionPointer);
         pusherCallObjs[2] = CallObject({
             amount: 0,
             addr: pusherLaminated,
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("copyCurrentJob(uint256)", blocksInADay)
+            callvalue: abi.encodeWithSignature("copyCurrentJob(uint256,bytes)", blocksInADay, callObjectContinueFnPtr)
+        });
+        pusherCallObjs[3] = CallObject({
+            amount: 0,
+            addr: address(cronTwoLogic),
+            gas: 10000000,
+            callvalue: abi.encodeWithSignature("cronTrailer()")
         });
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }

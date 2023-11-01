@@ -24,38 +24,17 @@ contract CronTwoLogic {
     event DebugLog(string msg, bytes bytesVal);
     event DebugLog(string msg, bytes32 bytesVal);
 
-    bool _shouldTerminate = false;
-    uint256 _tipWei;
-    uint32 _recurringDelay;
-
-    constructor(address callbreakerLocation, address laminatedProxyLocation, uint256 tipAmount, uint32 recurringDelay) {
+    constructor(address callbreakerLocation, address laminatedProxyLocation) {
         callbreaker = CallBreaker(payable(callbreakerLocation));
         laminatedProxy = LaminatedProxy(payable(laminatedProxyLocation));
-        _tipWei = tipAmount;
-        _recurringDelay = recurringDelay;
     }
 
     // todo: add a better shouldTerminate condition (some code?)
     // todo: add a better automatic function for tips?
     // todo: add a better delay: should not just be a constant! this adds jitter if there's an execution delay.
     function cronTrailer() public {
-        // start by... tipping the solver
-        bytes32 tipAddrKey = keccak256(abi.encodePacked("tipYourBartender"));
-        emit DebugLog("tipAddrKey", tipAddrKey);
-        emit DebugLog("you are here", tipAddrKey);
-        bytes memory tipAddrBytes = callbreaker.fetchFromAssociatedDataStore(tipAddrKey);
-        emit DebugLog("tipAddrBytes", tipAddrBytes);
-        address tipAddr = abi.decode(tipAddrBytes, (address));
-        payable(tipAddr).transfer(_tipWei);
         uint256 currentSequenceNum = laminatedProxy.getExecutingSequenceNumber();
 
-        // next, push this job back into the laminatedproxy :) to reschedule it
-        if (!_shouldTerminate) {
-            (bool _init, CallObject[] memory calls) = laminatedProxy.viewDeferredCall(currentSequenceNum);
-            require(_init, "CallObjectHolder not initialized");
-            bytes memory callsbytes = abi.encode(calls);
-            laminatedProxy.push(callsbytes, _recurringDelay);
-        }
         // call enterportal on the pull call- this ensures you were called in the CB
         CallObject memory callObj = CallObject({
             amount: 0,

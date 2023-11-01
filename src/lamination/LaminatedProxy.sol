@@ -12,8 +12,12 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     uint256 _executingSequenceNumber;
     bool _executingSequenceNumberSet;
 
-    /// @notice Some functions must be called by the laminator only.
+    /// @notice Some functions must be called by the laminator or the proxy only.
     /// @dev Selector 0x91c58dcd
+    error NotLaminatorOrProxy();
+
+    /// @notice Some functions must be called by the laminator only.
+    /// @dev Selector ????
     error NotLaminator();
 
     /// @notice Calls pulled from the mempool must have been previously pushed and initialized.
@@ -46,6 +50,15 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @param callableBlock The block number that is now callable.
     /// @param currentBlock The current block number.
     event CallableBlock(uint256 callableBlock, uint256 currentBlock);
+
+    /// @dev Modifier to make a function callable only by the laminator or proxy.
+    ///      Reverts the transaction if the sender is not the laminator or proxy.
+    modifier onlyLaminatorOrProxy() {
+        if (msg.sender != address(laminator()) && msg.sender != address(this)) {
+            revert NotLaminatorOrProxy();
+        }
+        _;
+    }
 
     /// @dev Modifier to make a function callable only by the laminator.
     ///      Reverts the transaction if the sender is not the laminator.
@@ -89,11 +102,11 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @param delay The number of blocks to delay before the function call can be executed.
     ///      Use 0 for no delay.
     /// @return callSequenceNumber The sequence number assigned to this deferred call.
-    function push(bytes calldata input, uint32 delay) external returns (uint256 callSequenceNumber) {
-        require(
-            msg.sender == address(this) || msg.sender == address(laminator()),
-            "Only the laminated proxy or the laminator can call this function"
-        );
+    function push(bytes calldata input, uint32 delay)
+        external
+        onlyLaminatorOrProxy
+        returns (uint256 callSequenceNumber)
+    {
         CallObject[] memory callObjs = abi.decode(input, (CallObject[]));
         callSequenceNumber = count();
         CallObjectHolder storage holder = deferredCalls[callSequenceNumber];
@@ -139,8 +152,17 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         _executingSequenceNumberSet = false;
     }
 
-    function copyJob(uint256 seqNumber, uint256 delay) public nonReentrant returns (uint256) {
+    function copyJob(uint256 seqNumber, uint256 delay, bytes memory shouldCopy) public returns (uint256) {
         require(msg.sender == address(this), "Only this contract can call this function");
+
+        if (shouldCopy.length != 0) {
+            CallObject memory callObj = abi.decode(shouldCopy, (CallObject));
+            bytes memory result = _executeSingle(callObj);
+            bool shouldContinue = abi.decode(result, (bool));
+            if (!shouldContinue) {
+                return 0;
+            }
+        }
 
         CallObjectHolder memory coh = deferredCalls[seqNumber];
         if (!coh.initialized) {
@@ -161,11 +183,11 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         return callSequenceNumber;
     }
 
-    function copyCurrentJob(uint256 delay) public nonReentrant returns (uint256) {
+    function copyCurrentJob(uint256 delay, bytes memory shouldCopy) public returns (uint256) {
         if (!_executingSequenceNumberSet) {
             revert("No executing sequence number set");
         }
-        return copyJob(_executingSequenceNumber, delay);
+        return copyJob(_executingSequenceNumber, delay, shouldCopy);
     }
 
     /// @notice Executes a function call immediately.

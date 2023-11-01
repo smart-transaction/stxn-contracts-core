@@ -12,4 +12,11 @@ contract CronTwoCounter {
     function getCount(address addr) public view returns (uint256) {
         return _counters[addr];
     }
+
+    function shouldContinue() public view returns (bool) {
+        if (_counters[msg.sender] > 3) {
+            return false;
+        }
+        return true;
+    }
 }
