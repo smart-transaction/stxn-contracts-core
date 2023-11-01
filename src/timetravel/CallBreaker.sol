@@ -44,6 +44,9 @@ contract CallBreaker is CallBreakerStorage {
     // @dev Selector ??????????
     error IndexMismatch(uint256, uint256);
 
+    event InsertIntoAssociatedDataStore(bytes32 key, bytes value);
+    event FetchFromAssociatedDataStore(bytes32 key);
+
     event EnterPortal(
         CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance, uint256 index
     );
@@ -76,6 +79,7 @@ contract CallBreaker is CallBreakerStorage {
         // Check if the key already exists in the associatedDataStore
         require(!associatedDataStore[key].set, "Key already exists in the associatedDataStore");
 
+        emit InsertIntoAssociatedDataStore(key, value);
         // Insert the key-value pair into the associatedDataStore
         associatedDataStore[key].set = true;
         associatedDataStore[key].value = value;

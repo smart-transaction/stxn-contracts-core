@@ -67,7 +67,7 @@ contract SelfCheckout {
         return callbreakerAddress;
     }
 
-    function getSwapPartner() public view returns (address) {
+    function getSwapPartner() public returns (address) {
         bytes32 swapPartnerKey = keccak256(abi.encodePacked("swapPartner"));
         bytes memory swapPartnerBytes =
             CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(swapPartnerKey);

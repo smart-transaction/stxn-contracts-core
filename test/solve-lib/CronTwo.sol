@@ -20,6 +20,10 @@ contract CronTwoLib {
     Laminator public laminator;
     CronTwoCounter public counter;
     CronTwoLogic public cronTwoLogic;
+    uint32 blocksInADay = 7150;
+    uint256 tipWei = 100000000000000000;
+
+    event MyDebugLog(string message, bytes32 key);
 
     function deployerLand(address pusher) public {
         // Initializing contracts
@@ -27,8 +31,6 @@ contract CronTwoLib {
         callbreaker = new CallBreaker();
 
         counter = new CronTwoCounter();
-        uint32 blocksInADay = 7150;
-        uint256 tipWei = 100000000000000000;
         cronTwoLogic = new CronTwoLogic(address(callbreaker), address(pusherLaminated), tipWei, blocksInADay);
 
         // compute the pusher laminated address
@@ -40,22 +42,26 @@ contract CronTwoLib {
 
     function userLand() public returns (uint256) {
         // Userland operations
-        CallObjectWithDelegateCall[] memory pusherCallObjs = new CallObjectWithDelegateCall[](2);
-        pusherCallObjs[0].callObj = CallObject({
+        CallObject[] memory pusherCallObjs = new CallObject[](3);
+        pusherCallObjs[0] = CallObject({
             amount: 0,
             addr: address(counter),
-            gas: 1000000,
+            gas: 10000000,
             callvalue: abi.encodeWithSignature("increment()")
         });
-        pusherCallObjs[0].delegatecall = false;
 
-        pusherCallObjs[1].callObj = CallObject({
+        pusherCallObjs[1] = CallObject({
             amount: 0,
             addr: address(cronTwoLogic),
-            gas: 1000000,
+            gas: 10000000,
             callvalue: abi.encodeWithSignature("cronTrailer()")
         });
-        pusherCallObjs[1].delegatecall = true;
+        pusherCallObjs[2] = CallObject({
+            amount: 0,
+            addr: pusherLaminated,
+            gas: 10000000,
+            callvalue: abi.encodeWithSignature("copyCurrentJob(uint256)", blocksInADay)
+        });
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
 
@@ -68,7 +74,7 @@ contract CronTwoLib {
         callObjs[0] = CallObject({
             amount: 0,
             addr: pusherLaminated,
-            gas: 1000000,
+            gas: 10000000,
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
         // should return a list of the return value of approve + takesomeatokenfrompusher in a list of returnobjects, abi packed, then stuck into another returnobject.
@@ -81,6 +87,7 @@ contract CronTwoLib {
         // Constructing something that'll decode happily
         bytes32[] memory keys = new bytes32[](1);
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
+        emit MyDebugLog("tipAddrKey", keys[0]);
         bytes[] memory values = new bytes[](1);
         values[0] = abi.encode(filler);
         bytes memory encodedData = abi.encode(keys, values);

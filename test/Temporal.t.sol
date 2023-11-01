@@ -50,18 +50,22 @@ contract TemporalExampleTest is Test, TemporalExampleLib {
         assertEq(erc20a.balanceOf(filler), 10);
         assertEq(!callbreaker.isPortalOpen(), true);
 
-        (bool init, CallObjectWithDelegateCall[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
+        (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
         assertEq(init, false);
     }
 
     function testFail_run_at_wrong_time() external {
         uint256 laminatorSequenceNumber;
 
-        vm.startPrank(pusher); laminatorSequenceNumber = userLand(); vm.stopPrank();
+        vm.startPrank(pusher);
+        laminatorSequenceNumber = userLand();
+        vm.stopPrank();
 
         // go forward in time
         vm.roll(block.number + 1);
 
-        vm.startPrank(filler); solverLand(laminatorSequenceNumber, filler); vm.stopPrank();
+        vm.startPrank(filler);
+        solverLand(laminatorSequenceNumber, filler);
+        vm.stopPrank();
     }
 }

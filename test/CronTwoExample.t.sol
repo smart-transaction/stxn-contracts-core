@@ -50,10 +50,10 @@ contract CronTwoTest is Test, CronTwoLib {
         vm.roll(block.number + 1);
 
         vm.startPrank(filler);
-                emit DebugLog("kms1");
+        emit DebugLog("kms1");
 
         solverLand(laminatorSequenceNumber, filler);
-                emit DebugLog("kms2");
+        emit DebugLog("kms2");
 
         vm.stopPrank();
 
@@ -68,8 +68,7 @@ contract CronTwoTest is Test, CronTwoLib {
 
         assertFalse(callbreaker.isPortalOpen());
 
-        (bool init, CallObjectWithDelegateCall[] memory co) =
-            LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
+        (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
         assertEq(init, false);
     }
 }

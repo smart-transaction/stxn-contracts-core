@@ -52,7 +52,7 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         assertEq(erc20b.balanceOf(filler), 0);
         assertFalse(callbreaker.isPortalOpen());
 
-        (bool init, CallObjectWithDelegateCall[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
+        (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
         assertEq(init, false);
     }
 }

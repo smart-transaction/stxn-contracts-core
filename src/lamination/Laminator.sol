@@ -13,7 +13,7 @@ contract Laminator is ILaminator {
     /// @param proxyAddress The address of the proxy contract where the function call is pushed.
     /// @param callObjs The CallObject containing the function call details.
     /// @param sequenceNumber The sequence number assigned to the deferred function call.
-    event ProxyPushed(address indexed proxyAddress, CallObjectWithDelegateCall[] callObjs, uint256 sequenceNumber);
+    event ProxyPushed(address indexed proxyAddress, CallObject[] callObjs, uint256 sequenceNumber);
 
     /// @dev Emitted when a function call is pulled from a proxy contract for execution.
     /// @param returnData The ABI-encoded data payload returned from the function call.
@@ -23,7 +23,7 @@ contract Laminator is ILaminator {
     /// @dev Emitted when a function call is executed immediately via a proxy contract.
     /// @param proxyAddress The address of the proxy contract where the function call is executed.
     /// @param callObjs The CallObject containing the function call details.
-    event ProxyExecuted(address indexed proxyAddress, CallObjectWithDelegateCall[] callObjs);
+    event ProxyExecuted(address indexed proxyAddress, CallObject[] callObjs);
 
     /// @notice Computes the deterministic address for a proxy contract for the given owner.
     /// @dev Uses the CREATE2 opcode to calculate the address for the proxy contract.
@@ -41,6 +41,21 @@ contract Laminator is ILaminator {
         return address(uint160(uint256(hash)));
     }
 
+    /// @notice Gets the next sequence number of the LaminatedProxy associated with the sender.
+    /// @return sequenceNumber The sequence number of the next deferred function call.
+    function getMyCount() public view returns (uint256) {
+        address addr = computeProxyAddress(msg.sender);
+        uint32 size;
+        assembly {
+            size := extcodesize(addr)
+        }
+        if (size == 0) {
+            return 0;
+        } else {
+            return LaminatedProxy(payable(addr)).count();
+        }
+    }
+
     /// @notice Calls the `push` function into the LaminatedProxy associated with the sender.
     /// @dev Encodes the provided calldata and calls it into the `push` function of the proxy contract.
     ///      A new proxy will be created if one does not already exist for the sender.
@@ -52,7 +67,7 @@ contract Laminator is ILaminator {
 
         sequenceNumber = proxy.push(cData, delay);
 
-        CallObjectWithDelegateCall[] memory callObjs = abi.decode(cData, (CallObjectWithDelegateCall[]));
+        CallObject[] memory callObjs = abi.decode(cData, (CallObject[]));
         emit ProxyPushed(address(proxy), callObjs, sequenceNumber);
     }
 
@@ -76,7 +91,7 @@ contract Laminator is ILaminator {
 
         bytes memory returnData = proxy.execute(cData);
 
-        CallObjectWithDelegateCall[] memory callObjs = abi.decode(cData, (CallObjectWithDelegateCall[]));
+        CallObject[] memory callObjs = abi.decode(cData, (CallObject[]));
         emit ProxyExecuted(address(proxy), callObjs);
 
         return returnData;
