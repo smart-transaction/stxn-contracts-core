@@ -41,7 +41,7 @@ contract CallBreaker is CallBreakerStorage {
     error LengthMismatch();
     // @dev Selector 0xcc68b8ba
     error CallVerificationFailed();
-    // @dev Selector ??????????
+    // @dev Selector 0xdba5f6f9
     error IndexMismatch(uint256, uint256);
 
     event InsertIntoAssociatedDataStore(bytes32 key, bytes value);

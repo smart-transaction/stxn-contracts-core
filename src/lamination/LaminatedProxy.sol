@@ -13,11 +13,11 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     bool _executingSequenceNumberSet;
 
     /// @notice Some functions must be called by the laminator or the proxy only.
-    /// @dev Selector 0x91c58dcd
+    /// @dev Selector 0xfc51f672
     error NotLaminatorOrProxy();
 
     /// @notice Some functions must be called by the laminator only.
-    /// @dev Selector ????
+    /// @dev Selector 0x91c58dcd
     error NotLaminator();
 
     /// @notice Calls pulled from the mempool must have been previously pushed and initialized.
@@ -95,8 +95,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
 
     /// @notice Pushes a deferred function call to be executed after a certain delay.
     /// @dev Adds a new CallObject to the `deferredCalls` mapping and emits a CallPushed event.
-    ///      The function can only be called by the contract owner or the contract itself.
-    ///      This means it can get called from the Laminator contract.
+    ///      The function can only be called by the Laminator or the LaminatedProxy contract itself.
     ///      It can also be called re-entrantly to enable the contract to do cronjobs with tail recursion.
     /// @param input The encoded CallObject containing information about the function call to defer.
     /// @param delay The number of blocks to delay before the function call can be executed.
