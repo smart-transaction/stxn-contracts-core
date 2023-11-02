@@ -46,8 +46,6 @@ contract CallBreaker is CallBreakerStorage {
 
     event InsertIntoAssociatedDataStore(bytes32 key, bytes value);
     event FetchFromAssociatedDataStore(bytes32 key);
-    event DebugLog(string message, bytes32 value);
-    event DebugLog(string message);
 
     event EnterPortal(
         CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance, uint256 index
@@ -133,7 +131,6 @@ contract CallBreaker is CallBreakerStorage {
             revert OutOfReturnValues();
         }
 
-        emit DebugLog("hello");
         // Fetch and remove the last ReturnObject from storage
         ReturnObjectWithIndex memory lastReturn = popLastReturn();
 

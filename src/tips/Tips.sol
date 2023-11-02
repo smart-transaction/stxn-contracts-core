@@ -6,10 +6,7 @@ import "../timetravel/CallBreaker.sol";
 
 contract Tips {
     event Tip(address indexed from, address indexed to, uint256 amount);
-
-    event DebugLog(string message, bytes32 value);
-    event DebugLog(string message, bytes value);
-
+    
     CallBreaker public callbreaker;
 
     constructor(address _callbreaker) {

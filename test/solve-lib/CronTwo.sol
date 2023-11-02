@@ -25,9 +25,6 @@ contract CronTwoLib {
     uint32 _blocksInADay = 7150;
     uint256 _tipWei = 100000000000000000;
 
-    event MyDebugLog(string message, bytes32 key);
-    event MyDebugLog(string message, address key);
-
     function deployerLand(address pusher) public {
         // Initializing contracts
         laminator = new Laminator();
