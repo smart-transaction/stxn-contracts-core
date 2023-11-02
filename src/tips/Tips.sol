@@ -6,13 +6,14 @@ import "../timetravel/CallBreaker.sol";
 
 contract Tips {
     event Tip(address indexed from, address indexed to, uint256 amount);
-    
+
     CallBreaker public callbreaker;
 
     constructor(address _callbreaker) {
         callbreaker = CallBreaker(payable(_callbreaker));
     }
 
+    /// @dev Tips should be transferred from each LaminatorProxy to the solver
     receive() external payable {
         bytes32 tipAddrKey = keccak256(abi.encodePacked("tipYourBartender"));
         bytes memory tipAddrBytes = callbreaker.fetchFromAssociatedDataStore(tipAddrKey);

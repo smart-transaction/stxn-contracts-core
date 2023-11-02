@@ -51,7 +51,7 @@ contract CronTwoLib {
 
         pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(tips), gas: 10000000, callvalue: ""});
 
-        CallObject memory callObjectContinueFunctionPointer = CallObject( {
+        CallObject memory callObjectContinueFunctionPointer = CallObject({
             amount: 0,
             addr: address(counter),
             gas: 10000000,
@@ -102,11 +102,10 @@ contract CronTwoLib {
         bytes memory encodedData = abi.encode(keys, values);
 
         if (!isFirstTime) {
-                    callObjs[0].callvalue = abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber + 1);
-        returnObjsFromPull[2] = ReturnObject({returnvalue: abi.encode(2)});
-        returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
+            callObjs[0].callvalue = abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber + 1);
+            returnObjsFromPull[2] = ReturnObject({returnvalue: abi.encode(2)});
+            returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
         }
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData);
-
     }
 }

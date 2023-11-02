@@ -110,44 +110,20 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @dev The received Ether can be spent via the `execute`, `push`, and `pull` functions.
     receive() external payable {}
 
+    /// @notice Copies the current job with a specified delay and condition.
+    /// @dev This function can only be called by the LaminatedProxy contract itself.
+    ///      It reverts if the sequence number is not set or if the sender is not the proxy.
+    /// @param delay The number of blocks to delay before the copied job can be executed.
+    /// @param shouldCopy The condition under which the job should be copied.
+    /// @return The sequence number of the copied job.
     function copyCurrentJob(uint256 delay, bytes memory shouldCopy) public returns (uint256) {
         if (!_executingSequenceNumberSet) {
             revert SeqNumberNotSet();
         }
-        return copyJob(_executingSequenceNumber, delay, shouldCopy);
-    }
-
-    function copyJob(uint256 seqNumber, uint256 delay, bytes memory shouldCopy) public returns (uint256) {
         if (msg.sender != address(this)) {
             revert NotProxy();
         }
-
-        if (shouldCopy.length != 0) {
-            CallObject memory callObj = abi.decode(shouldCopy, (CallObject));
-            bytes memory result = _executeSingle(callObj);
-            bool shouldContinue = abi.decode(result, (bool));
-            if (!shouldContinue) {
-                return 0;
-            }
-        }
-
-        CallObjectHolder memory coh = deferredCalls[seqNumber];
-        if (!coh.initialized) {
-            revert Uninitialized();
-        }
-        CallObject[] memory callObjs = coh.callObjs;
-        uint256 callSequenceNumber = count();
-        CallObjectHolder storage holder = deferredCalls[callSequenceNumber];
-        holder.initialized = true;
-        holder.firstCallableBlock = block.number + delay;
-        for (uint256 i = 0; i < callObjs.length; ++i) {
-            holder.callObjs.push(callObjs[i]);
-        }
-
-        emit CallableBlock(block.number, block.number);
-        emit CallPushed(callObjs, callSequenceNumber);
-        _incrementSequenceNumber();
-        return callSequenceNumber;
+        return _copyJob(_executingSequenceNumber, delay, shouldCopy);
     }
 
     /// @notice Pushes a deferred function call to be executed after a certain delay.
@@ -218,7 +194,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     ///      It reverts if no sequence number is set.
     /// @return The sequence number of the currently executing call.
     function getExecutingSequenceNumber() external view returns (uint256) {
-        if(!_executingSequenceNumberSet) {
+        if (!_executingSequenceNumberSet) {
             revert SeqNumberNotSet();
         }
         return _executingSequenceNumber;
@@ -236,15 +212,55 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         return abi.encode(returnObjs);
     }
 
+    /// @dev Executes a single function call specified by the CallObject `callToMake`.
+    ///      Emits a `CallExecuted` event upon successful execution.
+    /// @param callToMake The CallObject containing information about the function call to execute.
+    /// @return returnvalue The return value from the executed function call.
     function _executeSingle(CallObject memory callToMake) internal returns (bytes memory) {
         bool success;
         bytes memory returnvalue;
+
         (success, returnvalue) =
             callToMake.addr.call{gas: callToMake.gas, value: callToMake.amount}(callToMake.callvalue);
         if (!success) {
             revert CallFailed();
         }
+
         emit CallExecuted(callToMake);
         return returnvalue;
+    }
+
+    /// @dev Copies a job with a specified delay and condition.
+    /// @param seqNumber The sequence number of the job to be copied.
+    /// @param delay The number of blocks to delay before the copied job can be executed.
+    /// @param shouldCopy The condition under which the job should be copied.
+    /// @return The sequence number of the copied job.
+    function _copyJob(uint256 seqNumber, uint256 delay, bytes memory shouldCopy) internal returns (uint256) {
+        if (shouldCopy.length != 0) {
+            CallObject memory callObj = abi.decode(shouldCopy, (CallObject));
+            bytes memory result = _executeSingle(callObj);
+            bool shouldContinue = abi.decode(result, (bool));
+            if (!shouldContinue) {
+                return 0;
+            }
+        }
+
+        CallObjectHolder memory coh = deferredCalls[seqNumber];
+        if (!coh.initialized) {
+            revert Uninitialized();
+        }
+        CallObject[] memory callObjs = coh.callObjs;
+        uint256 callSequenceNumber = count();
+        CallObjectHolder storage holder = deferredCalls[callSequenceNumber];
+        holder.initialized = true;
+        holder.firstCallableBlock = block.number + delay;
+        for (uint256 i = 0; i < callObjs.length; ++i) {
+            holder.callObjs.push(callObjs[i]);
+        }
+
+        emit CallableBlock(block.number, block.number);
+        emit CallPushed(callObjs, callSequenceNumber);
+        _incrementSequenceNumber();
+        return callSequenceNumber;
     }
 }

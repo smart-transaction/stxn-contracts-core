@@ -43,13 +43,26 @@ contract CallBreaker is CallBreakerStorage {
     error CallVerificationFailed();
     // @dev Selector 0xdba5f6f9
     error IndexMismatch(uint256, uint256);
+    // @dev Selector 0xaa1ba2f8
+    error KeyAlreadyExists();
 
+    /// @notice Emitted when a new key-value pair is inserted into the associatedDataStore
     event InsertIntoAssociatedDataStore(bytes32 key, bytes value);
+
+    /// @notice Emitted when a value is fetched from the associatedDataStore using a key
     event FetchFromAssociatedDataStore(bytes32 key);
 
+    /// @notice Emitted when the enterPortal function is called
+    /// @param callObj The CallObject instance containing details of the call
+    /// @param returnvalue The ReturnObject instance containing details of the return value
+    /// @param pairid The unique ID derived from the given callObj and returnvalue
+    /// @param updatedcallbalance The updated balance of the call
+    /// @param index The index of the return value in the returnStore
     event EnterPortal(
         CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance, uint256 index
     );
+
+    /// @notice Emitted when the verifyStxn function is called
     event VerifyStxn();
 
     /// @notice Initializes the contract; sets the initial portal status to closed
@@ -62,6 +75,12 @@ contract CallBreaker is CallBreakerStorage {
         revert EmptyCalldata();
     }
 
+    /// NOTE: Expect calls to arrive with non-null msg.data
+    /// NOTE: Calldata bytes are structured as a CallObject
+    fallback(bytes calldata input) external payable returns (bytes memory) {
+        return this.enterPortal(input);
+    }
+
     /// @notice Generates a unique ID for a pair of CallObject and ReturnObject
     /// @param callObj The CallObject instance containing details of the call
     /// @param returnObj The ReturnObject instance containing details of the return value
@@ -70,22 +89,6 @@ contract CallBreaker is CallBreakerStorage {
     function getCallReturnID(CallObject memory callObj, ReturnObject memory returnObj) public pure returns (bytes32) {
         // Use keccak256 to generate a unique ID for a pair of CallObject and ReturnObject.
         return keccak256(abi.encode(callObj, returnObj));
-    }
-
-    /// @notice Inserts a pair of bytes32 into the associatedDataStore and associatedDataKeyList
-    /// @param key The key to be inserted into the associatedDataStore
-    /// @param value The value to be associated with the key in the associatedDataStore
-    function insertIntoAssociatedDataStore(bytes32 key, bytes memory value) internal {
-        // Check if the key already exists in the associatedDataStore
-        require(!associatedDataStore[key].set, "Key already exists in the associatedDataStore");
-
-        emit InsertIntoAssociatedDataStore(key, value);
-        // Insert the key-value pair into the associatedDataStore
-        associatedDataStore[key].set = true;
-        associatedDataStore[key].value = value;
-
-        // Add the key to the associatedDataKeyList
-        associatedDataKeyList.push(key);
     }
 
     /// @notice Fetches the value associated with a given key from the associatedDataStore
@@ -99,27 +102,6 @@ contract CallBreaker is CallBreakerStorage {
 
         // Return the value associated with the key
         return associatedData.value;
-    }
-
-    /// @notice Populates the associatedDataStore with a list of key-value pairs
-    /// @param encodedData The abi-encoded list of (bytes32, bytes32) key-value pairs
-    function populateAssociatedDataStore(bytes memory encodedData) internal {
-        // Decode the input data into an array of (bytes32, bytes32) pairs
-        (bytes32[] memory keys, bytes[] memory values) = abi.decode(encodedData, (bytes32[], bytes[]));
-
-        // Check that the keys and values arrays have the same length
-        require(keys.length == values.length, "Mismatch in keys and values array lengths");
-
-        // Iterate over the keys and values arrays and insert each pair into the associatedDataStore
-        for (uint256 i = 0; i < keys.length; i++) {
-            insertIntoAssociatedDataStore(keys[i], values[i]);
-        }
-    }
-
-    /// NOTE: Expect calls to arrive with non-null msg.data
-    /// NOTE: Calldata bytes are structured as a CallObject
-    fallback(bytes calldata input) external payable returns (bytes memory) {
-        return this.enterPortal(input);
     }
 
     /// this: takes in a call (structured as a CallObj), puts out a return value from the record of return values.
@@ -152,7 +134,7 @@ contract CallBreaker is CallBreakerStorage {
             pairID,
             callbalanceStore[pairID].balance,
             callObjWithIndex.index
-            );
+        );
         return lastReturn.returnObj.returnvalue;
     }
 
@@ -225,7 +207,7 @@ contract CallBreaker is CallBreakerStorage {
         delete associatedDataKeyList;
     }
 
-    // Helper function to fetch and remove the last ReturnObject from the storage
+    // @dev Helper function to fetch and remove the last ReturnObject from the storage
     function popLastReturn() internal returns (ReturnObjectWithIndex memory) {
         ReturnObjectWithIndex memory lastReturn = returnStore[returnStore.length - 1];
         returnStore.pop();
@@ -254,6 +236,39 @@ contract CallBreaker is CallBreakerStorage {
             callbalanceStore[pairID].set = true;
         } else {
             callbalanceStore[pairID].balance--;
+        }
+    }
+
+    /// @notice Inserts a pair of bytes32 into the associatedDataStore and associatedDataKeyList
+    /// @param key The key to be inserted into the associatedDataStore
+    /// @param value The value to be associated with the key in the associatedDataStore
+    function insertIntoAssociatedDataStore(bytes32 key, bytes memory value) internal {
+        // Check if the key already exists in the associatedDataStore
+        if (associatedDataStore[key].set) {
+            revert KeyAlreadyExists();
+        }
+
+        emit InsertIntoAssociatedDataStore(key, value);
+        // Insert the key-value pair into the associatedDataStore
+        associatedDataStore[key].set = true;
+        associatedDataStore[key].value = value;
+
+        // Add the key to the associatedDataKeyList
+        associatedDataKeyList.push(key);
+    }
+
+    /// @notice Populates the associatedDataStore with a list of key-value pairs
+    /// @param encodedData The abi-encoded list of (bytes32, bytes32) key-value pairs
+    function populateAssociatedDataStore(bytes memory encodedData) internal {
+        // Decode the input data into an array of (bytes32, bytes32) pairs
+        (bytes32[] memory keys, bytes[] memory values) = abi.decode(encodedData, (bytes32[], bytes[]));
+
+        // Check that the keys and values arrays have the same length
+        require(keys.length == values.length, "Mismatch in keys and values array lengths");
+
+        // Iterate over the keys and values arrays and insert each pair into the associatedDataStore
+        for (uint256 i = 0; i < keys.length; i++) {
+            insertIntoAssociatedDataStore(keys[i], values[i]);
         }
     }
 
