@@ -14,8 +14,6 @@ contract CronTwoTest is Test, CronTwoLib {
     address pusher;
     address filler;
 
-    event DebugLog(string message);
-
     function setUp() external {
         deployer = address(100);
         pusher = address(200);
@@ -39,9 +37,7 @@ contract CronTwoTest is Test, CronTwoLib {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
-        emit DebugLog("kms0");
         laminatorSequenceNumber = userLand();
-        emit DebugLog("kms0.5");
         vm.stopPrank();
 
         uint256 initialFillerBalance = address(filler).balance;
@@ -50,17 +46,15 @@ contract CronTwoTest is Test, CronTwoLib {
         vm.roll(block.number + 1);
 
         vm.startPrank(filler);
-        emit DebugLog("kms1");
 
-        solverLand(laminatorSequenceNumber, filler);
-        emit DebugLog("kms2");
+        solverLand(laminatorSequenceNumber, filler, true);
 
         vm.stopPrank();
 
         vm.roll(block.number + 8000);
 
         vm.startPrank(filler);
-        solverLand(laminatorSequenceNumber, filler);
+        solverLand(laminatorSequenceNumber, filler, false);
         vm.stopPrank();
 
         assertEq(counter.getCount(pusherLaminated), 2);

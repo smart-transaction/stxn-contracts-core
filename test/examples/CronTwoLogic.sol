@@ -23,6 +23,7 @@ contract CronTwoLogic {
 
     event DebugLog(string msg, bytes bytesVal);
     event DebugLog(string msg, bytes32 bytesVal);
+    event DebugLog(string msg, uint256 val);
 
     constructor(address callbreakerLocation, address laminatedProxyLocation) {
         callbreaker = CallBreaker(payable(callbreakerLocation));

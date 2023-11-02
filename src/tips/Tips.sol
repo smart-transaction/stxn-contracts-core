@@ -18,10 +18,7 @@ contract Tips {
 
     receive() external payable {
         bytes32 tipAddrKey = keccak256(abi.encodePacked("tipYourBartender"));
-        emit DebugLog("tipAddrKey", tipAddrKey);
-        emit DebugLog("you are here", tipAddrKey);
         bytes memory tipAddrBytes = callbreaker.fetchFromAssociatedDataStore(tipAddrKey);
-        emit DebugLog("tipAddrBytes", tipAddrBytes);
         address tipAddr = abi.decode(tipAddrBytes, (address));
         payable(tipAddr).transfer(msg.value);
         emit Tip(msg.sender, address(this), msg.value);

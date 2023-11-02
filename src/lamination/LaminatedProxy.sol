@@ -121,7 +121,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         _incrementSequenceNumber();
     }
 
-    function getExecutingSequenceNumber() external view returns (uint256) {
+    function getExecutingSequenceNumber() external returns (uint256) {
         require(_executingSequenceNumberSet, "No executing sequence number set");
         return _executingSequenceNumber;
     }

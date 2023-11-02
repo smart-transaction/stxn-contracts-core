@@ -22,10 +22,11 @@ contract CronTwoLib {
     CronTwoCounter public counter;
     CronTwoLogic public cronTwoLogic;
     Tips public tips;
-    uint32 blocksInADay = 7150;
-    uint256 tipWei = 100000000000000000;
+    uint32 _blocksInADay = 7150;
+    uint256 _tipWei = 100000000000000000;
 
     event MyDebugLog(string message, bytes32 key);
+    event MyDebugLog(string message, address key);
 
     function deployerLand(address pusher) public {
         // Initializing contracts
@@ -33,10 +34,9 @@ contract CronTwoLib {
         callbreaker = new CallBreaker();
 
         counter = new CronTwoCounter();
-        cronTwoLogic = new CronTwoLogic(address(callbreaker), address(pusherLaminated));
-
-        // compute the pusher laminated address
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
+        cronTwoLogic = new CronTwoLogic(address(callbreaker), address(pusherLaminated));
+        tips = new Tips(address(callbreaker));
 
         // give the pusher some eth
         pusherLaminated.transfer(10000000000000000000);
@@ -52,7 +52,7 @@ contract CronTwoLib {
             callvalue: abi.encodeWithSignature("increment()")
         });
 
-        pusherCallObjs[1] = CallObject({amount: 100000000000000000, addr: address(tips), gas: 10000000, callvalue: ""});
+        pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(tips), gas: 10000000, callvalue: ""});
 
         CallObject memory callObjectContinueFunctionPointer = CallObject( {
             amount: 0,
@@ -65,7 +65,7 @@ contract CronTwoLib {
             amount: 0,
             addr: pusherLaminated,
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("copyCurrentJob(uint256,bytes)", blocksInADay, callObjectContinueFnPtr)
+            callvalue: abi.encodeWithSignature("copyCurrentJob(uint256,bytes)", _blocksInADay, callObjectContinueFnPtr)
         });
         pusherCallObjs[3] = CallObject({
             amount: 0,
@@ -76,7 +76,7 @@ contract CronTwoLib {
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
 
-    function solverLand(uint256 laminatorSequenceNumber, address filler) public {
+    function solverLand(uint256 laminatorSequenceNumber, address filler, bool isFirstTime) public {
         // TODO: Refactor these parts further if necessary.
         CallObject[] memory callObjs = new CallObject[](1);
         ReturnObject[] memory returnObjs = new ReturnObject[](1);
@@ -89,23 +89,27 @@ contract CronTwoLib {
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
         // should return a list of the return value of approve + takesomeatokenfrompusher in a list of returnobjects, abi packed, then stuck into another returnobject.
-        ReturnObject[] memory returnObjsFromPull = new ReturnObject[](2);
+        ReturnObject[] memory returnObjsFromPull = new ReturnObject[](4);
         returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
         returnObjsFromPull[1] = ReturnObject({returnvalue: ""});
+        returnObjsFromPull[2] = ReturnObject({returnvalue: abi.encode(1)});
+        returnObjsFromPull[3] = ReturnObject({returnvalue: ""});
         // double encoding because first here second in pull()
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
         // Constructing something that'll decode happily
         bytes32[] memory keys = new bytes32[](1);
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
-        emit MyDebugLog("tipAddrKey", keys[0]);
         bytes[] memory values = new bytes[](1);
         values[0] = abi.encode(filler);
         bytes memory encodedData = abi.encode(keys, values);
 
+        if (!isFirstTime) {
+                    callObjs[0].callvalue = abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber + 1);
+        returnObjsFromPull[2] = ReturnObject({returnvalue: abi.encode(2)});
+        returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
+        }
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData);
 
-        callObjs[0].callvalue = abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber + 1);
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData);
     }
 }
