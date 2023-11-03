@@ -63,7 +63,7 @@ contract CronTwoTest is Test, CronTwoLib {
         assertFalse(callbreaker.isPortalOpen());
 
         //  Should be cleared so init should be false (testFail format is for compliance with Kontrol framework)
-        (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
+        (bool init,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
         assertTrue(init);
     }
 }
