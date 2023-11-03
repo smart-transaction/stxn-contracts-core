@@ -39,9 +39,6 @@ contract WorkedExampleLib {
 
         // set up a selfcheckout
         selfcheckout = new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
-
-        // give the pusher some eth
-        pusherLaminated.transfer(10000000000000000000);
     }
 
     function userLand() public returns (uint256) {

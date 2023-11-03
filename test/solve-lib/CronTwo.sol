@@ -34,9 +34,6 @@ contract CronTwoLib {
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
         cronTwoLogic = new CronTwoLogic(address(callbreaker), address(pusherLaminated));
         tips = new Tips(address(callbreaker));
-
-        // give the pusher some eth
-        pusherLaminated.transfer(10000000000000000000);
     }
 
     function userLand() public returns (uint256) {

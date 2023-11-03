@@ -21,6 +21,9 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         pusher = address(200);
         filler = address(300);
 
+        // give the pusher some eth
+        vm.deal(pusherLaminated, 100 ether);
+
         // start deployer land
         vm.startPrank(deployer);
         deployerLand(pusher, filler);

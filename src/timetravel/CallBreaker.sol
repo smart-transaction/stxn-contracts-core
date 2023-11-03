@@ -57,6 +57,9 @@ contract CallBreaker is CallBreakerStorage {
     /// @dev Error thrown when a nonexistent key is fetched from the associatedDataStore
     /// @dev Selector 0xf7c16a37
     error NonexistentKey();
+    /// @dev Caller must be EOA
+    /// @dev Selector 0x09d1095b
+    error MustBeEOA();
 
     /// @notice Emitted when a new key-value pair is inserted into the associatedDataStore
     event InsertIntoAssociatedDataStore(bytes32 key, bytes value);
@@ -158,7 +161,9 @@ contract CallBreaker is CallBreakerStorage {
         payable
         onlyPortalClosed
     {
-        require(msg.sender.code.length == 0, "msg.sender must be an EOA");
+        if (msg.sender.code.length != 0) {
+            revert MustBeEOA();
+        }
 
         CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
         ReturnObject[] memory return_s = abi.decode(returnsBytes, (ReturnObject[]));

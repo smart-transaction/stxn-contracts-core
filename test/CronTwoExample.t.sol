@@ -19,8 +19,8 @@ contract CronTwoTest is Test, CronTwoLib {
         pusher = address(200);
         filler = address(300);
 
-        // Mint ether to the deployer
-        payable(deployer).transfer(10000000000000000000);
+        // give the pusher some eth
+        vm.deal(pusherLaminated, 100 ether);
 
         // start deployer land
         vm.startPrank(deployer);
