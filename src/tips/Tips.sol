@@ -13,7 +13,7 @@ contract Tips {
         callbreaker = CallBreaker(payable(_callbreaker));
     }
 
-    /// @dev Tips should be transferred from each LaminatorProxy to the solver
+    /// @dev Tips should be transferred from each LaminatorProxy to the solver via msg.value
     receive() external payable {
         bytes32 tipAddrKey = keccak256(abi.encodePacked("tipYourBartender"));
         bytes memory tipAddrBytes = callbreaker.fetchFromAssociatedDataStore(tipAddrKey);

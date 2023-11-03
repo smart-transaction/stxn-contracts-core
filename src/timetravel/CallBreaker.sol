@@ -27,23 +27,32 @@ contract CallBreaker is CallBreakerStorage {
     bytes32[] public associatedDataKeyList;
     mapping(bytes32 => AssociatedData) public associatedDataStore;
 
-    // @dev Selector 0xc8acbe62
+    /// @dev Error thrown when there are no return values left
+    /// @dev Selector 0xc8acbe62
     error OutOfReturnValues();
-    // @dev Selector 0x75483b53
+    /// @dev Error thrown when there is not enough Ether left
+    /// @dev Selector 0x75483b53
     error OutOfEther();
-    // @dev Selector 0x3204506f
+    /// @dev Error thrown when a call fails
+    /// @dev Selector 0x3204506f
     error CallFailed();
-    // @dev Selector 0x8489203a
+    /// @dev Error thrown when call-return pairs don't have balanced counts
+    /// @dev Selector 0x8489203a
     error TimeImbalance();
-    // @dev Selector 0xc047a184
+    /// @dev Error thrown when receiving empty calldata
+    /// @dev Selector 0xc047a184
     error EmptyCalldata();
-    // @dev Selector 0xff633a38
+    /// @dev Error thrown when there is a length mismatch
+    /// @dev Selector 0xff633a38
     error LengthMismatch();
-    // @dev Selector 0xcc68b8ba
+    /// @dev Error thrown when call verification fails
+    /// @dev Selector 0xcc68b8ba
     error CallVerificationFailed();
-    // @dev Selector 0xdba5f6f9
+    /// @dev Error thrown when index of the callObj doesn't match the index of the returnObj
+    /// @dev Selector 0xdba5f6f9
     error IndexMismatch(uint256, uint256);
-    // @dev Selector 0xaa1ba2f8
+    /// @dev Error thrown when key already exists in the associatedDataStore
+    /// @dev Selector 0xaa1ba2f8
     error KeyAlreadyExists();
 
     /// @notice Emitted when a new key-value pair is inserted into the associatedDataStore
@@ -104,16 +113,17 @@ contract CallBreaker is CallBreakerStorage {
         return associatedData.value;
     }
 
-    /// this: takes in a call (structured as a CallObj), puts out a return value from the record of return values.
-    /// also: does some accounting that we saw a given pair of call and return values once, and returns a thing off the emulated stack.
-    /// called as reentrancy in order to balance the calls of the solution and make things validate.
+    /// @notice Executes a call and returns a value from the record of return values.
+    /// @dev This function also does some accounting to track the occurrence of a given pair of call and return values.
+    /// It is called as reentrancy in order to balance the calls of the solution and make things validate.
+    /// @param input The call to be executed, structured as a CallObject.
+    /// @return The return value from the record of return values.
     function enterPortal(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
         // Ensure there's at least one return value available
         if (returnStore.length == 0) {
             revert OutOfReturnValues();
         }
 
-        // Fetch and remove the last ReturnObject from storage
         ReturnObjectWithIndex memory lastReturn = popLastReturn();
 
         // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
@@ -139,13 +149,15 @@ contract CallBreaker is CallBreakerStorage {
     }
 
     /// @notice Verifies that the given calls, when executed, gives the correct return values
+    /// @dev SECURITY NOTICE: This function is only callable when the portal is closed. It requires the caller to be an EOA.
+    /// @param callsBytes The bytes representing the calls to be verified
+    /// @param returnsBytes The bytes representing the returns to be verified against
+    /// @param associatedData Bytes representing associated data with the verify call, reserved for tipping the solver
     function verify(bytes memory callsBytes, bytes memory returnsBytes, bytes memory associatedData)
         external
         payable
         onlyPortalClosed
     {
-        // pretty sure the first check isn't necessary?
-        //require(tx.origin == msg.sender, "Caller must be an EOA");
         require(msg.sender.code.length == 0, "msg.sender must be an EOA");
 
         CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
@@ -173,6 +185,7 @@ contract CallBreaker is CallBreakerStorage {
     }
 
     /// @dev Resets the returnStore with the given ReturnObject array
+    /// @param return_s The array of ReturnObject to reset the returnStore with
     function resetReturnStoreWith(ReturnObject[] memory return_s) internal {
         delete returnStore;
         for (uint256 i = 0; i < return_s.length; i++) {
@@ -182,6 +195,7 @@ contract CallBreaker is CallBreakerStorage {
     }
 
     /// @dev Executes a single call and verifies the result by generating the call-return pair ID
+    /// @param callObj The CallObject to be executed and verified
     function executeAndVerifyCall(CallObject memory callObj) internal {
         if (callObj.amount > address(this).balance) {
             revert OutOfEther();
@@ -228,7 +242,6 @@ contract CallBreaker is CallBreakerStorage {
 
     /// @dev Helper function to decrement the balance of a call-return pair in the storage.
     /// @param pairID The unique identifier for a call-return pair.
-    ///
     function decrementCallBalance(bytes32 pairID) internal {
         if (!callbalanceStore[pairID].set) {
             callbalanceStore[pairID].balance = -1;
