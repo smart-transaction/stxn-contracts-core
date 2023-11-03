@@ -7,6 +7,7 @@ import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../../test/examples/SelfCheckout.sol";
 import "../../test/examples/MyErc20.sol";
+import "../../src/tips/Tips.sol";
 
 contract WorkedExampleLib {
     CallBreaker public callbreaker;
@@ -15,6 +16,9 @@ contract WorkedExampleLib {
     Laminator public laminator;
     MyErc20 public erc20a;
     MyErc20 public erc20b;
+    Tips public tips;
+
+    uint256 _tipWei = 100000000000000000;
 
     function deployerLand(address pusher, address filler) public {
         // Initializing contracts
@@ -22,6 +26,7 @@ contract WorkedExampleLib {
         callbreaker = new CallBreaker();
         erc20a = new MyErc20("A", "A");
         erc20b = new MyErc20("B", "B");
+        tips = new Tips(address(callbreaker));
 
         // give the pusher 10 erc20a
         erc20a.mint(pusher, 10);
@@ -34,20 +39,24 @@ contract WorkedExampleLib {
 
         // set up a selfcheckout
         selfcheckout = new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
+
+        // give the pusher some eth
+        pusherLaminated.transfer(10000000000000000000);
     }
 
     function userLand() public returns (uint256) {
         // Userland operations
         erc20a.transfer(pusherLaminated, 10);
         CallObject[] memory pusherCallObjs = new CallObject[](2);
-        pusherCallObjs[0] = CallObject({
+        pusherCallObjs[0] = CallObject({amount: _tipWei, addr: address(tips), gas: 10000000, callvalue: ""});
+        pusherCallObjs[1] = CallObject({
             amount: 0,
             addr: address(erc20a),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), 10)
         });
 
-        pusherCallObjs[1] = CallObject({
+        pusherCallObjs[2] = CallObject({
             amount: 0,
             addr: address(selfcheckout),
             gas: 1000000,
@@ -74,8 +83,9 @@ contract WorkedExampleLib {
         });
         // should return a list of the return value of approve + takesomeatokenfrompusher in a list of returnobjects, abi packed, then stuck into another returnobject.
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](2);
-        returnObjsFromPull[0] = ReturnObject({returnvalue: abi.encode(true)});
-        returnObjsFromPull[1] = ReturnObject({returnvalue: ""});
+        returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
+        returnObjsFromPull[1] = ReturnObject({returnvalue: abi.encode(true)});
+        returnObjsFromPull[2] = ReturnObject({returnvalue: ""});
         // double encoding because first here second in pull()
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
@@ -102,7 +112,7 @@ contract WorkedExampleLib {
 
         // Constructing something that'll decode happily
         bytes32[] memory keys = new bytes32[](1);
-        keys[0] = keccak256(abi.encodePacked("swapPartner"));
+        keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
         bytes[] memory values = new bytes[](1);
         values[0] = abi.encode(filler);
         bytes memory encodedData = abi.encode(keys, values);
