@@ -54,6 +54,9 @@ contract CallBreaker is CallBreakerStorage {
     /// @dev Error thrown when key already exists in the associatedDataStore
     /// @dev Selector 0xaa1ba2f8
     error KeyAlreadyExists();
+    /// @dev Error thrown when a nonexistent key is fetched from the associatedDataStore
+    /// @dev Selector 0xf7c16a37
+    error NonexistentKey();
 
     /// @notice Emitted when a new key-value pair is inserted into the associatedDataStore
     event InsertIntoAssociatedDataStore(bytes32 key, bytes value);
@@ -90,6 +93,16 @@ contract CallBreaker is CallBreakerStorage {
         return this.enterPortal(input);
     }
 
+    /// @notice Fetches the value associated with a given key from the associatedDataStore
+    /// @param key The key whose associated value is to be fetched
+    /// @return The value associated with the given key
+    function fetchFromAssociatedDataStore(bytes32 key) public view returns (bytes memory) {
+        if (!associatedDataStore[key].set) {
+            revert NonexistentKey();
+        }
+        return associatedDataStore[key].value;
+    }
+
     /// @notice Generates a unique ID for a pair of CallObject and ReturnObject
     /// @param callObj The CallObject instance containing details of the call
     /// @param returnObj The ReturnObject instance containing details of the return value
@@ -98,19 +111,6 @@ contract CallBreaker is CallBreakerStorage {
     function getCallReturnID(CallObject memory callObj, ReturnObject memory returnObj) public pure returns (bytes32) {
         // Use keccak256 to generate a unique ID for a pair of CallObject and ReturnObject.
         return keccak256(abi.encode(callObj, returnObj));
-    }
-
-    /// @notice Fetches the value associated with a given key from the associatedDataStore
-    /// @param key The key whose associated value is to be fetched
-    /// @return The value associated with the given key
-    function fetchFromAssociatedDataStore(bytes32 key) public view returns (bytes memory) {
-        AssociatedData memory associatedData = associatedDataStore[key];
-
-        // Check if the key exists in the associatedDataStore
-        require(associatedData.set, "Key does not exist in the associatedDataStore");
-
-        // Return the value associated with the key
-        return associatedData.value;
     }
 
     /// @notice Executes a call and returns a value from the record of return values.

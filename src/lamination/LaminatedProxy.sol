@@ -86,17 +86,6 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         _;
     }
 
-    /// @notice Views a deferred function call with a given sequence number.
-    /// @dev Returns a tuple containing a boolean indicating whether the deferred call exists,
-    ///      and the CallObject containing details of the deferred function call.
-    /// @param seqNumber The sequence number of the deferred function call to view.
-    /// @return exists A boolean indicating whether the deferred call exists.
-    /// @return callObj The CallObject containing details of the deferred function call.
-    function viewDeferredCall(uint256 seqNumber) public view returns (bool, CallObject[] memory) {
-        CallObjectHolder memory coh = deferredCalls[seqNumber];
-        return (coh.initialized, coh.callObjs);
-    }
-
     /// @notice Constructs a new contract instance - usually called by the Laminator contract
     /// @dev Initializes the contract, setting the owner and laminator addresses.
     /// @param _laminator The address of the laminator contract.
@@ -124,6 +113,17 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
             revert NotProxy();
         }
         return _copyJob(_executingSequenceNumber, delay, shouldCopy);
+    }
+
+    /// @notice Views a deferred function call with a given sequence number.
+    /// @dev Returns a tuple containing a boolean indicating whether the deferred call exists,
+    ///      and the CallObject containing details of the deferred function call.
+    /// @param seqNumber The sequence number of the deferred function call to view.
+    /// @return exists A boolean indicating whether the deferred call exists.
+    /// @return callObj The CallObject containing details of the deferred function call.
+    function viewDeferredCall(uint256 seqNumber) public view returns (bool, CallObject[] memory) {
+        CallObjectHolder memory coh = deferredCalls[seqNumber];
+        return (coh.initialized, coh.callObjs);
     }
 
     /// @notice Pushes a deferred function call to be executed after a certain delay.

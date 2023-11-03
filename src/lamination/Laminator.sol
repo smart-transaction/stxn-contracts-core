@@ -43,7 +43,7 @@ contract Laminator is ILaminator {
 
     /// @notice Gets the next sequence number of the LaminatedProxy associated with the sender.
     /// @return sequenceNumber The sequence number of the next deferred function call.
-    function getMyCount() public view returns (uint256) {
+    function getNextSeqNumber() public view returns (uint256) {
         address addr = computeProxyAddress(msg.sender);
         uint32 size;
         assembly {
