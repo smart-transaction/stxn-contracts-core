@@ -33,7 +33,7 @@ contract CronTwoTest is Test, CronTwoLib {
         vm.label(filler, "filler");
     }
 
-    function test_run1CronTwo() external {
+    function testFail_run1CronTwo() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
@@ -62,7 +62,8 @@ contract CronTwoTest is Test, CronTwoLib {
 
         assertFalse(callbreaker.isPortalOpen());
 
+        //  Should be cleared so init should be false (testFail format is for compliance with Kontrol framework)
         (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
-        assertEq(init, false);
+        assertTrue(init);
     }
 }
