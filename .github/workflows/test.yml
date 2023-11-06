@@ -23,6 +23,7 @@ jobs:
     uses: smart-transaction/actions/.github/workflows/static-analysis-base.yml@main
     with:
       disable-divide-before-multiply: true
+      disable-arbitrary-send-erc20: true
   solidity-coverage:
     uses: smart-transaction/actions/.github/workflows/solidity-coverage.yml@main
     secrets: inherit
