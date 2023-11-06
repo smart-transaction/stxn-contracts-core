@@ -91,7 +91,7 @@ contract SelfCheckout {
                 callvalue: abi.encodeWithSignature("checkBalance()")
             });
             emit LogCallObj(callObj);
-            CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 3});
+            CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 2});
 
             (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObjectWithIndex));
 
@@ -116,24 +116,49 @@ contract SelfCheckout {
         } else {
             imbalance = 0;
         }
-
-        // balance the timeturner by calling yourself
-        // CallObject memory callObj = CallObject({
-        //     amount: 0,
-        //     addr: address(this),
-        //     gas: 1000000,
-        //     callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", btokenamount)
-        // });
-        // (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObj));
-
-        // if (!success) {
-        //     revert("turner CallFailed");
-        // }
     }
 
     // check that you don't owe me anything.
     function checkBalance() public {
         require(imbalance == 0, "You still owe me some btoken!");
         balanceScheduled = false;
+
+        // clear the portal
+        bytes32 xkey = keccak256(abi.encodePacked("x"));
+        bytes memory xbytes =
+            CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(xkey);
+        uint256 x = abi.decode(xbytes, (uint256));
+        CallObject memory callObj = CallObject({
+            amount: 0,
+            addr: address(this),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
+        });
+        CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 1});
+
+        (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObjectWithIndex));
+        if (!success) {
+            revert("turner1 CallFailed");
+        }
+
+        bytes32 pusherLaminatedKey = keccak256(abi.encodePacked("pusherLaminated"));
+        bytes memory pusherLaminatedBytes =
+            CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(pusherLaminatedKey);
+        address pusherLaminated = abi.decode(pusherLaminatedBytes, (address));
+        bytes32 seqNumkey = keccak256(abi.encodePacked("seqNum"));
+        bytes memory seqNumBytes =
+            CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(seqNumkey);
+        uint256 seqNum = abi.decode(seqNumBytes, (uint256));
+        callObj = CallObject({
+            amount: 0,
+            addr: pusherLaminated,
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature("pull(uint256)",seqNum)
+        });
+        callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 0});
+        (success, returnvalue) = callbreakerAddress.call(abi.encode(callObjectWithIndex));
+        if (!success) {
+            revert("turner2 CallFailed");
+        }
     }
 }

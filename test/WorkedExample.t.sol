@@ -22,7 +22,7 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         filler = address(300);
 
         // give the pusher some eth
-        vm.deal(pusherLaminated, 100 ether);
+        vm.deal(pusher, 100 ether);
 
         // start deployer land
         vm.startPrank(deployer);

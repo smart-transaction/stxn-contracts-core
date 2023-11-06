@@ -43,8 +43,9 @@ contract WorkedExampleLib {
 
     function userLand() public returns (uint256) {
         // Userland operations
+        pusherLaminated.transfer(1 ether);
         erc20a.transfer(pusherLaminated, 10);
-        CallObject[] memory pusherCallObjs = new CallObject[](2);
+        CallObject[] memory pusherCallObjs = new CallObject[](3);
         pusherCallObjs[0] = CallObject({amount: _tipWei, addr: address(tips), gas: 10000000, callvalue: ""});
         pusherCallObjs[1] = CallObject({
             amount: 0,
@@ -68,8 +69,8 @@ contract WorkedExampleLib {
         erc20b.approve(address(selfcheckout), x);
 
         // TODO: Refactor these parts further if necessary.
-        CallObject[] memory callObjs = new CallObject[](5);
-        ReturnObject[] memory returnObjs = new ReturnObject[](5);
+        CallObject[] memory callObjs = new CallObject[](3);
+        ReturnObject[] memory returnObjs = new ReturnObject[](3);
 
         // first we're going to call takeSomeAtokenFromOwner by pulling from the laminator
         callObjs[0] = CallObject({
@@ -79,7 +80,7 @@ contract WorkedExampleLib {
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
         // should return a list of the return value of approve + takesomeatokenfrompusher in a list of returnobjects, abi packed, then stuck into another returnobject.
-        ReturnObject[] memory returnObjsFromPull = new ReturnObject[](2);
+        ReturnObject[] memory returnObjsFromPull = new ReturnObject[](3);
         returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
         returnObjsFromPull[1] = ReturnObject({returnvalue: abi.encode(true)});
         returnObjsFromPull[2] = ReturnObject({returnvalue: ""});
@@ -108,10 +109,18 @@ contract WorkedExampleLib {
         returnObjs[2] = ReturnObject({returnvalue: ""});
 
         // Constructing something that'll decode happily
-        bytes32[] memory keys = new bytes32[](1);
+        bytes32[] memory keys = new bytes32[](5);
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
-        bytes[] memory values = new bytes[](1);
+        keys[1] = keccak256(abi.encodePacked("swapPartner"));
+        keys[2] = keccak256(abi.encodePacked("pusherLaminated"));
+        keys[3] = keccak256(abi.encodePacked("x"));
+        keys[4] = keccak256(abi.encodePacked("seqNum"));
+        bytes[] memory values = new bytes[](5);
         values[0] = abi.encode(filler);
+        values[1] = abi.encode(filler);
+        values[2] = abi.encode(pusherLaminated);
+        values[3] = abi.encode(x);
+        values[4] = abi.encode(laminatorSequenceNumber);
         bytes memory encodedData = abi.encode(keys, values);
 
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData);
