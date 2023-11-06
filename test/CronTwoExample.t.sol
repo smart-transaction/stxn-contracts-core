@@ -65,7 +65,6 @@ contract CronTwoTest is Test, CronTwoLib {
         //  Should be cleared so init should be false (testFail format is for compliance with Kontrol framework)
         (bool init,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
 
-        
         assertFalse(init);
     }
 }

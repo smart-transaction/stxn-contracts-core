@@ -35,7 +35,7 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         vm.label(filler, "filler");
     }
 
-    function testrun1() external {
+    function test_workedExample() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);

@@ -24,5 +24,4 @@ contract Tips {
         emit Tip(msg.sender, tipAddr, msg.value);
         payable(tipAddr).transfer(msg.value);
     }
-
 }

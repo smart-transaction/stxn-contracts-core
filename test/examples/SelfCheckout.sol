@@ -125,8 +125,7 @@ contract SelfCheckout {
 
         // clear the portal
         bytes32 xkey = keccak256(abi.encodePacked("x"));
-        bytes memory xbytes =
-            CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(xkey);
+        bytes memory xbytes = CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(xkey);
         uint256 x = abi.decode(xbytes, (uint256));
         CallObject memory callObj = CallObject({
             amount: 0,
@@ -146,14 +145,13 @@ contract SelfCheckout {
             CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(pusherLaminatedKey);
         address pusherLaminated = abi.decode(pusherLaminatedBytes, (address));
         bytes32 seqNumkey = keccak256(abi.encodePacked("seqNum"));
-        bytes memory seqNumBytes =
-            CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(seqNumkey);
+        bytes memory seqNumBytes = CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(seqNumkey);
         uint256 seqNum = abi.decode(seqNumBytes, (uint256));
         callObj = CallObject({
             amount: 0,
             addr: pusherLaminated,
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("pull(uint256)",seqNum)
+            callvalue: abi.encodeWithSignature("pull(uint256)", seqNum)
         });
         callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 0});
         (success, returnvalue) = callbreakerAddress.call(abi.encode(callObjectWithIndex));
