@@ -20,7 +20,7 @@ jobs:
     with:
       disable-gas-snapshot: true # disabling gas snapshot until one is present
   static-analysis-base:
-    uses: smart-transaction/actions/.github/workflows/static-analyze-base.yml@main
+    uses: smart-transaction/actions/.github/workflows/static-analysis-base.yml@main
     with:
       disable-divide-before-multiply: true
   solidity-coverage:
