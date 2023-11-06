@@ -4,14 +4,12 @@ pragma solidity >=0.6.2 <0.9.0;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
-import "./solve-lib/WorkedExample.sol";
+import "./solve-lib/CronTwo.sol";
 
 import "../src/lamination/Laminator.sol";
 import "../src/timetravel/CallBreaker.sol";
-import "../test/examples/SelfCheckout.sol";
-import "../test/examples/MyErc20.sol";
 
-contract WorkedExampleTest is Test, WorkedExampleLib {
+contract CronTwoTest is Test, CronTwoLib {
     address deployer;
     address pusher;
     address filler;
@@ -22,11 +20,11 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         filler = address(300);
 
         // give the pusher some eth
-        vm.deal(pusherLaminated, 100 ether);
+        vm.deal(pusher, 100 ether);
 
         // start deployer land
         vm.startPrank(deployer);
-        deployerLand(pusher, filler);
+        deployerLand(pusher);
         vm.stopPrank();
 
         // Label operations in the run function.
@@ -35,28 +33,39 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         vm.label(filler, "filler");
     }
 
-    function testrun1() external {
+    function testrun1CronTwo() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
         laminatorSequenceNumber = userLand();
         vm.stopPrank();
 
+        uint256 initialFillerBalance = address(filler).balance;
+
         // go forward in time
         vm.roll(block.number + 1);
 
         vm.startPrank(filler);
-        solverLand(laminatorSequenceNumber, filler, 20);
+
+        solverLand(laminatorSequenceNumber, filler, true);
+
         vm.stopPrank();
 
-        assertEq(erc20a.balanceOf(pusherLaminated), 0);
-        assertEq(erc20b.balanceOf(pusherLaminated), 20);
-        assertEq(erc20a.balanceOf(filler), 10);
-        assertEq(erc20b.balanceOf(filler), 0);
+        vm.roll(block.number + 8000);
+
+        vm.startPrank(filler);
+        solverLand(laminatorSequenceNumber, filler, false);
+        vm.stopPrank();
+
+        assertEq(counter.getCount(pusherLaminated), 2);
+        assertEq(address(filler).balance, initialFillerBalance + 2 * 33);
+
         assertFalse(callbreaker.isPortalOpen());
 
-        (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
-        // Test should fail here because we already solved and cleared the tx!
+        //  Should be cleared so init should be false (testFail format is for compliance with Kontrol framework)
+        (bool init,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
+
+        
         assertFalse(init);
     }
 }

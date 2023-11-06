@@ -21,9 +21,6 @@ contract CronDeposits {
     }
 
     function deposit(uint256 atokenamount) public {
-        // if you're calling me, you'd better be pulling my funds out before you finish.
-        // let's make sure that happens in the timeturner :)
-        // ... we don't check who pulls out the funds... that's the fun part ;)
         require(CallBreaker(payable(_callbreakerAddress)).isPortalOpen(), "CallBreaker is not open");
 
         // if checking the balance isn't scheduled, schedule it.
@@ -35,7 +32,9 @@ contract CronDeposits {
                 callvalue: abi.encodeWithSignature("ensureFundless()")
             });
 
-            (bool success, bytes memory returnValue) = _callbreakerAddress.call(abi.encode(callObj));
+            CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 3});
+
+            (bool success,) = _callbreakerAddress.call(abi.encode(callObjectWithIndex));
 
             if (!success) {
                 revert("turner CallFailed");

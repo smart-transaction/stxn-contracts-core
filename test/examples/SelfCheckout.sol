@@ -33,9 +33,6 @@ contract SelfCheckout {
     // tracks if we've called checkBalance yet. if not it needs to be.
     bool balanceScheduled = false;
 
-    // when a debt is taken out of the protocol, it goes here. should be called right before executing a pull...
-    address swapPartner;
-
     event DebugAddress(string message, address value);
     event DebugInfo(string message, string value);
     event DebugUint(string message, uint256 value);
@@ -65,12 +62,16 @@ contract SelfCheckout {
     function getExchangeRate() public view returns (uint256) {
         return exchangeRate;
     }
+
     function getCallBreaker() public view returns (address) {
         return callbreakerAddress;
     }
 
-    function setSwapPartner(address _swapPartner) public {
-        swapPartner = _swapPartner;
+    function getSwapPartner() public returns (address) {
+        bytes32 swapPartnerKey = keccak256(abi.encodePacked("swapPartner"));
+        bytes memory swapPartnerBytes =
+            CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(swapPartnerKey);
+        return abi.decode(swapPartnerBytes, (address));
     }
 
     event LogCallObj(CallObject callObj);
@@ -90,8 +91,9 @@ contract SelfCheckout {
                 callvalue: abi.encodeWithSignature("checkBalance()")
             });
             emit LogCallObj(callObj);
+            CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 3});
 
-            (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObj));
+            (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObjectWithIndex));
 
             if (!success) {
                 revert("turner CallFailed");
@@ -99,32 +101,14 @@ contract SelfCheckout {
             balanceScheduled = true;
         }
 
-        // // balance the timeturner by calling yourself
-        // CallObject memory callObj = CallObject({
-        //     amount: 0,
-        //     addr: address(this),
-        //     gas: 1000000,
-        //     callvalue: abi.encodeWithSignature("takeSomeATokenFromOwner(uint256)", atokenamount)
-        // });
-        // (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObj));
-
-        // if (!success) {
-        //     revert("turner CallFailed");
-        // }
-
         // compute amount owed
         imbalance += atokenamount * exchangeRate;
-        // get da tokens
-        // Debugging information
-
-        // ok so the problem is, transfer is transferring from selfcheckout to the swapPartner, not from the owner to the swapPartner.
-        // so ... uhhh ... when do we approve?
-        require(atoken.transferFrom(owner, swapPartner, atokenamount), "AToken transfer failed");
+        require(atoken.transferFrom(owner, getSwapPartner(), atokenamount), "AToken transfer failed");
     }
 
     // repay your debts.
     function giveSomeBtokenToOwner(uint256 btokenamount) public {
-        btoken.transferFrom(swapPartner, owner, btokenamount);
+        btoken.transferFrom(getSwapPartner(), owner, btokenamount);
 
         // if you've paid your debt, set imbalance to zero, if not, reduce accordingly
         if (imbalance > btokenamount) {

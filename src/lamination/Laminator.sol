@@ -41,6 +41,21 @@ contract Laminator is ILaminator {
         return address(uint160(uint256(hash)));
     }
 
+    /// @notice Gets the next sequence number of the LaminatedProxy associated with the sender.
+    /// @return sequenceNumber The sequence number of the next deferred function call.
+    function getNextSeqNumber() public view returns (uint256) {
+        address addr = computeProxyAddress(msg.sender);
+        uint32 size;
+        assembly {
+            size := extcodesize(addr)
+        }
+        if (size == 0) {
+            return 0;
+        } else {
+            return LaminatedProxy(payable(addr)).count();
+        }
+    }
+
     /// @notice Calls the `push` function into the LaminatedProxy associated with the sender.
     /// @dev Encodes the provided calldata and calls it into the `push` function of the proxy contract.
     ///      A new proxy will be created if one does not already exist for the sender.

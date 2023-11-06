@@ -19,8 +19,10 @@ contract NoopTurner {
             callvalue: abi.encodeWithSignature("const_loop(uint16)", input)
         });
 
+        CallObjectWithIndex memory callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 0});
+
         // call, hit the fallback.
-        (bool success, bytes memory returnvalue) = _callbreakerAddress.call(abi.encode(callObj));
+        (bool success, bytes memory returnvalue) = _callbreakerAddress.call(abi.encode(callObjWithIndex));
 
         if (!success) {
             revert("turner CallFailed");

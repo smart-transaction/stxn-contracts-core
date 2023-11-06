@@ -3,14 +3,27 @@ pragma solidity >=0.6.2 <0.9.0;
 
 import "../TimeTypes.sol";
 import "./LaminatedStorage.sol";
+import "openzeppelin/security/ReentrancyGuard.sol";
 
-contract LaminatedProxy is LaminatedStorage {
+contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @notice The map from sequence number to calls held in the mempool.
     mapping(uint256 => CallObjectHolder) public deferredCalls;
+    /// @notice The sequence number of the currently executing call.
+    uint256 _executingSequenceNumber;
+    /// @notice A flag indicating whether a sequence number is currently being executed.
+    bool _executingSequenceNumberSet;
+
+    /// @notice Some functions must be called by the laminator or the proxy only.
+    /// @dev Selector 0xfc51f672
+    error NotLaminatorOrProxy();
 
     /// @notice Some functions must be called by the laminator only.
     /// @dev Selector 0x91c58dcd
     error NotLaminator();
+
+    /// @notice Some functions must be called by the laminator or the proxy only.
+    /// @dev Selector 0xbf10dd3a
+    error NotProxy();
 
     /// @notice Calls pulled from the mempool must have been previously pushed and initialized.
     /// @dev Selector 0x1c72fad4
@@ -23,6 +36,9 @@ contract LaminatedProxy is LaminatedStorage {
     /// @notice Call pulled from the mempool failed to execute.
     /// @dev Selector 0x3204506f
     error CallFailed();
+
+    /// @notice The sequence number of a deferred call must be set before it can be executed.
+    error SeqNumberNotSet();
 
     /// @dev Emitted when a function call is deferred and added to the queue.
     /// @param callObjs The CallObject[] containing details of the deferred function call.
@@ -43,6 +59,15 @@ contract LaminatedProxy is LaminatedStorage {
     /// @param currentBlock The current block number.
     event CallableBlock(uint256 callableBlock, uint256 currentBlock);
 
+    /// @dev Modifier to make a function callable only by the proxy.
+    ///      Reverts the transaction if the sender is not the proxy.
+    modifier onlyProxy() {
+        if (msg.sender != address(this)) {
+            revert NotProxy();
+        }
+        _;
+    }
+
     /// @dev Modifier to make a function callable only by the laminator.
     ///      Reverts the transaction if the sender is not the laminator.
     modifier onlyLaminator() {
@@ -52,15 +77,13 @@ contract LaminatedProxy is LaminatedStorage {
         _;
     }
 
-    /// @notice Views a deferred function call with a given sequence number.
-    /// @dev Returns a tuple containing a boolean indicating whether the deferred call exists,
-    ///      and the CallObject containing details of the deferred function call.
-    /// @param seqNumber The sequence number of the deferred function call to view.
-    /// @return exists A boolean indicating whether the deferred call exists.
-    /// @return callObj The CallObject containing details of the deferred function call.
-    function viewDeferredCall(uint256 seqNumber) public view returns (bool, CallObject[] memory) {
-        CallObjectHolder memory coh = deferredCalls[seqNumber];
-        return (coh.initialized, coh.callObjs);
+    /// @dev Modifier to make a function callable only by the laminator or proxy.
+    ///      Reverts the transaction if the sender is not the laminator or proxy.
+    modifier onlyLaminatorOrProxy() {
+        if (msg.sender != address(laminator()) && msg.sender != address(this)) {
+            revert NotLaminatorOrProxy();
+        }
+        _;
     }
 
     /// @notice Constructs a new contract instance - usually called by the Laminator contract
@@ -76,14 +99,46 @@ contract LaminatedProxy is LaminatedStorage {
     /// @dev The received Ether can be spent via the `execute`, `push`, and `pull` functions.
     receive() external payable {}
 
+    /// @notice Copies the current job with a specified delay and condition.
+    /// @dev This function can only be called by the LaminatedProxy contract itself.
+    ///      It reverts if the sequence number is not set or if the sender is not the proxy.
+    /// @param delay The number of blocks to delay before the copied job can be executed.
+    /// @param shouldCopy The condition under which the job should be copied.
+    /// @return The sequence number of the copied job.
+    function copyCurrentJob(uint256 delay, bytes memory shouldCopy) public returns (uint256) {
+        if (!_executingSequenceNumberSet) {
+            revert SeqNumberNotSet();
+        }
+        if (msg.sender != address(this)) {
+            revert NotProxy();
+        }
+        return _copyJob(_executingSequenceNumber, delay, shouldCopy);
+    }
+
+    /// @notice Views a deferred function call with a given sequence number.
+    /// @dev Returns a tuple containing a boolean indicating whether the deferred call exists,
+    ///      and the CallObject containing details of the deferred function call.
+    /// @param seqNumber The sequence number of the deferred function call to view.
+    /// @return exists A boolean indicating whether the deferred call exists.
+    /// @return callObj The CallObject containing details of the deferred function call.
+    function viewDeferredCall(uint256 seqNumber) public view returns (bool, CallObject[] memory) {
+        CallObjectHolder memory coh = deferredCalls[seqNumber];
+        return (coh.initialized, coh.callObjs);
+    }
+
     /// @notice Pushes a deferred function call to be executed after a certain delay.
     /// @dev Adds a new CallObject to the `deferredCalls` mapping and emits a CallPushed event.
-    ///      The function can only be called by the contract owner.
+    ///      The function can only be called by the Laminator or the LaminatedProxy contract itself.
+    ///      It can also be called re-entrantly to enable the contract to do cronjobs with tail recursion.
     /// @param input The encoded CallObject containing information about the function call to defer.
     /// @param delay The number of blocks to delay before the function call can be executed.
     ///      Use 0 for no delay.
     /// @return callSequenceNumber The sequence number assigned to this deferred call.
-    function push(bytes calldata input, uint32 delay) external onlyLaminator returns (uint256 callSequenceNumber) {
+    function push(bytes calldata input, uint32 delay)
+        external
+        onlyLaminatorOrProxy
+        returns (uint256 callSequenceNumber)
+    {
         CallObject[] memory callObjs = abi.decode(input, (CallObject[]));
         callSequenceNumber = count();
         CallObjectHolder storage holder = deferredCalls[callSequenceNumber];
@@ -105,8 +160,10 @@ contract LaminatedProxy is LaminatedStorage {
     ///      the deferred call object from the `deferredCalls` mapping.
     /// @param seqNumber The sequence number of the deferred call to be executed.
     /// @return returnValue The return value of the executed deferred call.
-    function pull(uint256 seqNumber) external returns (bytes memory returnValue) {
+    function pull(uint256 seqNumber) external nonReentrant returns (bytes memory returnValue) {
         CallObjectHolder memory coh = deferredCalls[seqNumber];
+        _executingSequenceNumber = seqNumber;
+        _executingSequenceNumberSet = true;
         if (!coh.initialized) {
             revert Uninitialized();
         }
@@ -119,6 +176,7 @@ contract LaminatedProxy is LaminatedStorage {
         returnValue = _execute(coh.callObjs);
         emit CallPulled(coh.callObjs, seqNumber);
         delete deferredCalls[seqNumber];
+        _executingSequenceNumberSet = false;
     }
 
     /// @notice Executes a function call immediately.
@@ -126,9 +184,20 @@ contract LaminatedProxy is LaminatedStorage {
     ///      Can only be invoked by the owner of the contract.
     /// @param input The encoded CallObject containing information about the function call to execute.
     /// @return returnValue The return value from the executed function call.
-    function execute(bytes calldata input) external onlyLaminator returns (bytes memory) {
+    function execute(bytes calldata input) external onlyLaminator nonReentrant returns (bytes memory) {
         CallObject[] memory callsToMake = abi.decode(input, (CallObject[]));
         return _execute(callsToMake);
+    }
+
+    /// @notice Returns the sequence number of the currently executing call.
+    /// @dev This function can only be called when a sequence number is currently being executed.
+    ///      It reverts if no sequence number is set.
+    /// @return The sequence number of the currently executing call.
+    function getExecutingSequenceNumber() external view returns (uint256) {
+        if (!_executingSequenceNumberSet) {
+            revert SeqNumberNotSet();
+        }
+        return _executingSequenceNumber;
     }
 
     /// @dev Executes the function call specified by the CallObject `callToMake`.
@@ -143,13 +212,55 @@ contract LaminatedProxy is LaminatedStorage {
         return abi.encode(returnObjs);
     }
 
+    /// @dev Executes a single function call specified by the CallObject `callToMake`.
+    ///      Emits a `CallExecuted` event upon successful execution.
+    /// @param callToMake The CallObject containing information about the function call to execute.
+    /// @return returnvalue The return value from the executed function call.
     function _executeSingle(CallObject memory callToMake) internal returns (bytes memory) {
-        (bool success, bytes memory returnvalue) =
-            callToMake.addr.call{gas: callToMake.gas, value: callToMake.amount}(callToMake.callvalue);
+        bool success;
+        bytes memory returnvalue;
+
+            (success, returnvalue) =
+                callToMake.addr.call{gas: callToMake.gas, value: callToMake.amount}(callToMake.callvalue);
         if (!success) {
             revert CallFailed();
         }
+
         emit CallExecuted(callToMake);
         return returnvalue;
+    }
+
+    /// @dev Copies a job with a specified delay and condition.
+    /// @param seqNumber The sequence number of the job to be copied.
+    /// @param delay The number of blocks to delay before the copied job can be executed.
+    /// @param shouldCopy The condition under which the job should be copied.
+    /// @return The sequence number of the copied job.
+    function _copyJob(uint256 seqNumber, uint256 delay, bytes memory shouldCopy) internal returns (uint256) {
+        if (shouldCopy.length != 0) {
+            CallObject memory callObj = abi.decode(shouldCopy, (CallObject));
+            bytes memory result = _executeSingle(callObj);
+            bool shouldContinue = abi.decode(result, (bool));
+            if (!shouldContinue) {
+                return 0;
+            }
+        }
+
+        CallObjectHolder memory coh = deferredCalls[seqNumber];
+        if (!coh.initialized) {
+            revert Uninitialized();
+        }
+        CallObject[] memory callObjs = coh.callObjs;
+        uint256 callSequenceNumber = count();
+        CallObjectHolder storage holder = deferredCalls[callSequenceNumber];
+        holder.initialized = true;
+        holder.firstCallableBlock = block.number + delay;
+        for (uint256 i = 0; i < callObjs.length; ++i) {
+            holder.callObjs.push(callObjs[i]);
+        }
+
+        emit CallableBlock(block.number, block.number);
+        emit CallPushed(callObjs, callSequenceNumber);
+        _incrementSequenceNumber();
+        return callSequenceNumber;
     }
 }

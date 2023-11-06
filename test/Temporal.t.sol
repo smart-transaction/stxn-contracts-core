@@ -33,7 +33,7 @@ contract TemporalExampleTest is Test, TemporalExampleLib {
     }
 
     // All of the following tests are `testFail` to conform to `Kontrol` framework standards.
-    function testFail_temporal_run() external {
+    function test_temporal_run() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
@@ -51,18 +51,21 @@ contract TemporalExampleTest is Test, TemporalExampleLib {
         assertEq(!callbreaker.isPortalOpen(), true);
 
         (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
-        assertTrue(init);
+        assertEq(init, false);
     }
 
-    // Test works, but vm.expectRevert() is kinda being weird with not expecting the right call to revert.
     function testFail_run_at_wrong_time() external {
         uint256 laminatorSequenceNumber;
 
-        vm.startPrank(pusher); laminatorSequenceNumber = userLand(); vm.stopBroadcast();
+        vm.startPrank(pusher);
+        laminatorSequenceNumber = userLand();
+        vm.stopPrank();
 
         // go forward in time
         vm.roll(block.number + 1);
 
-        vm.startPrank(filler); solverLand(laminatorSequenceNumber, filler); vm.stopBroadcast();
+        vm.startPrank(filler);
+        solverLand(laminatorSequenceNumber, filler);
+        vm.stopPrank();
     }
 }
