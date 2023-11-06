@@ -43,6 +43,8 @@ contract WorkedExampleLib {
 
     function userLand() public returns (uint256) {
         // Userland operations
+        // Here, we push two calls to the user mempool stack: first to approve funds to be taken by the selfcheckout
+        // Then to take the funds from the pusherLaminated contract
         pusherLaminated.transfer(1 ether);
         erc20a.transfer(pusherLaminated, 10);
         CallObject[] memory pusherCallObjs = new CallObject[](3);
@@ -109,6 +111,9 @@ contract WorkedExampleLib {
         returnObjs[2] = ReturnObject({returnvalue: ""});
 
         // Constructing something that'll decode happily
+
+        // The stack construction for keys and values:
+
         bytes32[] memory keys = new bytes32[](5);
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
         keys[1] = keccak256(abi.encodePacked("swapPartner"));
