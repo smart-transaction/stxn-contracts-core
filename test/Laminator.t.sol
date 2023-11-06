@@ -188,7 +188,7 @@ contract LaminatorTest is Test {
         });
         bytes memory cData = abi.encode(callObj);
         vm.prank(randomFriendAddress);
-        vm.expectRevert(LaminatedProxy.NotLaminatorOrProxy.selector);
+        vm.expectRevert(LaminatedProxy.NotLaminator.selector);
         proxy.push(cData, 0);
     }
 

@@ -23,7 +23,7 @@ contract CronTwoLib {
     CronTwoLogic public cronTwoLogic;
     Tips public tips;
     uint32 _blocksInADay = 7150;
-    uint256 _tipWei = 100000000000000000;
+    uint256 _tipWei = 33;
 
     function deployerLand(address pusher) public {
         // Initializing contracts
@@ -37,6 +37,9 @@ contract CronTwoLib {
     }
 
     function userLand() public returns (uint256) {
+        // send proxy some eth
+        pusherLaminated.transfer(1 ether);
+
         // Userland operations
         CallObject[] memory pusherCallObjs = new CallObject[](4);
         pusherCallObjs[0] = CallObject({

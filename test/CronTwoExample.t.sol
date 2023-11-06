@@ -20,7 +20,7 @@ contract CronTwoTest is Test, CronTwoLib {
         filler = address(300);
 
         // give the pusher some eth
-        vm.deal(pusherLaminated, 100 ether);
+        vm.deal(pusher, 100 ether);
 
         // start deployer land
         vm.startPrank(deployer);
@@ -33,7 +33,7 @@ contract CronTwoTest is Test, CronTwoLib {
         vm.label(filler, "filler");
     }
 
-    function testFail_run1CronTwo() external {
+    function testrun1CronTwo() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
@@ -58,12 +58,14 @@ contract CronTwoTest is Test, CronTwoLib {
         vm.stopPrank();
 
         assertEq(counter.getCount(pusherLaminated), 2);
-        assertEq(address(filler).balance, initialFillerBalance + 2 * 100000000000000000);
+        assertEq(address(filler).balance, initialFillerBalance + 2 * 33);
 
         assertFalse(callbreaker.isPortalOpen());
 
         //  Should be cleared so init should be false (testFail format is for compliance with Kontrol framework)
         (bool init,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
-        assertTrue(init);
+
+        
+        assertFalse(init);
     }
 }

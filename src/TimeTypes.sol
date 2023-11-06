@@ -5,7 +5,7 @@ pragma solidity >=0.6.2 <0.9.0;
 /// @param amount The amount of Ether to send with the call
 /// @param addr The target address of the call
 /// @param gas The gas limit for the call
-/// @param callvalue The ABI-encoded data payload for the call
+/// @param callvalue The optional ABI-encoded data payload for the call
 struct CallObject {
     uint256 amount;
     address addr;
