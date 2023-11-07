@@ -116,6 +116,73 @@ contract CallBreaker is CallBreakerStorage {
         return keccak256(abi.encode(callObj, returnObj));
     }
 
+    // verify
+    // a .  11 (user doing some logic)
+    // b .  22 (solver doing some bs)
+    // c .  33 (user doing some asserts)
+    // d .  44 (solver doing more bs)
+
+    // EXAMPLE: user's desires:
+    // wants to allow: a d b c (arbitrary shit between a and c)
+    //     this is fine:
+    //     a pops c
+    //     db handle popping themselves
+    //     c pops a
+    // wants to allow: a b c d (arbitrary backrun)
+    //     this is *not* currently fine:
+    //     a pops c
+    //     b pops itself
+    //     what pops d? something before a must pop d. what goes before a? that's an illegal frontrun.
+    //     a cannot pop d because a can't know about d because d is arbitrary code provided at solve-time
+    //     c pops a
+    // want to prevent: c d b a: c before a (tricking the timeturner)
+    //     c pops a
+    //     db pop themselves
+    //     a pops c
+    //     this can be checked by setting a bool in a, and then checking and unsetting it in c- so we're okay in the current paradigm, although it is sucky and ugly
+    // wants to prevent: e a d b c (no frontrunning pls)
+    //     you can't prevent this without indices:
+    //     c pops a
+    //     add some (legal) backrun, g, after c
+    //     g pops e (e also pops g)
+    //     everything works :| unfortunately
+    //     this is fixed by adding indices :)
+    // want to prevent: a b d e (a ever being run without its call to c, which enforces invariants)
+    //     this is fixed with the timeturner- if a enterportals on c, c has to be called in verify, otherwise everything reverts
+
+    // in a, we want to see c executed at some point
+    // in a, we want nothing before a
+    // in a, call enterportal(c)
+    // in c, call enterportal(a)
+
+    // proposal: provide an index from the front, an index from the back, or a "hintdex"- the user wants to know the location of certain calls at solvetime, the solver provides that?
+    // look up return value and check into enterportal by index
+    // have a utility function that converts reverse indices into forward indices
+    // put assertions on relative ordering into userspace code! say a < c explicitly.
+    // same call twice, two different returns- how to disambiguate? indices and comparisons!
+    // need to be able to say that 
+
+    // i call enterportal with a, index 1
+    // enterportal checks that a is at index 1, returns the return value of a back to itself
+    // i call enterportal with c, index when_was_it_called(c) <- this is just a hashtable lookup in associateddata (or just another hashmap)
+    // enterportal checks that c is at index when_was_it_called(c), returns the return value of c back to itself
+    // verify handles actually making sure c is called at that index
+    // check 1 < when_was_it_called(c)
+    // xiangan's example: ind(a) + 2 == when_was_it_called(c)
+
+    // b and d need to handle their own enterportal and index calls- this is fine.
+    // no frontruns allowed- a is always 1
+    // backruns are fine
+    // arbitrary code is fine in between a and c and after c, it just needs to pop itself off the stack with knowledge of indices
+    // reshuffling a and c is no longer okay- a must be called before c, checked in a
+
+    // about hintdices:
+    // a will say ind(c) = associateddatafetch("whenwascccalled")
+    // a will assert ind(c) > 1 (1 is ind(a), a knows this, because c is checking it already through the callbreaker)
+    // enterportal(a, 1) will check in verify's call that a actually gets executed at index(1)
+    // enterportal(c, ind(c)) will check also in enterportal + verify's call using verify bookkeeping that c is executed at ind(c)
+    // it's fine that the solver is providing this value- a is checking the relative value to other calls, and enterportal is checking that the call happened there.
+
     /// @notice Executes a call and returns a value from the record of return values.
     /// @dev This function also does some accounting to track the occurrence of a given pair of call and return values.
     /// It is called as reentrancy in order to balance the calls of the solution and make things validate.
