@@ -37,7 +37,7 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
 
     /* To execute `test_workedExample()` with Kontrol:
         kontrol build --rekompile --require lemmas.k --module-import WorkedExampleTest:STXN-LEMMAS
-        kontrol prove --match-test WorkedExampleTest.testrun1 --use-booster --max-depth 3000 --no-break-on-calls --auto-abstract-gas --reinit
+        kontrol prove --match-test WorkedExampleTest.test_workedExample --use-booster --max-depth 3000 --no-break-on-calls --auto-abstract-gas --reinit
     */
     function test_workedExample() external {
         uint256 laminatorSequenceNumber;
