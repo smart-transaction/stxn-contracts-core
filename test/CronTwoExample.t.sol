@@ -34,6 +34,9 @@ contract CronTwoTest is Test, CronTwoLib {
     }
 
     function testrun1CronTwo() external {
+        vm.roll(1234);
+        vm.coinbase(address(400));
+
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);

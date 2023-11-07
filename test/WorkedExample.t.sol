@@ -35,8 +35,17 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         vm.label(filler, "filler");
     }
 
+    /* To execute `test_workedExample()` with Kontrol:
+        kontrol build --rekompile --require lemmas.k --module-import WorkedExampleTest:STXN-LEMMAS
+        kontrol prove --match-test WorkedExampleTest.testrun1 --use-booster --max-depth 3000 --no-break-on-calls --auto-abstract-gas --reinit
+    */
     function test_workedExample() external {
         uint256 laminatorSequenceNumber;
+
+        // Concretize `block.number` to avoid branching
+        vm.roll(1234);
+        // Concretize `block.coinbase` to avoid branching
+        vm.coinbase(address(400));
 
         vm.startPrank(pusher);
         laminatorSequenceNumber = userLand();

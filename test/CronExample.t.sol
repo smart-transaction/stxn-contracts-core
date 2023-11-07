@@ -32,7 +32,14 @@ contract CronExampleTest is Test, CronExampleLib {
         vm.label(filler, "filler");
     }
 
+    /* To execute `test_cron_run()` with Kontrol:
+        kontrol build --rekompile --require lemmas.k --module-import CronExampleTest:STXN-LEMMAS
+        kontrol prove --match-test CronExampleTest.test_cron_run --use-booster --max-depth 3000 --no-break-on-calls --auto-abstract-gas --reinit
+    */
     function test_cron_run() external {
+        vm.roll(1234);
+        vm.coinbase(address(400));
+
         uint256 laminatorSequenceNumberFirst;
         uint256 laminatorSequenceNumberSecond;
 
