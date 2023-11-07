@@ -286,6 +286,11 @@ contract CallBreaker is CallBreakerStorage {
         bytes32 callKey = keccak256(abi.encode(callObj));
         bytes memory expectedIndexBytes = fetchFromAssociatedDataStore(callKey);
         uint256 expectedCallIndex = abi.decode(expectedIndexBytes, (uint256));
+        // If the expectedCallIndex is 0 (i.e. call order doesn't matter),
+        // assert that the actualCallIndex is not performing an illegal frontrun (i.e. actualCallIndex is not the first call)
+        if (expectedCallIndex == 0 && actualCallIndex == 0) {
+            revert CallVerificationFailed();
+        }
         _ensureIndexConsistency(actualCallIndex, expectedCallIndex);
     }
 
