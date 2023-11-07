@@ -258,6 +258,7 @@ contract CallBreaker is CallBreakerStorage {
         _populateAssociatedDataStore(associatedData);
 
         for (uint256 i = 0; i < calls.length; i++) {
+            _checkCallOrder(calls[i], i);
             _executeAndVerifyCall(calls[i]); 
         }
 
@@ -279,6 +280,13 @@ contract CallBreaker is CallBreakerStorage {
             ReturnObjectWithIndex memory returnObjWithIndex = ReturnObjectWithIndex({returnObj: returnValues[i], index: i});
             returnStore.push(returnObjWithIndex);
         }
+    }
+
+    function _checkCallOrder(CallObject memory callObj, uint256 actualCallIndex) internal view {
+        bytes32 callKey = keccak256(abi.encode(callObj));
+        bytes memory expectedIndexBytes = fetchFromAssociatedDataStore(callKey);
+        uint256 expectedCallIndex = abi.decode(expectedIndexBytes, (uint256));
+        _ensureIndexConsistency(actualCallIndex, expectedCallIndex);
     }
 
     /// @dev Executes a single call and verifies the result by generating the call-return pair ID
