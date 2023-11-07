@@ -93,8 +93,7 @@ contract CallBreaker is CallBreakerStorage {
     /// NOTE: Expect calls to arrive with non-null msg.data
     /// NOTE: Calldata bytes are structured as a CallObject
     fallback(bytes calldata input) external payable returns (bytes memory) {
-        (bytes memory portalInput, uint256 callIndex) = abi.decode(input, (bytes, uint256));
-        return this.enterPortal(portalInput, callIndex);
+        return this.enterPortal(input);
     }
 
     /// @notice Fetches the value associated with a given key from the associatedDataStore
@@ -187,50 +186,31 @@ contract CallBreaker is CallBreakerStorage {
     /// @notice Executes a call and returns a value from the record of return values.
     /// @dev This function also does some accounting to track the occurrence of a given pair of call and return values.
     /// It is called as reentrancy in order to balance the calls of the solution and make things validate.
-    /// @param input The call to be executed, structured as a CallObject.
-    /// @param callIndex The index of the callObj used to enforce call order.
+    /// @param input The call to be executed, structured as a CallObjectWithIndex.
     /// @return The return value from the record of return values.
-    function enterPortal(bytes calldata input, uint256 callIndex) external payable onlyPortalOpen returns (bytes memory) {
+    function enterPortal(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
         // Ensure there's at least one return value available
         if (returnStore.length == 0) {
             revert OutOfReturnValues();
         }
 
-        ReturnObjectWithIndex memory lastReturn = _popLastReturn();
-
-        // Decode the input to obtain the CallObject
+        // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
         CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
-        // Ensure that the index is consistent with the intended callIndex given at solve-time
-        _ensureIndexConsistency(callObjWithIndex.index, callIndex);
+        ReturnObjectWithIndex memory thisReturn = getReturn(callObjWithIndex.index);
 
-        // Check that the index of the callObj matches the index of the returnObj
-        if (callObjWithIndex.index != lastReturn.index) {
-            revert IndexMismatch(callObjWithIndex.index, lastReturn.index);
-        }
-
-        // Calculate a unique ID representing the call-return pair
-        bytes32 pairID = getCallReturnID(callObjWithIndex.callObj, lastReturn.returnObj);
+        bytes32 pairID = getCallReturnID(callObjWithIndex.callObj, thisReturn.returnObj);
 
         // Update or initialize the balance of the call-return pair
         _incrementCallBalance(pairID);
 
         emit EnterPortal(
             callObjWithIndex.callObj,
-            lastReturn.returnObj,
+            thisReturn.returnObj,
             pairID,
             callbalanceStore[pairID].balance,
             callObjWithIndex.index
         );
-        return lastReturn.returnObj.returnvalue;
-    }
-
-    /// @dev Ensures that the index of the callObj matches the expected index
-    /// @param callIndex The index of the callObj
-    /// @param expectedIndex The expected index
-    function _ensureIndexConsistency(uint256 callIndex, uint256 expectedIndex) internal pure {
-        if (callIndex != expectedIndex) {
-            revert IndexMismatch(callIndex, expectedIndex);
-        }
+        return thisReturn.returnObj.returnvalue;
     }
 
     /// @notice Verifies that the given calls, when executed, gives the correct return values
@@ -258,7 +238,6 @@ contract CallBreaker is CallBreakerStorage {
         _populateAssociatedDataStore(associatedData);
 
         for (uint256 i = 0; i < calls.length; i++) {
-            _checkCallOrder(calls[i], i);
             _executeAndVerifyCall(calls[i]); 
         }
 
@@ -282,18 +261,6 @@ contract CallBreaker is CallBreakerStorage {
         }
     }
 
-    function _checkCallOrder(CallObject memory callObj, uint256 actualCallIndex) internal view {
-        bytes32 callKey = keccak256(abi.encode(callObj));
-        bytes memory expectedIndexBytes = fetchFromAssociatedDataStore(callKey);
-        uint256 expectedCallIndex = abi.decode(expectedIndexBytes, (uint256));
-        // If the expectedCallIndex is 0 (i.e. call order doesn't matter),
-        // assert that the actualCallIndex is not performing an illegal frontrun (i.e. actualCallIndex is not the first call)
-        if (expectedCallIndex == 0 && actualCallIndex == 0) {
-            revert CallVerificationFailed();
-        }
-        _ensureIndexConsistency(actualCallIndex, expectedCallIndex);
-    }
-
     /// @dev Executes a single call and verifies the result by generating the call-return pair ID
     /// @param callObj The CallObject to be executed and verified
     function _executeAndVerifyCall(CallObject memory callObj) internal {
@@ -314,6 +281,9 @@ contract CallBreaker is CallBreakerStorage {
     /// @dev Cleans up storage by resetting returnStore and callbalanceKeyList
     function _cleanUpStorage() internal {
         delete returnStore;
+        for (uint256 i = 0; i < returnStore.length; i++) {
+            delete returnStore[i];
+        }
         delete callbalanceKeyList;
         for (uint256 i = 0; i < associatedDataKeyList.length; i++) {
             delete associatedDataStore[associatedDataKeyList[i]];
@@ -322,10 +292,15 @@ contract CallBreaker is CallBreakerStorage {
     }
 
     // @dev Helper function to fetch and remove the last ReturnObject from the storage
-    function _popLastReturn() internal returns (ReturnObjectWithIndex memory) {
-        ReturnObjectWithIndex memory lastReturn = returnStore[returnStore.length - 1];
-        returnStore.pop();
+
+    function getReturn(uint256 index) internal view returns (ReturnObjectWithIndex memory) {
+        ReturnObjectWithIndex memory lastReturn = returnStore[index];
         return lastReturn;
+    }
+
+    // @dev convert a reverse index into a forward index
+    function reverseIndex(uint256 index) internal view returns (uint256) {
+        return returnStore.length - index - 1;
     }
 
     /// @dev Helper function to increment the balance of a call-return pair in the storage.
