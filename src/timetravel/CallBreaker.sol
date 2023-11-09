@@ -135,6 +135,8 @@ contract CallBreaker is CallBreakerStorage {
     //     what pops d? something before a must pop d. what goes before a? that's an illegal frontrun.
     //     a cannot pop d because a can't know about d because d is arbitrary code provided at solve-time
     //     c pops a
+    // want to allow: a c b c d
+    //     (this just works, when_was_it_called(c) can be either, enterportal accounting is basically the same
     // want to prevent: c d b a: c before a (tricking the timeturner)
     //     c pops a
     //     db pop themselves
@@ -223,6 +225,7 @@ contract CallBreaker is CallBreakerStorage {
         payable
         onlyPortalClosed
     {
+        _setPortalOpen();
         if (msg.sender.code.length != 0) {
             revert MustBeEOA();
         }
@@ -244,11 +247,8 @@ contract CallBreaker is CallBreakerStorage {
         _ensureAllPairsAreBalanced();
 
         _cleanUpStorage();
-
-        // Transfer remaining ETH balance to the block builder
-        address payable blockBuilder = payable(block.coinbase);
+        _setPortalClosed();
         emit VerifyStxn();
-        blockBuilder.transfer(address(this).balance);
     }
 
     /// @dev Resets the returnStore with the given ReturnObject array
@@ -289,6 +289,10 @@ contract CallBreaker is CallBreakerStorage {
             delete associatedDataStore[associatedDataKeyList[i]];
         }
         delete associatedDataKeyList;
+
+        // Transfer remaining ETH balance to the block builder
+        address payable blockBuilder = payable(block.coinbase);
+        blockBuilder.transfer(address(this).balance);
     }
 
     // @dev Helper function to fetch and remove the last ReturnObject from the storage
