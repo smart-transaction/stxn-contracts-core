@@ -3,7 +3,7 @@ on:
   pull_request:
   push:
     branches:
-      - master
+      - main
   workflow_dispatch:
 
 permissions:
@@ -19,3 +19,12 @@ jobs:
     secrets: inherit
     with:
       disable-gas-snapshot: true # disabling gas snapshot until one is present
+  solidity-coverage:
+    uses: smart-transaction/actions/.github/workflows/solidity-coverage.yml@main
+    secrets: inherit
+  # Will run on a standard set of slither detectors (see more in actions repo)
+  static-analysis-base:
+    uses: smart-transaction/actions/.github/workflows/static-analysis-base.yml@main
+    with:
+      disable-divide-before-multiply: true
+      disable-arbitrary-send-erc20: true
