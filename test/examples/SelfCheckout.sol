@@ -91,7 +91,7 @@ contract SelfCheckout {
                 callvalue: abi.encodeWithSignature("checkBalance()")
             });
             emit LogCallObj(callObj);
-            CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 2});
+            CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 2, executed: false});
 
             (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObjectWithIndex));
 
@@ -133,7 +133,7 @@ contract SelfCheckout {
             gas: 1000000,
             callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
         });
-        CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 1});
+        CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 1, executed: false});
 
         (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObjectWithIndex));
         if (!success) {
@@ -153,7 +153,7 @@ contract SelfCheckout {
             gas: 1000000,
             callvalue: abi.encodeWithSignature("pull(uint256)", seqNum)
         });
-        callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 0});
+        callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 0, executed: false});
         (success, returnvalue) = callbreakerAddress.call(abi.encode(callObjectWithIndex));
         if (!success) {
             revert("turner2 CallFailed");

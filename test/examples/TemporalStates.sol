@@ -40,7 +40,7 @@ contract TemporalHoneypot {
                 gas: 1000000,
                 callvalue: abi.encodeWithSignature("ensureFundless()")
             });
-            CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 3});
+            CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 3, executed: false});
 
             (bool success,) = _callbreakerAddress.call(abi.encode(callObjectWithIndex));
 

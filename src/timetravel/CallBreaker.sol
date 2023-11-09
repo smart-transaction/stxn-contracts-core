@@ -356,7 +356,9 @@ contract CallBreaker is CallBreakerStorage {
         (bytes32[] memory keys, bytes[] memory values) = abi.decode(encodedData, (bytes32[], bytes[]));
 
         // Check that the keys and values arrays have the same length
-        require(keys.length == values.length, "Mismatch in keys and values array lengths");
+        if (keys.length != values.length) {
+            revert LengthMismatch();
+        }
 
         // Iterate over the keys and values arrays and insert each pair into the associatedDataStore
         for (uint256 i = 0; i < keys.length; i++) {

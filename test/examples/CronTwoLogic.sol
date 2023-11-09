@@ -39,7 +39,7 @@ contract CronTwoLogic {
             gas: 10000000,
             callvalue: abi.encodeWithSignature("pull(uint256)", currentSequenceNum)
         });
-        CallObjectWithIndex memory callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 0});
+        CallObjectWithIndex memory callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 0, executed: false});
         callbreaker.enterPortal(abi.encode(callObjWithIndex));
     }
 }

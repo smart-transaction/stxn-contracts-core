@@ -28,7 +28,7 @@ contract CleanupUtility {
                 callValue
                 )
         });
-        CallObjectWithIndex memory callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 4});
+        CallObjectWithIndex memory callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 4, executed: false});
         bytes memory ret = cb.enterPortal(abi.encode(callObjWithIndex));
     }
 
@@ -48,7 +48,7 @@ contract CleanupUtility {
 
         CallObject memory callObj =
             CallObject({amount: 0, addr: address(selfcheckout), gas: 1000000, callvalue: callValue});
-        CallObjectWithIndex memory callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 2});
+        CallObjectWithIndex memory callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 2, executed: false});
         bytes memory ret = cb.enterPortal(abi.encode(callObjWithIndex));
 
         // next with pull.
@@ -58,7 +58,7 @@ contract CleanupUtility {
             gas: 1000000,
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
-        callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 1});
+        callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 1, executed: false});
 
         ret = cb.enterPortal(abi.encode(callObjWithIndex));
 
@@ -76,7 +76,7 @@ contract CleanupUtility {
                 callValue
                 )
         });
-        callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 0});
+        callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 0, executed: false});
         ret = cb.enterPortal(abi.encode(callObjWithIndex));
     }
 }

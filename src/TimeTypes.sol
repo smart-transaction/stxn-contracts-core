@@ -19,6 +19,7 @@ struct CallObject {
 struct CallObjectWithIndex {
     CallObject callObj;
     uint256 index;
+    bool executed;
 }
 
 /// @dev Struct for holding return object details
