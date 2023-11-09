@@ -162,7 +162,7 @@ contract CallBreaker is CallBreakerStorage {
     // have a utility function that converts reverse indices into forward indices
     // put assertions on relative ordering into userspace code! say a < c explicitly.
     // same call twice, two different returns- how to disambiguate? indices and comparisons!
-    // need to be able to say that 
+    // need to be able to say that
 
     // i call enterportal with a, index 1
     // enterportal checks that a is at index 1, returns the return value of a back to itself
@@ -198,7 +198,7 @@ contract CallBreaker is CallBreakerStorage {
 
         // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
         CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
-        ReturnObjectWithIndex memory thisReturn = getReturn(callObjWithIndex.index);
+        ReturnObjectWithIndex memory thisReturn = _getReturn(callObjWithIndex.index);
 
         bytes32 pairID = getCallReturnID(callObjWithIndex.callObj, thisReturn.returnObj);
 
@@ -241,7 +241,7 @@ contract CallBreaker is CallBreakerStorage {
         _populateAssociatedDataStore(associatedData);
 
         for (uint256 i = 0; i < calls.length; i++) {
-            _executeAndVerifyCall(calls[i]); 
+            _executeAndVerifyCall(calls[i]);
         }
 
         _ensureAllPairsAreBalanced();
@@ -256,7 +256,8 @@ contract CallBreaker is CallBreakerStorage {
     function _resetReturnStoreWith(ReturnObject[] memory returnValues) internal {
         delete returnStore;
         for (uint256 i = 0; i < returnValues.length; i++) {
-            ReturnObjectWithIndex memory returnObjWithIndex = ReturnObjectWithIndex({returnObj: returnValues[i], index: i});
+            ReturnObjectWithIndex memory returnObjWithIndex =
+                ReturnObjectWithIndex({returnObj: returnValues[i], index: i});
             returnStore.push(returnObjWithIndex);
         }
     }
@@ -297,13 +298,13 @@ contract CallBreaker is CallBreakerStorage {
 
     // @dev Helper function to fetch and remove the last ReturnObject from the storage
 
-    function getReturn(uint256 index) internal view returns (ReturnObjectWithIndex memory) {
+    function _getReturn(uint256 index) internal view returns (ReturnObjectWithIndex memory) {
         ReturnObjectWithIndex memory lastReturn = returnStore[index];
         return lastReturn;
     }
 
     // @dev convert a reverse index into a forward index
-    function reverseIndex(uint256 index) internal view returns (uint256) {
+    function _reverseIndex(uint256 index) internal view returns (uint256) {
         return returnStore.length - index - 1;
     }
 
