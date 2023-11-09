@@ -188,7 +188,7 @@ contract CallBreaker is CallBreakerStorage {
     /// @notice Executes a call and returns a value from the record of return values.
     /// @dev This function also does some accounting to track the occurrence of a given pair of call and return values.
     /// It is called as reentrancy in order to balance the calls of the solution and make things validate.
-    /// @param input The call to be executed, structured as a CallObject.
+    /// @param input The call to be executed, structured as a CallObjectWithIndex.
     /// @return The return value from the record of return values.
     function enterPortal(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
         // Ensure there's at least one return value available
@@ -196,28 +196,23 @@ contract CallBreaker is CallBreakerStorage {
             revert OutOfReturnValues();
         }
 
-        ReturnObjectWithIndex memory lastReturn = _popLastReturn();
-
         // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
         CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
+        ReturnObjectWithIndex memory thisReturn = getReturn(callObjWithIndex.index);
 
-        // Check that the index of the callObj matches the index of the returnObj
-        if (callObjWithIndex.index != lastReturn.index) {
-            revert IndexMismatch(callObjWithIndex.index, lastReturn.index);
-        }
-        bytes32 pairID = getCallReturnID(callObjWithIndex.callObj, lastReturn.returnObj);
+        bytes32 pairID = getCallReturnID(callObjWithIndex.callObj, thisReturn.returnObj);
 
         // Update or initialize the balance of the call-return pair
         _incrementCallBalance(pairID);
 
         emit EnterPortal(
             callObjWithIndex.callObj,
-            lastReturn.returnObj,
+            thisReturn.returnObj,
             pairID,
             callbalanceStore[pairID].balance,
             callObjWithIndex.index
         );
-        return lastReturn.returnObj.returnvalue;
+        return thisReturn.returnObj.returnvalue;
     }
 
     /// @notice Verifies that the given calls, when executed, gives the correct return values
@@ -246,7 +241,7 @@ contract CallBreaker is CallBreakerStorage {
         _populateAssociatedDataStore(associatedData);
 
         for (uint256 i = 0; i < calls.length; i++) {
-            _executeAndVerifyCall(calls[i]);
+            _executeAndVerifyCall(calls[i]); 
         }
 
         _ensureAllPairsAreBalanced();
@@ -286,6 +281,9 @@ contract CallBreaker is CallBreakerStorage {
     /// @dev Cleans up storage by resetting returnStore and callbalanceKeyList
     function _cleanUpStorage() internal {
         delete returnStore;
+        for (uint256 i = 0; i < returnStore.length; i++) {
+            delete returnStore[i];
+        }
         delete callbalanceKeyList;
         for (uint256 i = 0; i < associatedDataKeyList.length; i++) {
             delete associatedDataStore[associatedDataKeyList[i]];
@@ -298,10 +296,15 @@ contract CallBreaker is CallBreakerStorage {
     }
 
     // @dev Helper function to fetch and remove the last ReturnObject from the storage
-    function _popLastReturn() internal returns (ReturnObjectWithIndex memory) {
-        ReturnObjectWithIndex memory lastReturn = returnStore[returnStore.length - 1];
-        returnStore.pop();
+
+    function getReturn(uint256 index) internal view returns (ReturnObjectWithIndex memory) {
+        ReturnObjectWithIndex memory lastReturn = returnStore[index];
         return lastReturn;
+    }
+
+    // @dev convert a reverse index into a forward index
+    function reverseIndex(uint256 index) internal view returns (uint256) {
+        return returnStore.length - index - 1;
     }
 
     /// @dev Helper function to increment the balance of a call-return pair in the storage.
@@ -370,4 +373,7 @@ contract CallBreaker is CallBreakerStorage {
         }
     }
 
+    function _getIndexFromEnd(CallObject[] memory callObjects, uint256 indexFromStart) internal pure returns (uint256) {
+        return callObjects.length - indexFromStart - 1;
+    }
 }
