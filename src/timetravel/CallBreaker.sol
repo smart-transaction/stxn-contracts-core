@@ -372,8 +372,4 @@ contract CallBreaker is CallBreakerStorage {
             }
         }
     }
-
-    function _getIndexFromEnd(CallObject[] memory callObjects, uint256 indexFromStart) internal pure returns (uint256) {
-        return callObjects.length - indexFromStart - 1;
-    }
 }
