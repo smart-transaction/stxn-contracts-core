@@ -293,6 +293,7 @@ contract CallBreaker is CallBreakerStorage {
 
     /// @dev Cleans up storage by resetting returnStore
     function _cleanUpStorage() internal {
+        delete callStore;
         delete returnStore;
         delete callList;
         for (uint256 i = 0; i < associatedDataKeyList.length; i++) {
