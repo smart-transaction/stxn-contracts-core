@@ -28,6 +28,8 @@ contract CallBreaker is CallBreakerStorage {
 
     Call[] public callList;
 
+    uint256 _currentlyExecutingIndex;
+
     /// @dev Error thrown when there are no return values left
     /// @dev Selector 0xc8acbe62
     error OutOfReturnValues();
@@ -84,6 +86,7 @@ contract CallBreaker is CallBreakerStorage {
         _setPortalClosed();
     }
 
+    // todo: figure out a nice dev workflow for ensureTurnerOpen on OTHER contracts
     modifier ensureTurnerOpen() {
         if (!isPortalOpen()) {
             revert PortalClosed();
@@ -95,12 +98,6 @@ contract CallBreaker is CallBreakerStorage {
     receive() external payable {
         revert EmptyCalldata();
     }
-
-    // /// NOTE: Expect calls to arrive with non-null msg.data
-    // /// NOTE: Calldata bytes are structured as a CallObject
-    // fallback(bytes calldata input) external payable returns (bytes memory) {
-    //     return this.enterPortal(input);
-    // }
 
     /// @notice Fetches the value associated with a given key from the associatedDataStore
     /// @param key The key whose associated value is to be fetched
@@ -120,6 +117,10 @@ contract CallBreaker is CallBreakerStorage {
         return (callStore[i], returnStore[i]);
     }
 
+    function getCallListAt(uint256 i) public view returns (Call memory) {
+        return callList[i];
+    }
+
     function getCallIndex(CallObject memory callObj) public view returns (uint256[] memory index) {
         bytes32 callId = keccak256(abi.encode(callObj));
         for (uint256 i = 0; i < callList.length; i++) {
@@ -127,6 +128,13 @@ contract CallBreaker is CallBreakerStorage {
                 index[index.length] = callList[i].index;
             }
         }
+    }
+
+    function getCurrentlyExecuting() public view returns (uint256) {
+        if (!isPortalOpen()) {
+            revert PortalClosed();
+        }
+        return _currentlyExecutingIndex;
     }
 
     // verify
@@ -248,6 +256,7 @@ contract CallBreaker is CallBreakerStorage {
         _populateCallIndices();
 
         for (uint256 i = 0; i < calls.length; i++) {
+            _currentlyExecutingIndex = i;
             _executeAndVerifyCall(i);
         }
 
@@ -318,7 +327,12 @@ contract CallBreaker is CallBreakerStorage {
     }
 
     // @dev convert a reverse index into a forward index
-    function reverseIndex(uint256 index) internal view returns (uint256) {
+    // or a forward index into a reverse index
+    // looking at the callstore and returnstore indices
+    function reverseIndex(uint256 index) public view returns (uint256) {
+        if (index >= callStore.length) {
+            revert IndexMismatch(index, callStore.length);
+        }
         return returnStore.length - index - 1;
     }
 
