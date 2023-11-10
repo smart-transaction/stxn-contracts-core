@@ -5,8 +5,8 @@ import "forge-std/Vm.sol";
 
 import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
+import "../../src/timetravel/InvariantGuard.sol";
 import "../../test/examples/CronTwoCounter.sol";
-import "../../test/examples/CronTwoLogic.sol";
 import "../../src/tips/Tips.sol";
 
 // for the next year, every day:
@@ -16,11 +16,11 @@ import "../../src/tips/Tips.sol";
 // the way we do this is we push a new call at the end of execution
 
 contract CronTwoLib {
-    CallBreaker public callbreaker;
+    InvariantGuard public invariantGuard;
     address payable public pusherLaminated;
     Laminator public laminator;
     CronTwoCounter public counter;
-    CronTwoLogic public cronTwoLogic;
+    //CronTwoLogic public cronTwoLogic;
     Tips public tips;
     uint32 _blocksInADay = 7150;
     uint256 _tipWei = 33;
@@ -28,12 +28,12 @@ contract CronTwoLib {
     function deployerLand(address pusher) public {
         // Initializing contracts
         laminator = new Laminator();
-        callbreaker = new CallBreaker();
+        invariantGuard = new InvariantGuard(address(laminator));
 
         counter = new CronTwoCounter();
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
-        cronTwoLogic = new CronTwoLogic(address(callbreaker), address(pusherLaminated));
-        tips = new Tips(address(callbreaker));
+        //cronTwoLogic = new CronTwoLogic(address(invariantGuard), address(pusherLaminated));
+        tips = new Tips(address(invariantGuard));
     }
 
     function userLand() public returns (uint256) {
@@ -66,9 +66,9 @@ contract CronTwoLib {
         });
         pusherCallObjs[3] = CallObject({
             amount: 0,
-            addr: address(cronTwoLogic),
+            addr: address(invariantGuard),
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("cronTrailer()")
+            callvalue: abi.encodeWithSignature("noFrontRunInThisPull()")
         });
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
@@ -95,17 +95,20 @@ contract CronTwoLib {
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
         // Constructing something that'll decode happily
-        bytes32[] memory keys = new bytes32[](1);
+        bytes32[] memory keys = new bytes32[](2);
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
-        bytes[] memory values = new bytes[](1);
+        keys[1] = keccak256(abi.encodePacked("pullIndex"));
+        bytes[] memory values = new bytes[](2);
         values[0] = abi.encode(filler);
+        values[1] = abi.encode(laminatorSequenceNumber);
         bytes memory encodedData = abi.encode(keys, values);
 
         if (!isFirstTime) {
             callObjs[0].callvalue = abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber + 1);
             returnObjsFromPull[2] = ReturnObject({returnvalue: abi.encode(2)});
             returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
+            values[1] = abi.encode(laminatorSequenceNumber + 1);
         }
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData);
+        invariantGuard.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData);
     }
 }

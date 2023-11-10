@@ -4,11 +4,6 @@ pragma solidity >=0.6.2 <0.9.0;
 import "../TimeTypes.sol";
 import "./CallBreakerStorage.sol";
 
-struct CallBalance {
-    bool set;
-    int256 balance;
-}
-
 struct ReturnObjectWithIndex {
     ReturnObject returnObj;
     uint256 index;
@@ -20,12 +15,14 @@ struct AssociatedData {
 }
 
 contract CallBreaker is CallBreakerStorage {
-    ReturnObjectWithIndex[] public returnStore;
-    mapping(bytes32 => CallBalance) public callbalanceStore;
-    bytes32[] public callbalanceKeyList;
+    CallObject[] public callStore;
+    ReturnObject[] public returnStore;
 
     bytes32[] public associatedDataKeyList;
     mapping(bytes32 => AssociatedData) public associatedDataStore;
+
+    bytes32[] public callIndicesKeyList;
+    mapping(bytes32 => uint256[]) public callIndices;
 
     /// @dev Error thrown when there are no return values left
     /// @dev Selector 0xc8acbe62
@@ -61,6 +58,8 @@ contract CallBreaker is CallBreakerStorage {
     /// @dev Selector 0x09d1095b
     error MustBeEOA();
 
+    error CallPositionFailed(CallObject, uint256);
+
     /// @notice Emitted when a new key-value pair is inserted into the associatedDataStore
     event InsertIntoAssociatedDataStore(bytes32 key, bytes value);
 
@@ -70,12 +69,8 @@ contract CallBreaker is CallBreakerStorage {
     /// @notice Emitted when the enterPortal function is called
     /// @param callObj The CallObject instance containing details of the call
     /// @param returnvalue The ReturnObject instance containing details of the return value
-    /// @param pairid The unique ID derived from the given callObj and returnvalue
-    /// @param updatedcallbalance The updated balance of the call
     /// @param index The index of the return value in the returnStore
-    event EnterPortal(
-        CallObject callObj, ReturnObject returnvalue, bytes32 pairid, int256 updatedcallbalance, uint256 index
-    );
+    event EnterPortal(CallObject callObj, ReturnObject returnvalue, uint256 index);
 
     /// @notice Emitted when the verifyStxn function is called
     event VerifyStxn();
@@ -90,11 +85,11 @@ contract CallBreaker is CallBreakerStorage {
         revert EmptyCalldata();
     }
 
-    /// NOTE: Expect calls to arrive with non-null msg.data
-    /// NOTE: Calldata bytes are structured as a CallObject
-    fallback(bytes calldata input) external payable returns (bytes memory) {
-        return this.enterPortal(input);
-    }
+    // /// NOTE: Expect calls to arrive with non-null msg.data
+    // /// NOTE: Calldata bytes are structured as a CallObject
+    // fallback(bytes calldata input) external payable returns (bytes memory) {
+    //     return this.enterPortal(input);
+    // }
 
     /// @notice Fetches the value associated with a given key from the associatedDataStore
     /// @param key The key whose associated value is to be fetched
@@ -106,14 +101,18 @@ contract CallBreaker is CallBreakerStorage {
         return associatedDataStore[key].value;
     }
 
-    /// @notice Generates a unique ID for a pair of CallObject and ReturnObject
-    /// @param callObj The CallObject instance containing details of the call
-    /// @param returnObj The ReturnObject instance containing details of the return value
-    /// @return A unique ID derived from the given callObj and returnObj
-    /// NOTE: This is used in `verify` to check that the return value is actually the return value.
-    function getCallReturnID(CallObject memory callObj, ReturnObject memory returnObj) public pure returns (bytes32) {
-        // Use keccak256 to generate a unique ID for a pair of CallObject and ReturnObject.
-        return keccak256(abi.encode(callObj, returnObj));
+    function getPair(uint256 i)
+        public
+        view
+        returns (CallObject memory, ReturnObject memory)
+    {
+        return (callStore[i], returnStore[i]);
+    }
+
+    function ensureTurnerOpen() public view {
+        if (!isPortalOpen()) {
+            revert PortalClosed();
+        }
     }
 
     // verify
@@ -162,7 +161,7 @@ contract CallBreaker is CallBreakerStorage {
     // have a utility function that converts reverse indices into forward indices
     // put assertions on relative ordering into userspace code! say a < c explicitly.
     // same call twice, two different returns- how to disambiguate? indices and comparisons!
-    // need to be able to say that 
+    // need to be able to say that
 
     // i call enterportal with a, index 1
     // enterportal checks that a is at index 1, returns the return value of a back to itself
@@ -185,34 +184,34 @@ contract CallBreaker is CallBreakerStorage {
     // enterportal(c, ind(c)) will check also in enterportal + verify's call using verify bookkeeping that c is executed at ind(c)
     // it's fine that the solver is providing this value- a is checking the relative value to other calls, and enterportal is checking that the call happened there.
 
-    /// @notice Executes a call and returns a value from the record of return values.
-    /// @dev This function also does some accounting to track the occurrence of a given pair of call and return values.
-    /// It is called as reentrancy in order to balance the calls of the solution and make things validate.
-    /// @param input The call to be executed, structured as a CallObjectWithIndex.
-    /// @return The return value from the record of return values.
-    function enterPortal(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
-        // Ensure there's at least one return value available
-        if (returnStore.length == 0) {
-            revert OutOfReturnValues();
+    // OKAY! as of nov 8, hintdices are broken :|
+    // consider a language:
+    // aacac (legal)
+    // ababcabc (legal)
+    // ababacab (illegal) (a must always be followed by a c)
+    // what you want is to be able to express regular expressions of calls, ideally.
+    // how do you do this?
+
+    // /// @notice Executes a call and returns a value from the record of return values.
+    // /// @dev This function also does some accounting to track the occurrence of a given pair of call and return values.
+    // /// It is called as reentrancy in order to balance the calls of the solution and make things validate.
+    // /// @param input The call to be executed, structured as a CallObjectWithIndex.
+    // /// @return The return value from the record of return values.
+    // /// TODO: make this do lookups in an array instead of in a hashmap. mark "done" with a bool, and then just iterate over the array to check what's filled
+    // /// TODO: determine if this is gas-optimal (hi @ zellic-audit)
+    // function getReturnValue(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
+    //     // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
+    //     CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
+    //     ReturnObject memory thisReturn = getReturn(callObjWithIndex.index);
+
+    //     emit EnterPortal(callObjWithIndex.callObj, thisReturn, callObjWithIndex.index);
+    //     return thisReturn.returnvalue;
+    // }
+
+    function expectCallAt(CallObject memory callObj, uint256 index) internal view {
+        if (callStore[index].addr != callObj.addr) {
+            revert CallPositionFailed(callObj, index);
         }
-
-        // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
-        CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
-        ReturnObjectWithIndex memory thisReturn = getReturn(callObjWithIndex.index);
-
-        bytes32 pairID = getCallReturnID(callObjWithIndex.callObj, thisReturn.returnObj);
-
-        // Update or initialize the balance of the call-return pair
-        _incrementCallBalance(pairID);
-
-        emit EnterPortal(
-            callObjWithIndex.callObj,
-            thisReturn.returnObj,
-            pairID,
-            callbalanceStore[pairID].balance,
-            callObjWithIndex.index
-        );
-        return thisReturn.returnObj.returnvalue;
     }
 
     /// @notice Verifies that the given calls, when executed, gives the correct return values
@@ -237,33 +236,40 @@ contract CallBreaker is CallBreakerStorage {
             revert LengthMismatch();
         }
 
-        _resetReturnStoreWith(returnValues);
+        _resetTraceStoresWith(calls, returnValues);
         _populateAssociatedDataStore(associatedData);
+        _populateCallIndices();
 
         for (uint256 i = 0; i < calls.length; i++) {
-            _executeAndVerifyCall(calls[i]); 
+            _executeAndVerifyCall(i);
         }
-
-        _ensureAllPairsAreBalanced();
 
         _cleanUpStorage();
         _setPortalClosed();
         emit VerifyStxn();
     }
 
-    /// @dev Resets the returnStore with the given ReturnObject array
-    /// @param returnValues The array of ReturnObject to reset the returnStore with
-    function _resetReturnStoreWith(ReturnObject[] memory returnValues) internal {
+    function _populateCallIndices() internal {
+        for (uint256 i = 0; i < callStore.length; i++) {
+            bytes32 callId = keccak256(abi.encode(callStore[i]));
+            callIndices[callId].push(i);
+            callIndicesKeyList.push(callId);
+        }
+    }
+
+    function _resetTraceStoresWith(CallObject[] memory calls, ReturnObject[] memory returnValues) internal {
+        delete callStore;
         delete returnStore;
-        for (uint256 i = 0; i < returnValues.length; i++) {
-            ReturnObjectWithIndex memory returnObjWithIndex = ReturnObjectWithIndex({returnObj: returnValues[i], index: i});
-            returnStore.push(returnObjWithIndex);
+        for (uint256 i = 0; i < calls.length; i++) {
+            callStore.push(calls[i]);
+            returnStore.push(returnValues[i]);
         }
     }
 
     /// @dev Executes a single call and verifies the result by generating the call-return pair ID
-    /// @param callObj The CallObject to be executed and verified
-    function _executeAndVerifyCall(CallObject memory callObj) internal {
+    /// @param i The index of the CallObject and returnobject to be executed and verified
+    function _executeAndVerifyCall(uint256 i) internal {
+        (CallObject memory callObj, ReturnObject memory retObj) = getPair(i);
         if (callObj.amount > address(this).balance) {
             revert OutOfEther();
         }
@@ -274,17 +280,21 @@ contract CallBreaker is CallBreakerStorage {
             revert CallFailed();
         }
 
-        bytes32 pairID = getCallReturnID(callObj, ReturnObject(returnvalue));
-        _decrementCallBalance(pairID);
+        if (keccak256(retObj.returnvalue) != keccak256(returnvalue)) {
+            revert CallVerificationFailed();
+        }
     }
 
-    /// @dev Cleans up storage by resetting returnStore and callbalanceKeyList
+    /// @dev Cleans up storage by resetting returnStore
     function _cleanUpStorage() internal {
         delete returnStore;
         for (uint256 i = 0; i < returnStore.length; i++) {
             delete returnStore[i];
         }
-        delete callbalanceKeyList;
+        for (uint256 i = 0; i < callIndicesKeyList.length; i++) {
+            delete callIndices[callIndicesKeyList[i]];
+        }
+        delete callIndicesKeyList;
         for (uint256 i = 0; i < associatedDataKeyList.length; i++) {
             delete associatedDataStore[associatedDataKeyList[i]];
         }
@@ -296,39 +306,13 @@ contract CallBreaker is CallBreakerStorage {
     }
 
     // @dev Helper function to fetch and remove the last ReturnObject from the storage
-
-    function getReturn(uint256 index) internal view returns (ReturnObjectWithIndex memory) {
-        ReturnObjectWithIndex memory lastReturn = returnStore[index];
-        return lastReturn;
+    function getReturn(uint256 index) internal view returns (ReturnObject memory) {
+        return returnStore[index];
     }
 
     // @dev convert a reverse index into a forward index
     function reverseIndex(uint256 index) internal view returns (uint256) {
         return returnStore.length - index - 1;
-    }
-
-    /// @dev Helper function to increment the balance of a call-return pair in the storage.
-    /// @param pairID The unique identifier for a call-return pair.
-    function _incrementCallBalance(bytes32 pairID) internal {
-        if (!callbalanceStore[pairID].set) {
-            callbalanceStore[pairID].balance = 1;
-            callbalanceKeyList.push(pairID);
-            callbalanceStore[pairID].set = true;
-        } else {
-            callbalanceStore[pairID].balance++;
-        }
-    }
-
-    /// @dev Helper function to decrement the balance of a call-return pair in the storage.
-    /// @param pairID The unique identifier for a call-return pair.
-    function _decrementCallBalance(bytes32 pairID) internal {
-        if (!callbalanceStore[pairID].set) {
-            callbalanceStore[pairID].balance = -1;
-            callbalanceKeyList.push(pairID);
-            callbalanceStore[pairID].set = true;
-        } else {
-            callbalanceStore[pairID].balance--;
-        }
     }
 
     /// @notice Inserts a pair of bytes32 into the associatedDataStore and associatedDataKeyList
@@ -364,16 +348,16 @@ contract CallBreaker is CallBreakerStorage {
         }
     }
 
-    /// @dev Ensures all call-return pairs have balanced counts.
-    function _ensureAllPairsAreBalanced() internal view {
-        for (uint256 i = 0; i < callbalanceKeyList.length; i++) {
-            if (callbalanceStore[callbalanceKeyList[i]].balance != 0) {
-                revert TimeImbalance();
-            }
-        }
+    function _getIndexFromEnd(CallObject[] memory callObjects, uint256 indexFromStart)
+        internal
+        pure
+        returns (uint256)
+    {
+        return callObjects.length - indexFromStart - 1;
     }
 
-    function _getIndexFromEnd(CallObject[] memory callObjects, uint256 indexFromStart) internal pure returns (uint256) {
-        return callObjects.length - indexFromStart - 1;
+    function getCallIndices(CallObject memory callObj) public view returns (uint256[] memory) {
+        bytes32 callId = keccak256(abi.encode(callObj));
+        return callIndices[callId];
     }
 }

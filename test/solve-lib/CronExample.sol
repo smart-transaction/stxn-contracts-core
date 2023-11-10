@@ -6,7 +6,6 @@ import "forge-std/Vm.sol";
 import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../examples/CronDeposits.sol";
-import "./CleanupUtility.sol";
 import "../examples/MyErc20.sol";
 
 contract CronExampleLib {
@@ -17,7 +16,6 @@ contract CronExampleLib {
     CronDeposits public temporalHoneypot;
     Oracle public mevTimeOracle;
     Laminator public laminator;
-    CleanupUtility public cleanupContract;
 
     function deployerLand(address pusher) public {
         // Initializing contracts
@@ -30,8 +28,6 @@ contract CronExampleLib {
         erc20a.mint(pusher, 10);
 
         temporalHoneypot = new CronDeposits(address(callbreaker), address(erc20a));
-
-        cleanupContract = new CleanupUtility();
 
         // compute the pusher laminated address
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
@@ -82,26 +78,11 @@ contract CronExampleLib {
         temporalHoneypot.setWithdrawer(filler);
 
         // TODO: Refactor these parts further if necessary.
-        CallObject[] memory callObjs = new CallObject[](5);
-        ReturnObject[] memory returnObjs = new ReturnObject[](5);
-
-        callObjs[0] = CallObject({
-            amount: 0,
-            addr: address(cleanupContract),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature(
-                "preClean(address,address,address,uint256,bytes)",
-                address(callbreaker),
-                temporalHoneypot,
-                pusherLaminated,
-                laminatorSequenceNumber,
-                abi.encodeWithSignature("withdraw(uint256)", x)
-                )
-        });
-        returnObjs[0] = ReturnObject({returnvalue: ""});
+        CallObject[] memory callObjs = new CallObject[](3);
+        ReturnObject[] memory returnObjs = new ReturnObject[](3);
 
         // first we're going to call takeSomeAtokenFromOwner by pulling from the laminator
-        callObjs[1] = CallObject({
+        callObjs[0] = CallObject({
             amount: 0,
             addr: pusherLaminated,
             gas: 1000000,
@@ -112,19 +93,19 @@ contract CronExampleLib {
         returnObjsFromPull[0] = ReturnObject({returnvalue: abi.encode(true)});
         returnObjsFromPull[1] = ReturnObject({returnvalue: ""});
         // double encoding because first here second in pull()
-        returnObjs[1] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
+        returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
-        callObjs[2] = CallObject({
+        callObjs[1] = CallObject({
             amount: 0,
             addr: address(temporalHoneypot),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("withdraw(uint256)", x)
         });
         // return object is still nothing
-        returnObjs[2] = ReturnObject({returnvalue: ""});
+        returnObjs[1] = ReturnObject({returnvalue: ""});
 
         // then we'll call checkBalance
-        callObjs[3] = CallObject({
+        callObjs[2] = CallObject({
             amount: 0,
             addr: address(temporalHoneypot),
             gas: 1000000,
@@ -132,24 +113,7 @@ contract CronExampleLib {
         });
         // log what this callobject looks like
         // return object is still nothing
-        returnObjs[3] = ReturnObject({returnvalue: ""});
-
-        // finally we'll call cleanup
-        callObjs[4] = CallObject({
-            amount: 0,
-            addr: address(cleanupContract),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature(
-                "cleanup(address,address,address,uint256,bytes)",
-                address(callbreaker),
-                address(temporalHoneypot),
-                pusherLaminated,
-                laminatorSequenceNumber,
-                abi.encodeWithSignature("withdraw(uint256)", x)
-                )
-        });
-        // return object is still nothing
-        returnObjs[4] = ReturnObject({returnvalue: ""});
+        returnObjs[2] = ReturnObject({returnvalue: ""});
 
         // Constructing something that'll decode happily
         bytes32[] memory keys = new bytes32[](0);

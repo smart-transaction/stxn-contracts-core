@@ -8,8 +8,10 @@ import "openzeppelin/security/ReentrancyGuard.sol";
 contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @notice The map from sequence number to calls held in the mempool.
     mapping(uint256 => CallObjectHolder) public deferredCalls;
-    /// @notice The sequence number of the currently executing call.
+    /// @notice The sequence number of the currently executing job.
     uint256 _executingSequenceNumber;
+    /// @notice the index in the job of the currently executing call.
+    uint256 _executingCallIndex;
     /// @notice A flag indicating whether a sequence number is currently being executed.
     bool _executingSequenceNumberSet;
 
@@ -39,6 +41,8 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
 
     /// @notice The sequence number of a deferred call must be set before it can be executed.
     error SeqNumberNotSet();
+
+    error AlreadyExecuted();
 
     /// @dev Emitted when a function call is deferred and added to the queue.
     /// @param callObjs The CallObject[] containing details of the deferred function call.
@@ -143,6 +147,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         callSequenceNumber = count();
         CallObjectHolder storage holder = deferredCalls[callSequenceNumber];
         holder.initialized = true;
+        holder.executed = false;
         holder.firstCallableBlock = block.number + delay;
         for (uint256 i = 0; i < callObjs.length; ++i) {
             holder.callObjs.push(callObjs[i]);
@@ -162,7 +167,12 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @return returnValue The return value of the executed deferred call.
     function pull(uint256 seqNumber) external nonReentrant returns (bytes memory returnValue) {
         CallObjectHolder memory coh = deferredCalls[seqNumber];
+        if (coh.executed) {
+            revert AlreadyExecuted();
+        }
+        coh.executed = true;
         _executingSequenceNumber = seqNumber;
+        _executingCallIndex = 0;
         _executingSequenceNumberSet = true;
         if (!coh.initialized) {
             revert Uninitialized();
@@ -175,7 +185,6 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
 
         returnValue = _execute(coh.callObjs);
         emit CallPulled(coh.callObjs, seqNumber);
-        delete deferredCalls[seqNumber];
         _executingSequenceNumberSet = false;
     }
 
@@ -200,6 +209,31 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         return _executingSequenceNumber;
     }
 
+    /// @notice Returns the index of the currently executing call.
+    /// @dev This function can only be called when a sequence number is currently being executed.
+    ///      It reverts if no sequence number is set.
+    /// @return The index of the currently executing call.
+    function getExecutingCallIndex() public view returns (uint256) {
+        if (!_executingSequenceNumberSet) {
+            revert SeqNumberNotSet();
+        }
+        return _executingCallIndex;
+    }
+
+    function getExecutingCallObject() public view returns (CallObject memory) {
+        if (!_executingSequenceNumberSet) {
+            revert SeqNumberNotSet();
+        }
+        return deferredCalls[_executingSequenceNumber].callObjs[_executingCallIndex];
+    }
+
+    function getExecutingCallObjectHolder() public view returns (CallObjectHolder memory) {
+        if (!_executingSequenceNumberSet) {
+            revert SeqNumberNotSet();
+        }
+        return deferredCalls[_executingSequenceNumber];
+    }
+
     /// @dev Executes the function call specified by the CallObject `callToMake`.
     ///      Emits a `CallExecuted` event upon successful execution.
     /// @param callsToMake The CallObject containing information about the function call to execute.
@@ -207,6 +241,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     function _execute(CallObject[] memory callsToMake) internal returns (bytes memory) {
         ReturnObject[] memory returnObjs = new ReturnObject[](callsToMake.length);
         for (uint256 i = 0; i < callsToMake.length; i++) {
+            _executingCallIndex = i;
             returnObjs[i] = ReturnObject({returnvalue: _executeSingle(callsToMake[i])});
         }
         return abi.encode(returnObjs);
@@ -228,6 +263,15 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
 
         emit CallExecuted(callToMake);
         return returnvalue;
+    }
+
+    function cleanupStorage(uint256[] memory seqNumbers) external {
+        for (uint256 i = 0; i < seqNumbers.length; i++) {
+            if (!deferredCalls[seqNumbers[i]].executed) {
+                continue;
+            }
+            delete deferredCalls[seqNumbers[i]];
+        }
     }
 
     /// @dev Copies a job with a specified delay and condition.
@@ -253,6 +297,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         uint256 callSequenceNumber = count();
         CallObjectHolder storage holder = deferredCalls[callSequenceNumber];
         holder.initialized = true;
+        holder.executed = false;
         holder.firstCallableBlock = block.number + delay;
         for (uint256 i = 0; i < callObjs.length; ++i) {
             holder.callObjs.push(callObjs[i]);

@@ -335,6 +335,10 @@ contract LaminatorTest is Test {
         proxy.execute(cData);
     }
 
+    function testExecuteBeforeDeleteLogic() public {
+        revert("This function has not been implemented yet.");
+    }
+
     // ensure executions as the owner through the laminator do work
     function testExecuteAsOwnerFromLaminator() public {
         address expectedProxyAddress = laminator.computeProxyAddress(address(this));

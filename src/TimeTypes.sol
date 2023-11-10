@@ -33,6 +33,7 @@ struct ReturnObject {
 /// @param callObj The actual CallObject instance
 struct CallObjectHolder {
     bool initialized;
+    bool executed;
     uint256 firstCallableBlock;
     CallObject[] callObjs;
 }
