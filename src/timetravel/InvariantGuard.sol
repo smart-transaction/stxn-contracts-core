@@ -11,10 +11,7 @@ contract InvariantGuard is CallBreaker {
         laminator = LaminatedProxy(payable(_laminator));
     }
 
-    function noFrontRunInThisPull() public {
-        // ensure we're in the timeturner context
-        ensureTurnerOpen();
-
+    function noFrontRunInThisPull() public view ensureTurnerOpen {
         bytes memory snumbytes = this.fetchFromAssociatedDataStore(keccak256(abi.encodePacked("pullIndex")));
 
         uint256 snum = abi.decode(snumbytes, (uint256));
@@ -26,7 +23,7 @@ contract InvariantGuard is CallBreaker {
             callvalue: abi.encodeWithSignature("pull(uint256)", snum)
         });
 
-        uint256[] memory cinds = this.getCallIndices(callObj);
+        uint256[] memory cinds = this.getCallIndex(callObj);
         require(cinds.length == 1, "InvariantGuard: noFrontRunInThisPull expected exactly one call index");
         require(cinds[0] == 0, "InvariantGuard: noFrontRunInThisPull expected call index 0");
     }

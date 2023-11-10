@@ -14,6 +14,11 @@ struct AssociatedData {
     bytes value;
 }
 
+struct Call {
+    bytes32 callId;
+    uint256 index;
+}
+
 contract CallBreaker is CallBreakerStorage {
     CallObject[] public callStore;
     ReturnObject[] public returnStore;
@@ -21,8 +26,7 @@ contract CallBreaker is CallBreakerStorage {
     bytes32[] public associatedDataKeyList;
     mapping(bytes32 => AssociatedData) public associatedDataStore;
 
-    bytes32[] public callIndicesKeyList;
-    mapping(bytes32 => uint256[]) public callIndices;
+    Call[] public callList;
 
     /// @dev Error thrown when there are no return values left
     /// @dev Selector 0xc8acbe62
@@ -80,6 +84,13 @@ contract CallBreaker is CallBreakerStorage {
         _setPortalClosed();
     }
 
+    modifier ensureTurnerOpen() {
+        if (!isPortalOpen()) {
+            revert PortalClosed();
+        }
+        _;
+    }
+
     /// NOTE: Expect calls to arrive with non-null msg.data
     receive() external payable {
         revert EmptyCalldata();
@@ -109,9 +120,12 @@ contract CallBreaker is CallBreakerStorage {
         return (callStore[i], returnStore[i]);
     }
 
-    function ensureTurnerOpen() public view {
-        if (!isPortalOpen()) {
-            revert PortalClosed();
+    function getCallIndex(CallObject memory callObj) public view returns (uint256[] memory index) {
+        bytes32 callId = keccak256(abi.encode(callObj));
+        for (uint256 i = 0; i < callList.length; i++) {
+            if (callList[i].callId == callId) {
+                index[index.length] = callList[i].index;
+            }
         }
     }
 
@@ -198,21 +212,14 @@ contract CallBreaker is CallBreakerStorage {
     // /// @param input The call to be executed, structured as a CallObjectWithIndex.
     // /// @return The return value from the record of return values.
     // /// TODO: make this do lookups in an array instead of in a hashmap. mark "done" with a bool, and then just iterate over the array to check what's filled
-    // /// TODO: determine if this is gas-optimal (hi @ zellic-audit)
-    // function getReturnValue(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
-    //     // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
-    //     CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
-    //     ReturnObject memory thisReturn = getReturn(callObjWithIndex.index);
-
-    //     emit EnterPortal(callObjWithIndex.callObj, thisReturn, callObjWithIndex.index);
-    //     return thisReturn.returnvalue;
-    // }
-
-    function expectCallAt(CallObject memory callObj, uint256 index) internal view {
-        if (callStore[index].addr != callObj.addr) {
-            revert CallPositionFailed(callObj, index);
-        }
-    }
+    // /// TODO: determine if this is gas-optimal (hi @audit)
+     function getReturnValue(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
+        // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
+        CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
+        ReturnObject memory thisReturn = getReturn(callObjWithIndex.index);
+        emit EnterPortal(callObjWithIndex.callObj, thisReturn, callObjWithIndex.index);
+        return thisReturn.returnvalue;
+     }
 
     /// @notice Verifies that the given calls, when executed, gives the correct return values
     /// @dev SECURITY NOTICE: This function is only callable when the portal is closed. It requires the caller to be an EOA.
@@ -251,9 +258,8 @@ contract CallBreaker is CallBreakerStorage {
 
     function _populateCallIndices() internal {
         for (uint256 i = 0; i < callStore.length; i++) {
-            bytes32 callId = keccak256(abi.encode(callStore[i]));
-            callIndices[callId].push(i);
-            callIndicesKeyList.push(callId);
+            Call memory call = Call({callId: keccak256(abi.encode(callStore[i])), index: i});
+            callList.push(call);
         }
     }
 
@@ -288,13 +294,7 @@ contract CallBreaker is CallBreakerStorage {
     /// @dev Cleans up storage by resetting returnStore
     function _cleanUpStorage() internal {
         delete returnStore;
-        for (uint256 i = 0; i < returnStore.length; i++) {
-            delete returnStore[i];
-        }
-        for (uint256 i = 0; i < callIndicesKeyList.length; i++) {
-            delete callIndices[callIndicesKeyList[i]];
-        }
-        delete callIndicesKeyList;
+        delete callList;
         for (uint256 i = 0; i < associatedDataKeyList.length; i++) {
             delete associatedDataStore[associatedDataKeyList[i]];
         }
@@ -303,6 +303,12 @@ contract CallBreaker is CallBreakerStorage {
         // Transfer remaining ETH balance to the block builder
         address payable blockBuilder = payable(block.coinbase);
         blockBuilder.transfer(address(this).balance);
+    }
+
+    function expectCallAt(CallObject memory callObj, uint256 index) internal view {
+        if (callStore[index].addr != callObj.addr) {
+            revert CallPositionFailed(callObj, index);
+        }
     }
 
     // @dev Helper function to fetch and remove the last ReturnObject from the storage
@@ -340,7 +346,9 @@ contract CallBreaker is CallBreakerStorage {
         (bytes32[] memory keys, bytes[] memory values) = abi.decode(encodedData, (bytes32[], bytes[]));
 
         // Check that the keys and values arrays have the same length
-        require(keys.length == values.length, "Mismatch in keys and values array lengths");
+        if (keys.length != values.length) {
+            revert LengthMismatch();
+        }
 
         // Iterate over the keys and values arrays and insert each pair into the associatedDataStore
         for (uint256 i = 0; i < keys.length; i++) {
@@ -354,10 +362,5 @@ contract CallBreaker is CallBreakerStorage {
         returns (uint256)
     {
         return callObjects.length - indexFromStart - 1;
-    }
-
-    function getCallIndices(CallObject memory callObj) public view returns (uint256[] memory) {
-        bytes32 callId = keccak256(abi.encode(callObj));
-        return callIndices[callId];
     }
 }
