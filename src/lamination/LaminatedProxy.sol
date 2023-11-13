@@ -168,6 +168,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     ///      the deferred call object from the `deferredCalls` mapping.
     /// @param seqNumber The sequence number of the deferred call to be executed.
     /// @return returnValue The return value of the executed deferred call.
+
     function pull(uint256 seqNumber) external nonReentrant returns (bytes memory returnValue) {
         CallObjectHolder storage coh = deferredCalls[seqNumber];
         if (coh.executed) {

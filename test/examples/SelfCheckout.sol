@@ -39,7 +39,13 @@ contract SelfCheckout {
     event DebugInfo(string message, string value);
     event DebugUint(string message, uint256 value);
 
-    constructor(address _owner, address _atoken, address _btoken, address _callbreakerAddress, address _smarterContract) {
+    constructor(
+        address _owner,
+        address _atoken,
+        address _btoken,
+        address _callbreakerAddress,
+        address _smarterContract
+    ) {
         owner = _owner;
 
         atoken = IERC20(_atoken);
@@ -96,7 +102,7 @@ contract SelfCheckout {
             emit LogCallObj(callObj);
             CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 2});
             smarterContract.assertFutureCallTo(callObj);
-            
+
             balanceScheduled = true;
         }
 

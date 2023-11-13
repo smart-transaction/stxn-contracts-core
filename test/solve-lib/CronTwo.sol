@@ -19,7 +19,6 @@ contract CronTwoLib {
     address payable public pusherLaminated;
     Laminator public laminator;
     CronTwoCounter public counter;
-    //CronTwoLogic public cronTwoLogic;
     CallBreaker public callbreaker;
     SmarterContract public smartercontract;
     Tips public tips;
@@ -33,7 +32,6 @@ contract CronTwoLib {
         callbreaker = new CallBreaker();
         smartercontract = new SmarterContract(payable(address(callbreaker)));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
-        //cronTwoLogic = new CronTwoLogic(address(invariantGuard), address(pusherLaminated));
         tips = new Tips(address(callbreaker));
     }
 
@@ -81,9 +79,9 @@ contract CronTwoLib {
         // 13: remove tina from flashpill
         pusherCallObjs[3] = CallObject({
             amount: 0,
-            addr: address(callbreaker),
+            addr: address(smartercontract),
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("noFrontRunInThisPull()")
+            callvalue: abi.encodeWithSignature("frontrunBlocker()")
         });
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }

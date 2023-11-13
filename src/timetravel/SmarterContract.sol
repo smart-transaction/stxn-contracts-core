@@ -9,6 +9,7 @@ import "../timetravel/CallBreaker.sol";
 
 contract SmarterContract {
     CallBreaker public callbreaker;
+
     constructor(address _callbreaker) {
         callbreaker = CallBreaker(payable(_callbreaker));
     }
@@ -28,8 +29,8 @@ contract SmarterContract {
         _;
     }
 
-    function frontrunBlocker() internal view {
-        require(callbreaker.getCurrentlyExecuting()==0, "CallBreakerUser: frontrunBlocker expected call index 0");
+    function frontrunBlocker() public view {
+        require(callbreaker.getCurrentlyExecuting() == 0, "CallBreakerUser: frontrunBlocker expected call index 0");
     }
 
     modifier noBackRun() {
@@ -40,7 +41,7 @@ contract SmarterContract {
     function backrunBlocker() internal view {
         uint256 currentlyExecuting = callbreaker.getCurrentlyExecuting();
         uint256 reversecurrentlyExecuting = callbreaker.reverseIndex(currentlyExecuting);
-        require (reversecurrentlyExecuting == 0, "CallBreakerUser: noBackRun expected reverse call index 0");
+        require(reversecurrentlyExecuting == 0, "CallBreakerUser: noBackRun expected reverse call index 0");
     }
 
     modifier noBackRunOrFrontRun() {
@@ -79,15 +80,23 @@ contract SmarterContract {
         uint256 currentlyExecuting = callbreaker.getCurrentlyExecuting();
         bytes32 callObjHash = keccak256(abi.encode(callObj));
         bytes32 outputHash = keccak256(abi.encode(callbreaker.getCallListAt(hintdex)));
-        require(hintdex > currentlyExecuting, "CallBreakerUser: assertFutureCallTo expected a future call to this callobject");
-        require(outputHash == callObjHash, "CallBreakerUser: assertFutureCallTo expected a future call to this callobject");
+        require(
+            hintdex > currentlyExecuting,
+            "CallBreakerUser: assertFutureCallTo expected a future call to this callobject"
+        );
+        require(
+            outputHash == callObjHash, "CallBreakerUser: assertFutureCallTo expected a future call to this callobject"
+        );
     }
 
     /// @dev makes sure the next call is to this callobj
     function assertNextCallTo(CallObject memory callObj) public view {
         uint256 currentlyExecuting = callbreaker.getCurrentlyExecuting();
         bytes32 callObjHash = keccak256(abi.encode(callObj));
-        bytes32 outputHash = keccak256(abi.encode(callbreaker.getCallListAt(currentlyExecuting+1)));
-        require(outputHash == callObjHash, "CallBreakerUser: assertNextCallTo expected the next call to be to this callobject");
+        bytes32 outputHash = keccak256(abi.encode(callbreaker.getCallListAt(currentlyExecuting + 1)));
+        require(
+            outputHash == callObjHash,
+            "CallBreakerUser: assertNextCallTo expected the next call to be to this callobject"
+        );
     }
 }

@@ -42,7 +42,8 @@ contract WorkedExampleLib {
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
 
         // set up a selfcheckout
-        selfcheckout = new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker), address(smartercontract));
+        selfcheckout =
+        new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker), address(smartercontract));
     }
 
     function userLand() public returns (uint256) {
@@ -127,6 +128,16 @@ contract WorkedExampleLib {
         values[4] = abi.encode(laminatorSequenceNumber);
         bytes memory encodedData = abi.encode(keys, values);
 
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData);
+        bytes32[] memory hintdicesKeys = new bytes32[](3);
+        hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
+        hintdicesKeys[1] = keccak256(abi.encode(callObjs[1]));
+        hintdicesKeys[2] = keccak256(abi.encode(callObjs[2]));
+        uint256[] memory hintindicesVals = new uint256[](3);
+        hintindicesVals[0] = 0;
+        hintindicesVals[1] = 1;
+        hintindicesVals[2] = 2;
+        bytes memory hintindices = abi.encode(hintdicesKeys, hintindicesVals);
+
+        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintindices);
     }
 }

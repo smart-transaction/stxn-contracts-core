@@ -339,8 +339,8 @@ contract LaminatorTest is Test {
     /// Goal: use a 'use after free' function -- question for when things are deleted
     /// Can only be deleted ... when? Iff executed == init == true? maybe by the owner?
     /// Concern: Laminator can be done with pull before callBreaker is done with verify
-        /// Pull --> clean storage --> executed check --> ??? (how to force cleanup deletion to be last)
-        /// Deletion should be last? --> how to force this?
+    /// Pull --> clean storage --> executed check --> ??? (how to force cleanup deletion to be last)
+    /// Deletion should be last? --> how to force this?
     /// Change array to mapping of job schedule
     function testExecuteBeforeDeleteLogic() public {
         revert("This function has not been implemented yet.");

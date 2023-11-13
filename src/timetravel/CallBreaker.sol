@@ -122,11 +122,7 @@ contract CallBreaker is CallBreakerStorage {
         return associatedDataStore[key].value;
     }
 
-    function getPair(uint256 i)
-        public
-        view
-        returns (CallObject memory, ReturnObject memory)
-    {
+    function getPair(uint256 i) public view returns (CallObject memory, ReturnObject memory) {
         return (callStore[i], returnStore[i]);
     }
 
@@ -134,7 +130,7 @@ contract CallBreaker is CallBreakerStorage {
         return callList[i];
     }
 
-    event Log(uint256 i); 
+    event Log(uint256 i);
 
     /// very important to document this
     // @audit come back here and fix what xh was talking about?
@@ -257,24 +253,25 @@ contract CallBreaker is CallBreakerStorage {
     // /// @return The return value from the record of return values.
     // /// TODO: make this do lookups in an array instead of in a hashmap. mark "done" with a bool, and then just iterate over the array to check what's filled
     // /// TODO: determine if this is gas-optimal (hi @audit)
-     function getReturnValue(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
+    function getReturnValue(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
         // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
         CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
         ReturnObject memory thisReturn = getReturn(callObjWithIndex.index);
         emit EnterPortal(callObjWithIndex.callObj, thisReturn, callObjWithIndex.index);
         return thisReturn.returnvalue;
-     }
+    }
 
     /// @notice Verifies that the given calls, when executed, gives the correct return values
     /// @dev SECURITY NOTICE: This function is only callable when the portal is closed. It requires the caller to be an EOA.
     /// @param callsBytes The bytes representing the calls to be verified
     /// @param returnsBytes The bytes representing the returns to be verified against
     /// @param associatedData Bytes representing associated data with the verify call, reserved for tipping the solver
-    function verify(bytes memory callsBytes, bytes memory returnsBytes, bytes memory associatedData, bytes memory hintdices)
-        external
-        payable
-        onlyPortalClosed
-    {
+    function verify(
+        bytes memory callsBytes,
+        bytes memory returnsBytes,
+        bytes memory associatedData,
+        bytes memory hintdices
+    ) external payable onlyPortalClosed {
         _setPortalOpen();
         if (msg.sender.code.length != 0) {
             revert MustBeEOA();
