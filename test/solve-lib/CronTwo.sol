@@ -65,6 +65,17 @@ contract CronTwoLib {
             gas: 10000000,
             callvalue: abi.encodeWithSignature("copyCurrentJob(uint256,bytes)", _blocksInADay, callObjectContinueFnPtr)
         });
+        // xiangan homework: change this to make a smartercontract call directly inside the laminator push
+        // xiangan homework 2: general cleanup as much as u want (split storage up?)
+        // xiangan homework 3: make hintdices work across codebase
+        // 4: delete tests that we hate
+        // 5: write a test that breaks that basically just says todo call uniswap in a DCA job
+        // 6: write another tests that breaks that says unimplemented!(check ofac)
+        // 7: write a test that breaks that says unimplemented!(check audited)
+        // 8: make sure everything is documented and generally things are in the right contracts
+        // 9: inheritance of smartercontract
+        // 10: clean up storage patterns
+        // 11: get some *ideas* about where to do gas optimizations
         pusherCallObjs[3] = CallObject({
             amount: 0,
             addr: address(callbreaker),
