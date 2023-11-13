@@ -60,7 +60,7 @@ contract CronTwoTest is Test, CronTwoLib {
         assertEq(counter.getCount(pusherLaminated), 2);
         assertEq(address(filler).balance, initialFillerBalance + 2 * 33);
 
-        assertFalse(invariantGuard.isPortalOpen());
+        assertFalse(callbreaker.isPortalOpen());
 
         //  Should be cleared so init should be false (testFail format is for compliance with Kontrol framework)
         (bool init, bool exec,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);

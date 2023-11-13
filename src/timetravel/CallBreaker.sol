@@ -14,6 +14,14 @@ struct AssociatedData {
     bytes value;
 }
 
+// allow solver to provide indices where a call is executed, verified for accuracy on chain, to save gas
+// this is NOT necessarily complete- to get a complete index of everywhere a call is executed, you need to use getCompleteCallIndex
+// getCompleteCallIndex is O(n) and iterates through the entire call list.
+struct Hintdex {
+    bool set;
+    uint256[] indices;
+}
+
 struct Call {
     bytes32 callId;
     uint256 index;
@@ -25,6 +33,9 @@ contract CallBreaker is CallBreakerStorage {
 
     bytes32[] public associatedDataKeyList;
     mapping(bytes32 => AssociatedData) public associatedDataStore;
+
+    bytes32[] public hintdicesStoreKeyList;
+    mapping(bytes32 => Hintdex) public hintdicesStore;
 
     Call[] public callList;
 
@@ -125,8 +136,9 @@ contract CallBreaker is CallBreakerStorage {
 
     event Log(uint256 i); 
 
-    // @audit FIXXXX
-    function getCallIndex(CallObject memory callObj) public returns (uint256[] memory) {
+    /// very important to document this
+    // @audit come back here and fix what xh was talking about?
+    function getCompleteCallIndex(CallObject memory callObj) public returns (uint256[] memory) {
         bytes32 callId = keccak256(abi.encode(callObj));
         uint256[] memory index = new uint256[](callList.length);
         for (uint256 i = 0; i < callList.length; i++) {
@@ -137,6 +149,21 @@ contract CallBreaker is CallBreakerStorage {
             }
         }
         return index;
+    }
+
+    function getCallIndex(CallObject memory callObj) public view returns (uint256[] memory) {
+        bytes32 callId = keccak256(abi.encode(callObj));
+        // look up this callid in hintdices
+        uint256[] storage hintdices = hintdicesStore[callId].indices;
+        // validate that the right callid lives at these hintdices
+        for (uint256 i = 0; i < hintdices.length; i++) {
+            uint256 hintdex = hintdices[i];
+            Call memory call = callList[hintdex];
+            if (call.callId != callId) {
+                revert("CallBreakerUser: getCallIndex expected the right callid to live at the hintdex");
+            }
+        }
+        return hintdices;
     }
 
     function getCurrentlyExecuting() public view returns (uint256) {
@@ -243,7 +270,7 @@ contract CallBreaker is CallBreakerStorage {
     /// @param callsBytes The bytes representing the calls to be verified
     /// @param returnsBytes The bytes representing the returns to be verified against
     /// @param associatedData Bytes representing associated data with the verify call, reserved for tipping the solver
-    function verify(bytes memory callsBytes, bytes memory returnsBytes, bytes memory associatedData)
+    function verify(bytes memory callsBytes, bytes memory returnsBytes, bytes memory associatedData, bytes memory hintdices)
         external
         payable
         onlyPortalClosed
@@ -262,6 +289,7 @@ contract CallBreaker is CallBreakerStorage {
 
         _resetTraceStoresWith(calls, returnValues);
         _populateAssociatedDataStore(associatedData);
+        _populateHintdices(hintdices);
         _populateCallIndices();
 
         for (uint256 i = 0; i < calls.length; i++) {
@@ -319,6 +347,11 @@ contract CallBreaker is CallBreakerStorage {
             delete associatedDataStore[associatedDataKeyList[i]];
         }
         delete associatedDataKeyList;
+
+        for (uint256 i = 0; i < hintdicesStoreKeyList.length; i++) {
+            delete hintdicesStore[hintdicesStoreKeyList[i]];
+        }
+        delete hintdicesStoreKeyList;
 
         // Transfer remaining ETH balance to the block builder
         address payable blockBuilder = payable(block.coinbase);
@@ -378,6 +411,33 @@ contract CallBreaker is CallBreakerStorage {
         // Iterate over the keys and values arrays and insert each pair into the associatedDataStore
         for (uint256 i = 0; i < keys.length; i++) {
             _insertIntoAssociatedDataStore(keys[i], values[i]);
+        }
+    }
+
+    function _insertIntoHintdices(bytes32 key, uint256 value) internal {
+        // If the key doesn't exist in the hintdices, initialize it
+        if (!hintdicesStore[key].set) {
+            hintdicesStore[key].set = true;
+            hintdicesStore[key].indices = new uint256[](0);
+            hintdicesStoreKeyList.push(key);
+        }
+
+        // Append the value to the list of values associated with the key
+        hintdicesStore[key].indices.push(value);
+    }
+
+    function _populateHintdices(bytes memory encodedData) internal {
+        // Decode the input data into an array of (bytes32, bytes32) pairs
+        (bytes32[] memory keys, uint256[] memory values) = abi.decode(encodedData, (bytes32[], uint256[]));
+
+        // Check that the keys and values arrays have the same length
+        if (keys.length != values.length) {
+            revert LengthMismatch();
+        }
+
+        // Iterate over the keys and values arrays and insert each pair into the hintdices
+        for (uint256 i = 0; i < keys.length; i++) {
+            _insertIntoHintdices(keys[i], values[i]);
         }
     }
 

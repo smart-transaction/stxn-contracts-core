@@ -5,9 +5,9 @@ import "forge-std/Vm.sol";
 
 import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
-import "../../src/timetravel/InvariantGuard.sol";
 import "../../test/examples/CronTwoCounter.sol";
 import "../../src/tips/Tips.sol";
+import "../../src/timetravel/SmarterContract.sol";
 
 // for the next year, every day:
 // tip the pusher with a little eth
@@ -16,11 +16,12 @@ import "../../src/tips/Tips.sol";
 // the way we do this is we push a new call at the end of execution
 
 contract CronTwoLib {
-    InvariantGuard public invariantGuard;
     address payable public pusherLaminated;
     Laminator public laminator;
     CronTwoCounter public counter;
     //CronTwoLogic public cronTwoLogic;
+    CallBreaker public callbreaker;
+    SmarterContract public smartercontract;
     Tips public tips;
     uint32 _blocksInADay = 7150;
     uint256 _tipWei = 33;
@@ -28,12 +29,12 @@ contract CronTwoLib {
     function deployerLand(address pusher) public {
         // Initializing contracts
         laminator = new Laminator();
-        invariantGuard = new InvariantGuard(address(laminator));
-
         counter = new CronTwoCounter();
+        callbreaker = new CallBreaker();
+        smartercontract = new SmarterContract(payable(address(callbreaker)));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
         //cronTwoLogic = new CronTwoLogic(address(invariantGuard), address(pusherLaminated));
-        tips = new Tips(address(invariantGuard));
+        tips = new Tips(address(callbreaker));
     }
 
     function userLand() public returns (uint256) {
@@ -66,7 +67,7 @@ contract CronTwoLib {
         });
         pusherCallObjs[3] = CallObject({
             amount: 0,
-            addr: address(invariantGuard),
+            addr: address(callbreaker),
             gas: 10000000,
             callvalue: abi.encodeWithSignature("noFrontRunInThisPull()")
         });
@@ -109,6 +110,11 @@ contract CronTwoLib {
             returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
             values[1] = abi.encode(laminatorSequenceNumber + 1);
         }
-        invariantGuard.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData);
+        bytes32[] memory hintdicesKeys = new bytes32[](1);
+        hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
+        uint256[] memory hintindicesVals = new uint256[](1);
+        hintindicesVals[0] = 0;
+        bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
+        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
 }
