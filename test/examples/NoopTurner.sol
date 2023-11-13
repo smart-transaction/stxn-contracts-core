@@ -11,29 +11,12 @@ contract NoopTurner {
         _callbreakerAddress = callbreakerLocation;
     }
 
-    function const_loop(uint16 input) external returns (uint16) {
-        CallObject memory callObj = CallObject({
-            amount: 0,
-            addr: address(this),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("const_loop(uint16)", input)
-        });
-
-        CallObjectWithIndex memory callObjWithIndex = CallObjectWithIndex({callObj: callObj, index: 0});
-
-        // call, hit the fallback.
-        (bool success, bytes memory returnvalue) = _callbreakerAddress.call(abi.encode(callObjWithIndex));
-
-        if (!success) {
-            revert("turner CallFailed");
-        }
-
-        // this one just returns whatever it gets from the turner.
-        return abi.decode(returnvalue, (uint16));
+    // dumb noop function without callbreaker
+    function vanilla(uint16 _input) public pure returns (uint16) {
+        return 52;
     }
 
-    // dumb noop function without callbreaker
-    function vanilla(uint16 _input) external pure returns (uint16) {
-        return 52;
+    function const_loop(uint16 input) external pure returns (uint16) {
+        return vanilla(input);
     }
 }

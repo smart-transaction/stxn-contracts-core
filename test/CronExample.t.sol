@@ -59,12 +59,14 @@ contract CronExampleTest is Test, CronExampleLib {
         assertEq(!callbreaker.isPortalOpen(), true);
 
         // Both of the following should be false since we already solved and cleared the tx!
-        (bool init, CallObject[] memory co) =
-            LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumberFirst);
-        assertEq(init, false);
+        (bool init, bool exec, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumberFirst);
+        // Test should fail here because we already solved and cleared the tx!
+        assertTrue(init);
+        assertTrue(exec);
 
-        (bool initSecond, CallObject[] memory coSecond) =
+        (bool initSecond, bool execSecond, CallObject[] memory coSecond) =
             LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumberSecond);
-        assertEq(initSecond, false);
+        assertTrue(initSecond);
+        assertTrue(execSecond);
     }
 }

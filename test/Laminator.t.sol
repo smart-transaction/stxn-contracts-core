@@ -238,7 +238,7 @@ contract LaminatorTest is Test {
         proxy.pull(0);
 
         // and try to pull again
-        vm.expectRevert(LaminatedProxy.Uninitialized.selector);
+        vm.expectRevert(LaminatedProxy.AlreadyExecuted.selector);
         proxy.pull(0);
     }
 
@@ -335,6 +335,13 @@ contract LaminatorTest is Test {
         proxy.execute(cData);
     }
 
+    /// cleanupStorage tests
+    /// Goal: use a 'use after free' function -- question for when things are deleted
+    /// Can only be deleted ... when? Iff executed == init == true? maybe by the owner?
+    /// Concern: Laminator can be done with pull before callBreaker is done with verify
+        /// Pull --> clean storage --> executed check --> ??? (how to force cleanup deletion to be last)
+        /// Deletion should be last? --> how to force this?
+    /// Change array to mapping of job schedule
     function testExecuteBeforeDeleteLogic() public {
         revert("This function has not been implemented yet.");
     }

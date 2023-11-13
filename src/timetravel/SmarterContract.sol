@@ -64,7 +64,7 @@ contract SmarterContract {
     // make sure there's a future call to this callobject after the current call
     // this iterates over all the call indices and makes sure there's one after the current call
     // you can add a hint and make it cheaper...
-    function assertFutureCallTo(CallObject memory callObj) internal view {
+    function assertFutureCallTo(CallObject memory callObj) public {
         uint256[] memory cinds = callbreaker.getCallIndex(callObj);
         uint256 currentlyExecuting = callbreaker.getCurrentlyExecuting();
         for (uint256 i = 0; i < cinds.length; i++) {
@@ -75,7 +75,7 @@ contract SmarterContract {
         revert("CallBreakerUser: assertFutureCallTo expected a future call to this callobject");
     }
 
-    function assertFutureCallTo(CallObject memory callObj, uint256 hintdex) internal view {
+    function assertFutureCallTo(CallObject memory callObj, uint256 hintdex) public view {
         uint256 currentlyExecuting = callbreaker.getCurrentlyExecuting();
         bytes32 callObjHash = keccak256(abi.encode(callObj));
         bytes32 outputHash = keccak256(abi.encode(callbreaker.getCallListAt(hintdex)));
@@ -84,7 +84,7 @@ contract SmarterContract {
     }
 
     /// @dev makes sure the next call is to this callobj
-    function assertNextCallTo(CallObject memory callObj) internal view {
+    function assertNextCallTo(CallObject memory callObj) public view {
         uint256 currentlyExecuting = callbreaker.getCurrentlyExecuting();
         bytes32 callObjHash = keccak256(abi.encode(callObj));
         bytes32 outputHash = keccak256(abi.encode(callbreaker.getCallListAt(currentlyExecuting+1)));

@@ -50,8 +50,9 @@ contract TemporalExampleTest is Test, TemporalExampleLib {
         assertEq(erc20a.balanceOf(filler), 10);
         assertEq(!callbreaker.isPortalOpen(), true);
 
-        (bool init, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
-        assertEq(init, false);
+        (bool init, bool exec, CallObject[] memory co) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
+        assertTrue(init);
+        assertTrue(exec);
     }
 
     function testFail_run_at_wrong_time() external {

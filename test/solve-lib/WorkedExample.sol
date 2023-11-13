@@ -5,6 +5,7 @@ import "forge-std/Vm.sol";
 
 import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
+import "../../src/timetravel/SmarterContract.sol";
 import "../../test/examples/SelfCheckout.sol";
 import "../../test/examples/MyErc20.sol";
 import "../../src/tips/Tips.sol";
@@ -12,6 +13,7 @@ import "../../src/tips/Tips.sol";
 contract WorkedExampleLib {
     CallBreaker public callbreaker;
     SelfCheckout public selfcheckout;
+    SmarterContract public smartercontract;
     address payable public pusherLaminated;
     Laminator public laminator;
     MyErc20 public erc20a;
@@ -24,6 +26,8 @@ contract WorkedExampleLib {
         // Initializing contracts
         laminator = new Laminator();
         callbreaker = new CallBreaker();
+        smartercontract = new SmarterContract(address(callbreaker));
+
         erc20a = new MyErc20("A", "A");
         erc20b = new MyErc20("B", "B");
         tips = new Tips(address(callbreaker));
@@ -38,7 +42,7 @@ contract WorkedExampleLib {
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
 
         // set up a selfcheckout
-        selfcheckout = new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
+        selfcheckout = new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker), address(smartercontract));
     }
 
     function userLand() public returns (uint256) {

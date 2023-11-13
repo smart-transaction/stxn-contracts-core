@@ -4,9 +4,11 @@ pragma solidity >=0.6.2 <0.9.0;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "../../src/timetravel/CallBreaker.sol";
+import "../../src/timetravel/SmarterContract.sol";
 
 contract TemporalHoneypot {
     address private _callbreakerAddress;
+    SmarterContract smarterContract;
     IERC20 atoken;
     bool withdrawalScheduled;
     address withdrawer;
@@ -16,9 +18,10 @@ contract TemporalHoneypot {
 
     event Transfer(address indexed from, address indexed to, uint256 value);
 
-    constructor(address callbreakerLocation, address _atoken) {
+    constructor(address callbreakerLocation, address _atoken, address _smarterContract) {
         _callbreakerAddress = callbreakerLocation;
         atoken = IERC20(_atoken);
+        smarterContract = SmarterContract(_smarterContract);
     }
 
     modifier onlyRightTime() {
@@ -42,11 +45,7 @@ contract TemporalHoneypot {
             });
             CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 3});
 
-            (bool success,) = _callbreakerAddress.call(abi.encode(callObjectWithIndex));
-
-            if (!success) {
-                revert("turner CallFailed");
-            }
+            smarterContract.assertFutureCallTo(callObj);
             withdrawalScheduled = true;
         }
 

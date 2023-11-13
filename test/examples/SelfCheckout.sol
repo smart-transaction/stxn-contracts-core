@@ -15,10 +15,12 @@ pragma solidity >=0.6.2 <0.9.0;
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "../../src/TimeTypes.sol";
 import "../../src/timetravel/CallBreaker.sol";
+import "../../src/timetravel/SmarterContract.sol";
 
 contract SelfCheckout {
     address owner;
     address callbreakerAddress;
+    SmarterContract smarterContract;
 
     IERC20 atoken;
     IERC20 btoken;
@@ -37,13 +39,14 @@ contract SelfCheckout {
     event DebugInfo(string message, string value);
     event DebugUint(string message, uint256 value);
 
-    constructor(address _owner, address _atoken, address _btoken, address _callbreakerAddress) {
+    constructor(address _owner, address _atoken, address _btoken, address _callbreakerAddress, address _smarterContract) {
         owner = _owner;
 
         atoken = IERC20(_atoken);
         btoken = IERC20(_btoken);
 
         callbreakerAddress = _callbreakerAddress;
+        smarterContract = SmarterContract(_smarterContract);
     }
 
     modifier onlyOwner() {
@@ -92,12 +95,8 @@ contract SelfCheckout {
             });
             emit LogCallObj(callObj);
             CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 2});
-
-            (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObjectWithIndex));
-
-            if (!success) {
-                revert("turner CallFailed");
-            }
+            smarterContract.assertFutureCallTo(callObj);
+            
             balanceScheduled = true;
         }
 
@@ -122,41 +121,5 @@ contract SelfCheckout {
     function checkBalance() public {
         require(imbalance == 0, "You still owe me some btoken!");
         balanceScheduled = false;
-
-        // clear the portal
-        bytes32 xkey = keccak256(abi.encodePacked("x"));
-        bytes memory xbytes = CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(xkey);
-        uint256 x = abi.decode(xbytes, (uint256));
-        CallObject memory callObj = CallObject({
-            amount: 0,
-            addr: address(this),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
-        });
-        CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 1});
-
-        (bool success, bytes memory returnvalue) = callbreakerAddress.call(abi.encode(callObjectWithIndex));
-        if (!success) {
-            revert("turner1 CallFailed");
-        }
-
-        bytes32 pusherLaminatedKey = keccak256(abi.encodePacked("pusherLaminated"));
-        bytes memory pusherLaminatedBytes =
-            CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(pusherLaminatedKey);
-        address pusherLaminated = abi.decode(pusherLaminatedBytes, (address));
-        bytes32 seqNumkey = keccak256(abi.encodePacked("seqNum"));
-        bytes memory seqNumBytes = CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(seqNumkey);
-        uint256 seqNum = abi.decode(seqNumBytes, (uint256));
-        callObj = CallObject({
-            amount: 0,
-            addr: pusherLaminated,
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("pull(uint256)", seqNum)
-        });
-        callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 0});
-        (success, returnvalue) = callbreakerAddress.call(abi.encode(callObjectWithIndex));
-        if (!success) {
-            revert("turner2 CallFailed");
-        }
     }
 }

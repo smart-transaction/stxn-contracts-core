@@ -5,6 +5,7 @@ import "forge-std/Vm.sol";
 
 import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
+import "../../src/timetravel/SmarterContract.sol";
 import "../examples/CronDeposits.sol";
 import "../examples/MyErc20.sol";
 
@@ -16,18 +17,21 @@ contract CronExampleLib {
     CronDeposits public temporalHoneypot;
     Oracle public mevTimeOracle;
     Laminator public laminator;
+    SmarterContract public smartercontract;
 
     function deployerLand(address pusher) public {
         // Initializing contracts
         laminator = new Laminator();
         callbreaker = new CallBreaker();
         mevTimeOracle = new Oracle();
+        smartercontract = new SmarterContract(address(callbreaker));
+
         erc20a = new MyErc20("A", "A");
 
         // give the pusher 10 erc20a
         erc20a.mint(pusher, 10);
 
-        temporalHoneypot = new CronDeposits(address(callbreaker), address(erc20a));
+        temporalHoneypot = new CronDeposits(address(callbreaker), address(erc20a), address(smartercontract));
 
         // compute the pusher laminated address
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));

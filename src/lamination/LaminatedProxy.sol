@@ -42,6 +42,8 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @notice The sequence number of a deferred call must be set before it can be executed.
     error SeqNumberNotSet();
 
+    /// @notice Call has already been pulled and executed.
+    /// @dev Selector 0x0dc10197
     error AlreadyExecuted();
 
     /// @dev Emitted when a function call is deferred and added to the queue.
@@ -125,9 +127,9 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @param seqNumber The sequence number of the deferred function call to view.
     /// @return exists A boolean indicating whether the deferred call exists.
     /// @return callObj The CallObject containing details of the deferred function call.
-    function viewDeferredCall(uint256 seqNumber) public view returns (bool, CallObject[] memory) {
+    function viewDeferredCall(uint256 seqNumber) public view returns (bool, bool, CallObject[] memory) {
         CallObjectHolder memory coh = deferredCalls[seqNumber];
-        return (coh.initialized, coh.callObjs);
+        return (coh.initialized, coh.executed, coh.callObjs);
     }
 
     /// @notice Pushes a deferred function call to be executed after a certain delay.
@@ -158,6 +160,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         _incrementSequenceNumber();
     }
 
+    event Executed(bool yes);
     /// @notice Executes a deferred function call that has been pushed to the contract.
     /// @dev Executes the deferred call specified by the sequence number `seqNumber`.
     ///      This function performs a series of checks before calling `_execute` to
@@ -166,7 +169,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @param seqNumber The sequence number of the deferred call to be executed.
     /// @return returnValue The return value of the executed deferred call.
     function pull(uint256 seqNumber) external nonReentrant returns (bytes memory returnValue) {
-        CallObjectHolder memory coh = deferredCalls[seqNumber];
+        CallObjectHolder storage coh = deferredCalls[seqNumber];
         if (coh.executed) {
             revert AlreadyExecuted();
         }

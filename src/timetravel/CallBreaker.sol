@@ -81,6 +81,8 @@ contract CallBreaker is CallBreakerStorage {
     /// @notice Emitted when the verifyStxn function is called
     event VerifyStxn();
 
+    event CallPopulated(CallObject callObj, uint256 index);
+
     /// @notice Initializes the contract; sets the initial portal status to closed
     constructor() {
         _setPortalClosed();
@@ -121,13 +123,20 @@ contract CallBreaker is CallBreakerStorage {
         return callList[i];
     }
 
-    function getCallIndex(CallObject memory callObj) public view returns (uint256[] memory index) {
+    event Log(uint256 i); 
+
+    // @audit FIXXXX
+    function getCallIndex(CallObject memory callObj) public returns (uint256[] memory) {
         bytes32 callId = keccak256(abi.encode(callObj));
+        uint256[] memory index = new uint256[](callList.length);
         for (uint256 i = 0; i < callList.length; i++) {
             if (callList[i].callId == callId) {
-                index[index.length] = callList[i].index;
+                emit Log(i);
+                emit Log(index.length);
+                index[index.length - 1] = callList[i].index;
             }
         }
+        return index;
     }
 
     function getCurrentlyExecuting() public view returns (uint256) {
@@ -269,6 +278,7 @@ contract CallBreaker is CallBreakerStorage {
         for (uint256 i = 0; i < callStore.length; i++) {
             Call memory call = Call({callId: keccak256(abi.encode(callStore[i])), index: i});
             callList.push(call);
+            emit CallPopulated(callStore[i], i);
         }
     }
 

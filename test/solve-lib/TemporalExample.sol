@@ -7,6 +7,7 @@ import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../examples/TemporalStates.sol";
 import "../examples/MyErc20.sol";
+import "../../src/timetravel/SmarterContract.sol";
 
 contract TemporalExampleLib {
     address payable public pusherLaminated;
@@ -16,6 +17,7 @@ contract TemporalExampleLib {
     TemporalHoneypot public temporalHoneypot;
     MEVTimeOracle public mevTimeOracle;
     Laminator public laminator;
+    SmarterContract public smartercontract;
 
     // Deploy all contracts, provide the user with 10 ERC20A tokens to deposit into the honeypot
     // The attacker will later attempt to pull the 10 ERC20A tokens from the honeypot
@@ -25,11 +27,12 @@ contract TemporalExampleLib {
         callbreaker = new CallBreaker();
         mevTimeOracle = new MEVTimeOracle();
         erc20a = new MyErc20("A", "A");
+        smartercontract = new SmarterContract(address(callbreaker));
 
         // give the pusher 10 erc20a
         erc20a.mint(pusher, 10);
 
-        temporalHoneypot = new TemporalHoneypot(address(callbreaker), address(erc20a));
+        temporalHoneypot = new TemporalHoneypot(address(callbreaker), address(erc20a), address(smartercontract));
 
         // compute the pusher laminated address
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
