@@ -68,14 +68,17 @@ contract CronTwoLib {
         // xiangan homework: change this to make a smartercontract call directly inside the laminator push
         // xiangan homework 2: general cleanup as much as u want (split storage up?)
         // xiangan homework 3: make hintdices work across codebase
-        // 4: delete tests that we hate
+        // 4: delete tests that we hate (quine, pnp)
         // 5: write a test that breaks that basically just says todo call uniswap in a DCA job
+        // 5.5: what is limit order? can we implement it? what?
         // 6: write another tests that breaks that says unimplemented!(check ofac)
         // 7: write a test that breaks that says unimplemented!(check audited)
         // 8: make sure everything is documented and generally things are in the right contracts
         // 9: inheritance of smartercontract
         // 10: clean up storage patterns
         // 11: get some *ideas* about where to do gas optimizations
+        // 12: get a test for flashpill where we show it works... this means update and clean the flashpill
+        // 13: remove tina from flashpill
         pusherCallObjs[3] = CallObject({
             amount: 0,
             addr: address(callbreaker),
