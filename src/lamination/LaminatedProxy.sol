@@ -6,15 +6,6 @@ import "./LaminatedStorage.sol";
 import "openzeppelin/security/ReentrancyGuard.sol";
 
 contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
-    /// @notice The map from sequence number to calls held in the mempool.
-    mapping(uint256 => CallObjectHolder) public deferredCalls;
-    /// @notice The sequence number of the currently executing job.
-    uint256 _executingSequenceNumber;
-    /// @notice the index in the job of the currently executing call.
-    uint256 _executingCallIndex;
-    /// @notice A flag indicating whether a sequence number is currently being executed.
-    bool _executingSequenceNumberSet;
-
     /// @notice Some functions must be called by the laminator or the proxy only.
     /// @dev Selector 0xfc51f672
     error NotLaminatorOrProxy();
@@ -40,7 +31,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     error CallFailed();
 
     /// @notice The sequence number of a deferred call must be set before it can be executed.
-    error SeqNumberNotSet();
+    error NotExecuting();
 
     /// @notice Call has already been pulled and executed.
     /// @dev Selector 0x0dc10197
@@ -112,13 +103,13 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @param shouldCopy The condition under which the job should be copied.
     /// @return The sequence number of the copied job.
     function copyCurrentJob(uint256 delay, bytes memory shouldCopy) public returns (uint256) {
-        if (!_executingSequenceNumberSet) {
-            revert SeqNumberNotSet();
+        if (!isCallExecuting()) {
+            revert NotExecuting();
         }
         if (msg.sender != address(this)) {
             revert NotProxy();
         }
-        return _copyJob(_executingSequenceNumber, delay, shouldCopy);
+        return _copyJob(executingSequenceNumber(), delay, shouldCopy);
     }
 
     /// @notice Views a deferred function call with a given sequence number.
@@ -175,9 +166,9 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
             revert AlreadyExecuted();
         }
         coh.executed = true;
-        _executingSequenceNumber = seqNumber;
-        _executingCallIndex = 0;
-        _executingSequenceNumberSet = true;
+        _setCurrentlyExecutingSeqNum(seqNumber);
+        _setCurrentlyExecutingCallIndex(0);
+        _setExecuting();
         if (!coh.initialized) {
             revert Uninitialized();
         }
@@ -189,7 +180,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
 
         returnValue = _execute(coh.callObjs);
         emit CallPulled(coh.callObjs, seqNumber);
-        _executingSequenceNumberSet = false;
+        _setFree();
     }
 
     /// @notice Executes a function call immediately.
@@ -202,40 +193,35 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         return _execute(callsToMake);
     }
 
-    /// @notice Returns the sequence number of the currently executing call.
-    /// @dev This function can only be called when a sequence number is currently being executed.
-    ///      It reverts if no sequence number is set.
-    /// @return The sequence number of the currently executing call.
-    function getExecutingSequenceNumber() external view returns (uint256) {
-        if (!_executingSequenceNumberSet) {
-            revert SeqNumberNotSet();
+    /// @notice Cancels all pending calls
+    /// @dev Sets the executed flag to true for all pending calls
+    function cancelAllPending() external onlyLaminator {
+        for (uint256 i = 0; i < executingSequenceNumber(); i++) {
+            if (deferredCalls[i].executed == false) {
+                deferredCalls[i].executed = true;
+            }
         }
-        return _executingSequenceNumber;
     }
 
-    /// @notice Returns the index of the currently executing call.
-    /// @dev This function can only be called when a sequence number is currently being executed.
-    ///      It reverts if no sequence number is set.
-    /// @return The index of the currently executing call.
-    function getExecutingCallIndex() public view returns (uint256) {
-        if (!_executingSequenceNumberSet) {
-            revert SeqNumberNotSet();
+    function cancelPending(uint256 callSequenceNumber) external onlyLaminator {
+        if (deferredCalls[callSequenceNumber].executed == false) {
+            deferredCalls[callSequenceNumber].executed = true;
         }
-        return _executingCallIndex;
     }
 
+    // @audit revise these? 
     function getExecutingCallObject() public view returns (CallObject memory) {
-        if (!_executingSequenceNumberSet) {
-            revert SeqNumberNotSet();
+        if (!isCallExecuting()) {
+            revert NotExecuting();
         }
-        return deferredCalls[_executingSequenceNumber].callObjs[_executingCallIndex];
+        return deferredCalls[executingSequenceNumber()].callObjs[executingCallIndex()];
     }
 
     function getExecutingCallObjectHolder() public view returns (CallObjectHolder memory) {
-        if (!_executingSequenceNumberSet) {
-            revert SeqNumberNotSet();
+        if (!isCallExecuting()) {
+            revert NotExecuting();
         }
-        return deferredCalls[_executingSequenceNumber];
+        return deferredCalls[executingSequenceNumber()];
     }
 
     /// @dev Executes the function call specified by the CallObject `callToMake`.
@@ -245,7 +231,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     function _execute(CallObject[] memory callsToMake) internal returns (bytes memory) {
         ReturnObject[] memory returnObjs = new ReturnObject[](callsToMake.length);
         for (uint256 i = 0; i < callsToMake.length; i++) {
-            _executingCallIndex = i;
+            _setCurrentlyExecutingCallIndex(i);
             returnObjs[i] = ReturnObject({returnvalue: _executeSingle(callsToMake[i])});
         }
         return abi.encode(returnObjs);
@@ -282,6 +268,8 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @param seqNumber The sequence number of the job to be copied.
     /// @param delay The number of blocks to delay before the copied job can be executed.
     /// @param shouldCopy The condition under which the job should be copied.
+    /// @notice SECURITY NOTICE: Jobs copied with conditions for tail recursion will NOT
+    ///         revert on error. Instead, it returns 0.
     /// @return The sequence number of the copied job.
     function _copyJob(uint256 seqNumber, uint256 delay, bytes memory shouldCopy) internal returns (uint256) {
         if (shouldCopy.length != 0) {
