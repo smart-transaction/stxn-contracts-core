@@ -342,15 +342,15 @@ contract LaminatorTest is Test {
     /// Pull --> clean storage --> executed check --> ??? (how to force cleanup deletion to be last)
     /// Deletion should be last? --> how to force this?
     /// Change array to mapping of job schedule
-    function testExecuteBeforeDeleteLogic() public {
+    function testExecuteBeforeDeleteLogic() public view {
         console.logString("This function has not been implemented yet.");
     }
 
-    function testCheckOFAC() public {
+    function testCheckOFAC() public view {
         console.logString("This function has not been implemented yet.");
     }
 
-    function testCheckAudited() public {
+    function testCheckAudited() public view {
         console.logString("This function has not been implemented yet.");
     }
 

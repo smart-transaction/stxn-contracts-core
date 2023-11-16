@@ -169,21 +169,14 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
 
     function pull(uint256 seqNumber) external nonReentrant returns (bytes memory returnValue) {
         CallObjectHolder storage coh = deferredCalls[seqNumber];
-        if (coh.executed) {
-            revert AlreadyExecuted();
-        }
+        _checkPrePush(coh);
+
         coh.executed = true;
         _setCurrentlyExecutingSeqNum(seqNumber);
         _setCurrentlyExecutingCallIndex(0);
         _setExecuting();
-        if (!coh.initialized) {
-            revert Uninitialized();
-        }
 
         emit CallableBlock(coh.firstCallableBlock, block.number);
-        if (coh.firstCallableBlock > block.number) {
-            revert TooEarly();
-        }
 
         returnValue = _executeAll(coh.callObjs);
         emit CallPulled(coh.callObjs, seqNumber);
@@ -247,15 +240,6 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         return returnvalue;
     }
 
-    function cleanupStorage(uint256[] memory seqNumbers) external {
-        for (uint256 i = 0; i < seqNumbers.length; i++) {
-            if (!deferredCalls[seqNumbers[i]].executed) {
-                continue;
-            }
-            delete deferredCalls[seqNumbers[i]];
-        }
-    }
-
     /// @dev Copies a job with a specified delay and condition.
     /// @param seqNumber The sequence number of the job to be copied.
     /// @param delay The number of blocks to delay before the copied job can be executed.
@@ -279,5 +263,17 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         }
         CallObject[] memory callObjs = coh.callObjs;
         return push(abi.encode(callObjs), delay);
+    }
+
+    function _checkPrePush(CallObjectHolder storage coh) internal view {
+        if (!coh.initialized) {
+            revert Uninitialized();
+        }
+        if (coh.executed) {
+            revert AlreadyExecuted();
+        }
+        if (coh.firstCallableBlock > block.number) {
+            revert TooEarly();
+        }
     }
 }

@@ -69,7 +69,7 @@ contract LimitOrder {
             });
             emit LogCallObj(callObj);
 
-            (bool success, bytes memory returnValue) = callbreakerAddress.call(abi.encode(callObj));
+            (bool success,) = callbreakerAddress.call(abi.encode(callObj));
 
             if (!success) {
                 revert("turner CallFailed");

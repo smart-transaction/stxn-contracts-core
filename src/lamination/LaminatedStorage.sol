@@ -36,6 +36,15 @@ abstract contract LaminatedStorage {
     /// @dev Selector 0xc77a0100
     error NullOwner();
 
+    function cleanupLaminatorStorage(uint256[] memory seqNumbers) public {
+        for (uint256 i = 0; i < seqNumbers.length; i++) {
+            if (!deferredCalls[seqNumbers[i]].executed) {
+                continue;
+            }
+            delete deferredCalls[seqNumbers[i]];
+        }
+    }
+
     /// @notice Get Laminator contract
     function laminator() public view returns (ILaminator _laminator) {
         uint256 slot = uint256(LAMINATOR_SLOT);

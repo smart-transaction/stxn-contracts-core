@@ -23,6 +23,9 @@ contract SmarterContract {
     /// @dev Selector 0x3df7e356
     error IllegalFrontrun();
 
+    /// @dev Selector 0xd1cb360d
+    error IllegalBackrun();
+
     constructor(address _callbreaker) {
         callbreaker = CallBreaker(payable(_callbreaker));
     }
@@ -51,8 +54,11 @@ contract SmarterContract {
 
     function backrunBlocker() public view {
         uint256 currentlyExecuting = callbreaker.getCurrentlyExecuting();
-        uint256 reversecurrentlyExecuting = callbreaker.reverseIndex(currentlyExecuting);
+        uint256 reversecurrentlyExecuting = callbreaker.getReverseIndex(currentlyExecuting);
         require(reversecurrentlyExecuting == 0, "CallBreakerUser: noBackRun expected reverse call index 0");
+        if (reversecurrentlyExecuting != 0) {
+            revert IllegalBackrun();
+        }
     }
 
     modifier noBackRunOrFrontRun() {

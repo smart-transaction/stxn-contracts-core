@@ -29,9 +29,7 @@ contract CallBreaker is CallBreakerStorage {
     /// @dev Error thrown when index of the callObj doesn't match the index of the returnObj
     /// @dev Selector 0xdba5f6f9
     error IndexMismatch(uint256, uint256);
-    /// @dev Error thrown when key already exists in the associatedDataStore
-    /// @dev Selector 0xaa1ba2f8
-    error KeyAlreadyExists();
+
     /// @dev Error thrown when a nonexistent key is fetched from the associatedDataStore
     /// @dev Selector 0xf7c16a37
     error NonexistentKey();
@@ -40,12 +38,6 @@ contract CallBreaker is CallBreakerStorage {
     error MustBeEOA();
 
     error CallPositionFailed(CallObject, uint256);
-
-    /// @notice Emitted when a new key-value pair is inserted into the associatedDataStore
-    event InsertIntoAssociatedDataStore(bytes32 key, bytes value);
-
-    /// @notice Emitted when a value is fetched from the associatedDataStore using a key
-    event FetchFromAssociatedDataStore(bytes32 key);
 
     /// @notice Emitted when the enterPortal function is called
     /// @param callObj The CallObject instance containing details of the call
@@ -93,13 +85,11 @@ contract CallBreaker is CallBreakerStorage {
         return callList[i];
     }
 
-    event Log(uint256 i);
-
     /// very important to document this
     /// @notice Searches the callList for all indices of the callId
     /// @dev This is very gas-extensive as it computes in O(n)
     /// @param callObj The callObj to search for
-    function getCompleteCallIndex(CallObject memory callObj) public view returns (uint256[] memory) {
+    function getCompleteCallIndexList(CallObject memory callObj) public view returns (uint256[] memory) {
         bytes32 callId = keccak256(abi.encode(callObj));
         uint256[] memory index = new uint256[](callList.length);
         for (uint256 i = 0; i < callList.length; i++) {
@@ -125,113 +115,21 @@ contract CallBreaker is CallBreakerStorage {
         return hintdices;
     }
 
-    function getCurrentlyExecuting() public view returns (uint256) {
-        if (!isPortalOpen()) {
-            revert PortalClosed();
-        }
-        return executingCallIndex();
-    }
-
     // @dev convert a reverse index into a forward index
     // or a forward index into a reverse index
     // looking at the callstore and returnstore indices
-    function reverseIndex(uint256 index) public view returns (uint256) {
+    function getReverseIndex(uint256 index) public view returns (uint256) {
         if (index >= callStore.length) {
             revert IndexMismatch(index, callStore.length);
         }
         return returnStore.length - index - 1;
     }
 
-    // verify
-    // a .  11 (user doing some logic)
-    // b .  22 (solver doing some bs)
-    // c .  33 (user doing some asserts)
-    // d .  44 (solver doing more bs)
-
-    // EXAMPLE: user's desires:
-    // wants to allow: a d b c (arbitrary shit between a and c)
-    //     this is fine:
-    //     a pops c
-    //     db handle popping themselves
-    //     c pops a
-    // wants to allow: a b c d (arbitrary backrun)
-    //     this is *not* currently fine:
-    //     a pops c
-    //     b pops itself
-    //     what pops d? something before a must pop d. what goes before a? that's an illegal frontrun.
-    //     a cannot pop d because a can't know about d because d is arbitrary code provided at solve-time
-    //     c pops a
-    // want to allow: a c b c d
-    //     (this just works, when_was_it_called(c) can be either, enterportal accounting is basically the same
-    // want to prevent: c d b a: c before a (tricking the timeturner)
-    //     c pops a
-    //     db pop themselves
-    //     a pops c
-    //     this can be checked by setting a bool in a, and then checking and unsetting it in c- so we're okay in the current paradigm, although it is sucky and ugly
-    // wants to prevent: e a d b c (no frontrunning pls)
-    //     you can't prevent this without indices:
-    //     c pops a
-    //     add some (legal) backrun, g, after c
-    //     g pops e (e also pops g)
-    //     everything works :| unfortunately
-    //     this is fixed by adding indices :)
-    // want to prevent: a b d e (a ever being run without its call to c, which enforces invariants)
-    //     this is fixed with the timeturner- if a enterportals on c, c has to be called in verify, otherwise everything reverts
-
-    // in a, we want to see c executed at some point
-    // in a, we want nothing before a
-    // in a, call enterportal(c)
-    // in c, call enterportal(a)
-
-    // proposal: provide an index from the front, an index from the back, or a "hintdex"- the user wants to know the location of certain calls at solvetime, the solver provides that?
-    // look up return value and check into enterportal by index
-    // have a utility function that converts reverse indices into forward indices
-    // put assertions on relative ordering into userspace code! say a < c explicitly.
-    // same call twice, two different returns- how to disambiguate? indices and comparisons!
-    // need to be able to say that
-
-    // i call enterportal with a, index 1
-    // enterportal checks that a is at index 1, returns the return value of a back to itself
-    // i call enterportal with c, index when_was_it_called(c) <- this is just a hashtable lookup in associateddata (or just another hashmap)
-    // enterportal checks that c is at index when_was_it_called(c), returns the return value of c back to itself
-    // verify handles actually making sure c is called at that index
-    // check 1 < when_was_it_called(c)
-    // xiangan's example: ind(a) + 2 == when_was_it_called(c)
-
-    // b and d need to handle their own enterportal and index calls- this is fine.
-    // no frontruns allowed- a is always 1
-    // backruns are fine
-    // arbitrary code is fine in between a and c and after c, it just needs to pop itself off the stack with knowledge of indices
-    // reshuffling a and c is no longer okay- a must be called before c, checked in a
-
-    // about hintdices:
-    // a will say ind(c) = associateddatafetch("whenwascccalled")
-    // a will assert ind(c) > 1 (1 is ind(a), a knows this, because c is checking it already through the callbreaker)
-    // enterportal(a, 1) will check in verify's call that a actually gets executed at index(1)
-    // enterportal(c, ind(c)) will check also in enterportal + verify's call using verify bookkeeping that c is executed at ind(c)
-    // it's fine that the solver is providing this value- a is checking the relative value to other calls, and enterportal is checking that the call happened there.
-
-    // OKAY! as of nov 8, hintdices are broken :|
-    // consider a language:
-    // aacac (legal)
-    // ababcabc (legal)
-    // ababacab (illegal) (a must always be followed by a c)
-    // what you want is to be able to express regular expressions of calls, ideally.
-    // how do you do this?
-
-    // /// @notice Executes a call and returns a value from the record of return values.
-    // /// @dev This function also does some accounting to track the occurrence of a given pair of call and return values.
-    // /// It is called as reentrancy in order to balance the calls of the solution and make things validate.
-    // /// @param input The call to be executed, structured as a CallObjectWithIndex.
-    // /// @return The return value from the record of return values.
-    // /// TODO: make this do lookups in an array instead of in a hashmap. mark "done" with a bool, and then just iterate over the array to check what's filled
-    // /// TODO: determine if this is gas-optimal (hi @audit)
-    function getReturnValue(bytes calldata input) external payable onlyPortalOpen returns (bytes memory) {
-        // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
-        CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
-        ReturnObject memory thisReturn = getReturn(callObjWithIndex.index);
-        emit EnterPortal(callObjWithIndex.callObj, thisReturn, callObjWithIndex.index);
-        return thisReturn.returnvalue;
+    function getCurrentlyExecuting() public view returns (uint256) {
+        if (!isPortalOpen()) {
+            revert PortalClosed();
+        }
+        return executingCallIndex();
     }
 
     /// @notice Verifies that the given calls, when executed, gives the correct return values
@@ -272,20 +170,22 @@ contract CallBreaker is CallBreakerStorage {
         emit VerifyStxn();
     }
 
+    // /// @notice Executes a call and returns a value from the record of return values.
+    // /// @dev This function also does some accounting to track the occurrence of a given pair of call and return values.
+    // /// @param input The call to be executed, structured as a CallObjectWithIndex.
+    // /// @return The return value from the record of return values.
+    function getReturnValue(bytes calldata input) external view returns (bytes memory) {
+        // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
+        CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
+        ReturnObject memory thisReturn = _getReturn(callObjWithIndex.index);
+        return thisReturn.returnvalue;
+    }
+
     function _populateCallIndices() internal {
         for (uint256 i = 0; i < callStore.length; i++) {
             Call memory call = Call({callId: keccak256(abi.encode(callStore[i])), index: i});
             callList.push(call);
             emit CallPopulated(callStore[i], i);
-        }
-    }
-
-    function _resetTraceStoresWith(CallObject[] memory calls, ReturnObject[] memory returnValues) internal {
-        delete callStore;
-        delete returnStore;
-        for (uint256 i = 0; i < calls.length; i++) {
-            callStore.push(calls[i]);
-            returnStore.push(returnValues[i]);
         }
     }
 
@@ -297,6 +197,8 @@ contract CallBreaker is CallBreakerStorage {
             revert OutOfEther();
         }
 
+        emit EnterPortal(callObj, retObj, i);
+
         (bool success, bytes memory returnvalue) =
             callObj.addr.call{gas: callObj.gas, value: callObj.amount}(callObj.callvalue);
         if (!success) {
@@ -306,37 +208,6 @@ contract CallBreaker is CallBreakerStorage {
         if (keccak256(retObj.returnvalue) != keccak256(returnvalue)) {
             revert CallVerificationFailed();
         }
-    }
-
-    /// @dev Cleans up storage by resetting returnStore
-    function _cleanUpStorage() internal {
-        delete callStore;
-        delete returnStore;
-        delete callList;
-        for (uint256 i = 0; i < associatedDataKeyList.length; i++) {
-            delete associatedDataStore[associatedDataKeyList[i]];
-        }
-        delete associatedDataKeyList;
-
-        for (uint256 i = 0; i < hintdicesStoreKeyList.length; i++) {
-            delete hintdicesStore[hintdicesStoreKeyList[i]];
-        }
-        delete hintdicesStoreKeyList;
-
-        // Transfer remaining ETH balance to the block builder
-        address payable blockBuilder = payable(block.coinbase);
-        blockBuilder.transfer(address(this).balance);
-    }
-
-    function expectCallAt(CallObject memory callObj, uint256 index) internal view {
-        if (callStore[index].addr != callObj.addr) {
-            revert CallPositionFailed(callObj, index);
-        }
-    }
-
-    // @dev Helper function to fetch and remove the last ReturnObject from the storage
-    function getReturn(uint256 index) internal view returns (ReturnObject memory) {
-        return returnStore[index];
     }
 
     /// @notice Populates the associatedDataStore with a list of key-value pairs
@@ -371,33 +242,9 @@ contract CallBreaker is CallBreakerStorage {
         }
     }
 
-    function _insertIntoHintdices(bytes32 key, uint256 value) internal {
-        // If the key doesn't exist in the hintdices, initialize it
-        if (!hintdicesStore[key].set) {
-            hintdicesStore[key].set = true;
-            hintdicesStore[key].indices = new uint256[](0);
-            hintdicesStoreKeyList.push(key);
+    function _expectCallAt(CallObject memory callObj, uint256 index) internal view {
+        if (keccak256(abi.encode(callStore[index])) != keccak256(abi.encode(callObj))) {
+            revert CallPositionFailed(callObj, index);
         }
-
-        // Append the value to the list of values associated with the key
-        hintdicesStore[key].indices.push(value);
-    }
-
-    /// @notice Inserts a pair of bytes32 into the associatedDataStore and associatedDataKeyList
-    /// @param key The key to be inserted into the associatedDataStore
-    /// @param value The value to be associated with the key in the associatedDataStore
-    function _insertIntoAssociatedDataStore(bytes32 key, bytes memory value) internal {
-        // Check if the key already exists in the associatedDataStore
-        if (associatedDataStore[key].set) {
-            revert KeyAlreadyExists();
-        }
-
-        emit InsertIntoAssociatedDataStore(key, value);
-        // Insert the key-value pair into the associatedDataStore
-        associatedDataStore[key].set = true;
-        associatedDataStore[key].value = value;
-
-        // Add the key to the associatedDataKeyList
-        associatedDataKeyList.push(key);
     }
 }

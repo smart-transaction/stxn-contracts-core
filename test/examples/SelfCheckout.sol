@@ -17,10 +17,9 @@ import "../../src/TimeTypes.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../../src/timetravel/SmarterContract.sol";
 
-contract SelfCheckout {
+contract SelfCheckout is SmarterContract {
     address owner;
     address callbreakerAddress;
-    SmarterContract smarterContract;
 
     IERC20 atoken;
     IERC20 btoken;
@@ -39,20 +38,15 @@ contract SelfCheckout {
     event DebugInfo(string message, string value);
     event DebugUint(string message, uint256 value);
 
-    constructor(
-        address _owner,
-        address _atoken,
-        address _btoken,
-        address _callbreakerAddress,
-        address _smarterContract
-    ) {
+    constructor(address _owner, address _atoken, address _btoken, address _callbreakerAddress)
+        SmarterContract(_callbreakerAddress)
+    {
         owner = _owner;
 
         atoken = IERC20(_atoken);
         btoken = IERC20(_btoken);
 
         callbreakerAddress = _callbreakerAddress;
-        smarterContract = SmarterContract(_smarterContract);
     }
 
     modifier onlyOwner() {
@@ -100,7 +94,7 @@ contract SelfCheckout {
                 callvalue: abi.encodeWithSignature("checkBalance()")
             });
             emit LogCallObj(callObj);
-            smarterContract.assertFutureCallTo(callObj, 2);
+            assertFutureCallTo(callObj, 2);
 
             balanceScheduled = true;
         }
