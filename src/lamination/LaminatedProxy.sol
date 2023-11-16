@@ -83,6 +83,13 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         _;
     }
 
+    modifier onlyWhileExecuting() {
+        if (!isCallExecuting()) {
+            revert NotExecuting();
+        }
+        _;
+    }
+
     /// @notice Constructs a new contract instance - usually called by the Laminator contract
     /// @dev Initializes the contract, setting the owner and laminator addresses.
     /// @param _laminator The address of the laminator contract.
@@ -102,10 +109,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @param delay The number of blocks to delay before the copied job can be executed.
     /// @param shouldCopy The condition under which the job should be copied.
     /// @return The sequence number of the copied job.
-    function copyCurrentJob(uint256 delay, bytes memory shouldCopy) public returns (uint256) {
-        if (!isCallExecuting()) {
-            revert NotExecuting();
-        }
+    function copyCurrentJob(uint256 delay, bytes memory shouldCopy) public onlyWhileExecuting returns (uint256) {
         if (msg.sender != address(this)) {
             revert NotProxy();
         }
@@ -123,6 +127,14 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         return (coh.initialized, coh.executed, coh.callObjs);
     }
 
+    function getExecutingCallObject() public view onlyWhileExecuting returns (CallObject memory) {
+        return deferredCalls[executingSequenceNumber()].callObjs[executingCallIndex()];
+    }
+
+    function getExecutingCallObjectHolder() public view onlyWhileExecuting returns (CallObjectHolder memory) {
+        return deferredCalls[executingSequenceNumber()];
+    }
+
     /// @notice Pushes a deferred function call to be executed after a certain delay.
     /// @dev Adds a new CallObject to the `deferredCalls` mapping and emits a CallPushed event.
     ///      The function can only be called by the Laminator or the LaminatedProxy contract itself.
@@ -131,11 +143,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @param delay The number of blocks to delay before the function call can be executed.
     ///      Use 0 for no delay.
     /// @return callSequenceNumber The sequence number assigned to this deferred call.
-    function push(bytes calldata input, uint32 delay)
-        external
-        onlyLaminatorOrProxy
-        returns (uint256 callSequenceNumber)
-    {
+    function push(bytes memory input, uint256 delay) public onlyLaminatorOrProxy returns (uint256 callSequenceNumber) {
         CallObject[] memory callObjs = abi.decode(input, (CallObject[]));
         callSequenceNumber = count();
         CallObjectHolder storage holder = deferredCalls[callSequenceNumber];
@@ -151,7 +159,6 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         _incrementSequenceNumber();
     }
 
-    event Executed(bool yes);
     /// @notice Executes a deferred function call that has been pushed to the contract.
     /// @dev Executes the deferred call specified by the sequence number `seqNumber`.
     ///      This function performs a series of checks before calling `_execute` to
@@ -178,7 +185,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
             revert TooEarly();
         }
 
-        returnValue = _execute(coh.callObjs);
+        returnValue = _executeAll(coh.callObjs);
         emit CallPulled(coh.callObjs, seqNumber);
         _setFree();
     }
@@ -190,7 +197,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @return returnValue The return value from the executed function call.
     function execute(bytes calldata input) external onlyLaminator nonReentrant returns (bytes memory) {
         CallObject[] memory callsToMake = abi.decode(input, (CallObject[]));
-        return _execute(callsToMake);
+        return _executeAll(callsToMake);
     }
 
     /// @notice Cancels all pending calls
@@ -209,30 +216,15 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         }
     }
 
-    // @audit revise these? 
-    function getExecutingCallObject() public view returns (CallObject memory) {
-        if (!isCallExecuting()) {
-            revert NotExecuting();
-        }
-        return deferredCalls[executingSequenceNumber()].callObjs[executingCallIndex()];
-    }
-
-    function getExecutingCallObjectHolder() public view returns (CallObjectHolder memory) {
-        if (!isCallExecuting()) {
-            revert NotExecuting();
-        }
-        return deferredCalls[executingSequenceNumber()];
-    }
-
     /// @dev Executes the function call specified by the CallObject `callToMake`.
     ///      Emits a `CallExecuted` event upon successful execution.
     /// @param callsToMake The CallObject containing information about the function call to execute.
     /// @return returnValue The return value from the executed function call.
-    function _execute(CallObject[] memory callsToMake) internal returns (bytes memory) {
+    function _executeAll(CallObject[] memory callsToMake) internal returns (bytes memory) {
         ReturnObject[] memory returnObjs = new ReturnObject[](callsToMake.length);
         for (uint256 i = 0; i < callsToMake.length; i++) {
             _setCurrentlyExecutingCallIndex(i);
-            returnObjs[i] = ReturnObject({returnvalue: _executeSingle(callsToMake[i])});
+            returnObjs[i] = ReturnObject({returnvalue: _execute(callsToMake[i])});
         }
         return abi.encode(returnObjs);
     }
@@ -241,7 +233,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     ///      Emits a `CallExecuted` event upon successful execution.
     /// @param callToMake The CallObject containing information about the function call to execute.
     /// @return returnvalue The return value from the executed function call.
-    function _executeSingle(CallObject memory callToMake) internal returns (bytes memory) {
+    function _execute(CallObject memory callToMake) internal returns (bytes memory) {
         bool success;
         bytes memory returnvalue;
 
@@ -274,7 +266,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     function _copyJob(uint256 seqNumber, uint256 delay, bytes memory shouldCopy) internal returns (uint256) {
         if (shouldCopy.length != 0) {
             CallObject memory callObj = abi.decode(shouldCopy, (CallObject));
-            bytes memory result = _executeSingle(callObj);
+            bytes memory result = _execute(callObj);
             bool shouldContinue = abi.decode(result, (bool));
             if (!shouldContinue) {
                 return 0;
@@ -286,18 +278,6 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
             revert Uninitialized();
         }
         CallObject[] memory callObjs = coh.callObjs;
-        uint256 callSequenceNumber = count();
-        CallObjectHolder storage holder = deferredCalls[callSequenceNumber];
-        holder.initialized = true;
-        holder.executed = false;
-        holder.firstCallableBlock = block.number + delay;
-        for (uint256 i = 0; i < callObjs.length; ++i) {
-            holder.callObjs.push(callObjs[i]);
-        }
-
-        emit CallableBlock(block.number, block.number);
-        emit CallPushed(callObjs, callSequenceNumber);
-        _incrementSequenceNumber();
-        return callSequenceNumber;
+        return push(abi.encode(callObjs), delay);
     }
 }

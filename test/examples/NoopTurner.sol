@@ -12,7 +12,7 @@ contract NoopTurner {
     }
 
     // dumb noop function without callbreaker
-    function vanilla(uint16 _input) public pure returns (uint16) {
+    function vanilla(uint16 /* _input */ ) public pure returns (uint16) {
         return 52;
     }
 

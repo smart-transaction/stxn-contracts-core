@@ -9,12 +9,15 @@ abstract contract LaminatedStorage {
     /// @notice The slot at which the owner address is stored
     bytes32 public constant OWNER_SLOT = bytes32(uint256(keccak256("LaminatorStorage.OWNER_SLOT")) - 1);
     /// @notice The slot at which the sequence number is stored
-    bytes32 public constant SEQUENCE_NUMBER_SLOT = bytes32(uint256(keccak256("LaminatorStorage.SEQUENCE_NUMBER_SLOT")) - 1);
+    bytes32 public constant SEQUENCE_NUMBER_SLOT =
+        bytes32(uint256(keccak256("LaminatorStorage.SEQUENCE_NUMBER_SLOT")) - 1);
     /// @notice The slot at which the current executing sequence number is stored
-    /// @dev This is not to be confused with the SEQUENCE_NUMBER_SLOT, which tracks the sequence number of 
-    bytes32 public constant EXECUTING_SEQUENCE_NUMBER_SLOT = bytes32(uint256(keccak256("LaminatorStorage.EXEC_SEQ_NUM_SLOT")) - 1);
+    /// @dev This is not to be confused with the SEQUENCE_NUMBER_SLOT, which tracks the sequence number of
+    bytes32 public constant EXECUTING_SEQUENCE_NUMBER_SLOT =
+        bytes32(uint256(keccak256("LaminatorStorage.EXEC_SEQ_NUM_SLOT")) - 1);
     /// @notice The slot at which the current executing call index is stored
-    bytes32 public constant EXECUTING_CALL_INDEX_SLOT = bytes32(uint256(keccak256("LaminatorStorage.EXEC_CALL_INDEX_SLOT")) - 1);
+    bytes32 public constant EXECUTING_CALL_INDEX_SLOT =
+        bytes32(uint256(keccak256("LaminatorStorage.EXEC_CALL_INDEX_SLOT")) - 1);
     /// @notice The slot for checking whether or not a call is executing
     bytes32 public constant CALL_STATUS_SLOT = bytes32(uint256(keccak256("LaminatorStorage.CALL_STATUS_SLOT")) - 1);
 

@@ -76,7 +76,7 @@ contract SelfCheckout {
         return callbreakerAddress;
     }
 
-    function getSwapPartner() public returns (address) {
+    function getSwapPartner() public view returns (address) {
         bytes32 swapPartnerKey = keccak256(abi.encodePacked("swapPartner"));
         bytes memory swapPartnerBytes =
             CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(swapPartnerKey);
@@ -100,8 +100,7 @@ contract SelfCheckout {
                 callvalue: abi.encodeWithSignature("checkBalance()")
             });
             emit LogCallObj(callObj);
-            CallObjectWithIndex memory callObjectWithIndex = CallObjectWithIndex({callObj: callObj, index: 2});
-            smarterContract.assertFutureCallTo(callObj);
+            smarterContract.assertFutureCallTo(callObj, 2);
 
             balanceScheduled = true;
         }

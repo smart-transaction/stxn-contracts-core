@@ -4,43 +4,7 @@ pragma solidity >=0.6.2 <0.9.0;
 import "../TimeTypes.sol";
 import "./CallBreakerStorage.sol";
 
-struct ReturnObjectWithIndex {
-    ReturnObject returnObj;
-    uint256 index;
-}
-
-struct AssociatedData {
-    bool set;
-    bytes value;
-}
-
-// allow solver to provide indices where a call is executed, verified for accuracy on chain, to save gas
-// this is NOT necessarily complete- to get a complete index of everywhere a call is executed, you need to use getCompleteCallIndex
-// getCompleteCallIndex is O(n) and iterates through the entire call list.
-struct Hintdex {
-    bool set;
-    uint256[] indices;
-}
-
-struct Call {
-    bytes32 callId;
-    uint256 index;
-}
-
 contract CallBreaker is CallBreakerStorage {
-    CallObject[] public callStore;
-    ReturnObject[] public returnStore;
-
-    bytes32[] public associatedDataKeyList;
-    mapping(bytes32 => AssociatedData) public associatedDataStore;
-
-    bytes32[] public hintdicesStoreKeyList;
-    mapping(bytes32 => Hintdex) public hintdicesStore;
-
-    Call[] public callList;
-
-    uint256 _currentlyExecutingIndex;
-
     /// @dev Error thrown when there are no return values left
     /// @dev Selector 0xc8acbe62
     error OutOfReturnValues();
@@ -99,7 +63,6 @@ contract CallBreaker is CallBreakerStorage {
         _setPortalClosed();
     }
 
-    // todo: figure out a nice dev workflow for ensureTurnerOpen on OTHER contracts
     modifier ensureTurnerOpen() {
         if (!isPortalOpen()) {
             revert PortalClosed();
@@ -133,15 +96,15 @@ contract CallBreaker is CallBreakerStorage {
     event Log(uint256 i);
 
     /// very important to document this
-    // @audit come back here and fix what xh was talking about?
-    function getCompleteCallIndex(CallObject memory callObj) public returns (uint256[] memory) {
+    /// @notice Searches the callList for all indices of the callId
+    /// @dev This is very gas-extensive as it computes in O(n)
+    /// @param callObj The callObj to search for
+    function getCompleteCallIndex(CallObject memory callObj) public view returns (uint256[] memory) {
         bytes32 callId = keccak256(abi.encode(callObj));
         uint256[] memory index = new uint256[](callList.length);
         for (uint256 i = 0; i < callList.length; i++) {
             if (callList[i].callId == callId) {
-                emit Log(i);
-                emit Log(index.length);
-                index[index.length - 1] = callList[i].index;
+                index[i] = i;
             }
         }
         return index;
@@ -156,7 +119,7 @@ contract CallBreaker is CallBreakerStorage {
             uint256 hintdex = hintdices[i];
             Call memory call = callList[hintdex];
             if (call.callId != callId) {
-                revert("CallBreakerUser: getCallIndex expected the right callid to live at the hintdex");
+                revert CallPositionFailed(callObj, hintdex);
             }
         }
         return hintdices;
@@ -166,7 +129,17 @@ contract CallBreaker is CallBreakerStorage {
         if (!isPortalOpen()) {
             revert PortalClosed();
         }
-        return _currentlyExecutingIndex;
+        return executingCallIndex();
+    }
+
+    // @dev convert a reverse index into a forward index
+    // or a forward index into a reverse index
+    // looking at the callstore and returnstore indices
+    function reverseIndex(uint256 index) public view returns (uint256) {
+        if (index >= callStore.length) {
+            revert IndexMismatch(index, callStore.length);
+        }
+        return returnStore.length - index - 1;
     }
 
     // verify
@@ -290,7 +263,7 @@ contract CallBreaker is CallBreakerStorage {
         _populateCallIndices();
 
         for (uint256 i = 0; i < calls.length; i++) {
-            _currentlyExecutingIndex = i;
+            _setCurrentlyExecutingCallIndex(i);
             _executeAndVerifyCall(i);
         }
 
@@ -366,14 +339,48 @@ contract CallBreaker is CallBreakerStorage {
         return returnStore[index];
     }
 
-    // @dev convert a reverse index into a forward index
-    // or a forward index into a reverse index
-    // looking at the callstore and returnstore indices
-    function reverseIndex(uint256 index) public view returns (uint256) {
-        if (index >= callStore.length) {
-            revert IndexMismatch(index, callStore.length);
+    /// @notice Populates the associatedDataStore with a list of key-value pairs
+    /// @param encodedData The abi-encoded list of (bytes32, bytes32) key-value pairs
+    function _populateAssociatedDataStore(bytes memory encodedData) internal {
+        // Decode the input data into an array of (bytes32, bytes32) pairs
+        (bytes32[] memory keys, bytes[] memory values) = abi.decode(encodedData, (bytes32[], bytes[]));
+
+        // Check that the keys and values arrays have the same length
+        if (keys.length != values.length) {
+            revert LengthMismatch();
         }
-        return returnStore.length - index - 1;
+
+        // Iterate over the keys and values arrays and insert each pair into the associatedDataStore
+        for (uint256 i = 0; i < keys.length; i++) {
+            _insertIntoAssociatedDataStore(keys[i], values[i]);
+        }
+    }
+
+    function _populateHintdices(bytes memory encodedData) internal {
+        // Decode the input data into an array of (bytes32, bytes32) pairs
+        (bytes32[] memory keys, uint256[] memory values) = abi.decode(encodedData, (bytes32[], uint256[]));
+
+        // Check that the keys and values arrays have the same length
+        if (keys.length != values.length) {
+            revert LengthMismatch();
+        }
+
+        // Iterate over the keys and values arrays and insert each pair into the hintdices
+        for (uint256 i = 0; i < keys.length; i++) {
+            _insertIntoHintdices(keys[i], values[i]);
+        }
+    }
+
+    function _insertIntoHintdices(bytes32 key, uint256 value) internal {
+        // If the key doesn't exist in the hintdices, initialize it
+        if (!hintdicesStore[key].set) {
+            hintdicesStore[key].set = true;
+            hintdicesStore[key].indices = new uint256[](0);
+            hintdicesStoreKeyList.push(key);
+        }
+
+        // Append the value to the list of values associated with the key
+        hintdicesStore[key].indices.push(value);
     }
 
     /// @notice Inserts a pair of bytes32 into the associatedDataStore and associatedDataKeyList
@@ -392,57 +399,5 @@ contract CallBreaker is CallBreakerStorage {
 
         // Add the key to the associatedDataKeyList
         associatedDataKeyList.push(key);
-    }
-
-    /// @notice Populates the associatedDataStore with a list of key-value pairs
-    /// @param encodedData The abi-encoded list of (bytes32, bytes32) key-value pairs
-    function _populateAssociatedDataStore(bytes memory encodedData) internal {
-        // Decode the input data into an array of (bytes32, bytes32) pairs
-        (bytes32[] memory keys, bytes[] memory values) = abi.decode(encodedData, (bytes32[], bytes[]));
-
-        // Check that the keys and values arrays have the same length
-        if (keys.length != values.length) {
-            revert LengthMismatch();
-        }
-
-        // Iterate over the keys and values arrays and insert each pair into the associatedDataStore
-        for (uint256 i = 0; i < keys.length; i++) {
-            _insertIntoAssociatedDataStore(keys[i], values[i]);
-        }
-    }
-
-    function _insertIntoHintdices(bytes32 key, uint256 value) internal {
-        // If the key doesn't exist in the hintdices, initialize it
-        if (!hintdicesStore[key].set) {
-            hintdicesStore[key].set = true;
-            hintdicesStore[key].indices = new uint256[](0);
-            hintdicesStoreKeyList.push(key);
-        }
-
-        // Append the value to the list of values associated with the key
-        hintdicesStore[key].indices.push(value);
-    }
-
-    function _populateHintdices(bytes memory encodedData) internal {
-        // Decode the input data into an array of (bytes32, bytes32) pairs
-        (bytes32[] memory keys, uint256[] memory values) = abi.decode(encodedData, (bytes32[], uint256[]));
-
-        // Check that the keys and values arrays have the same length
-        if (keys.length != values.length) {
-            revert LengthMismatch();
-        }
-
-        // Iterate over the keys and values arrays and insert each pair into the hintdices
-        for (uint256 i = 0; i < keys.length; i++) {
-            _insertIntoHintdices(keys[i], values[i]);
-        }
-    }
-
-    function _getIndexFromEnd(CallObject[] memory callObjects, uint256 indexFromStart)
-        internal
-        pure
-        returns (uint256)
-    {
-        return callObjects.length - indexFromStart - 1;
     }
 }

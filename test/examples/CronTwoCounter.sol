@@ -2,8 +2,12 @@
 
 pragma solidity >=0.6.2 <0.9.0;
 
-contract CronTwoCounter {
+import "../../src/timetravel/SmarterContract.sol";
+
+contract CronTwoCounter is SmarterContract {
     mapping(address => uint256) private _counters;
+
+    constructor(address _callbreaker) SmarterContract(_callbreaker) {}
 
     function increment() public {
         _counters[msg.sender]++;

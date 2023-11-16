@@ -55,8 +55,7 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         assertEq(erc20b.balanceOf(filler), 0);
         assertFalse(callbreaker.isPortalOpen());
 
-        (bool init, bool exec, CallObject[] memory co) =
-            LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
+        (bool init, bool exec,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
         // Test should fail here because we already solved and cleared the tx!
         assertTrue(init);
         assertTrue(exec);

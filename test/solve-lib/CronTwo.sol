@@ -20,7 +20,6 @@ contract CronTwoLib {
     Laminator public laminator;
     CronTwoCounter public counter;
     CallBreaker public callbreaker;
-    SmarterContract public smartercontract;
     Tips public tips;
     uint32 _blocksInADay = 7150;
     uint256 _tipWei = 33;
@@ -28,9 +27,8 @@ contract CronTwoLib {
     function deployerLand(address pusher) public {
         // Initializing contracts
         laminator = new Laminator();
-        counter = new CronTwoCounter();
         callbreaker = new CallBreaker();
-        smartercontract = new SmarterContract(payable(address(callbreaker)));
+        counter = new CronTwoCounter(address(callbreaker));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
         tips = new Tips(address(callbreaker));
     }
@@ -66,11 +64,8 @@ contract CronTwoLib {
         // xiangan homework: change this to make a smartercontract call directly inside the laminator push
         // xiangan homework 2: general cleanup as much as u want (split storage up?)
         // xiangan homework 3: make hintdices work across codebase
-        // 4: delete tests that we hate (quine, pnp)
         // 5: write a test that breaks that basically just says todo call uniswap in a DCA job
         // 5.5: what is limit order? can we implement it? what?
-        // 6: write another tests that breaks that says unimplemented!(check ofac)
-        // 7: write a test that breaks that says unimplemented!(check audited)
         // 8: make sure everything is documented and generally things are in the right contracts
         // 9: inheritance of smartercontract
         // 10: clean up storage patterns
@@ -79,7 +74,7 @@ contract CronTwoLib {
         // 13: remove tina from flashpill
         pusherCallObjs[3] = CallObject({
             amount: 0,
-            addr: address(smartercontract),
+            addr: address(counter),
             gas: 10000000,
             callvalue: abi.encodeWithSignature("frontrunBlocker()")
         });

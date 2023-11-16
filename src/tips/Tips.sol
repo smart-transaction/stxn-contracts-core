@@ -9,6 +9,10 @@ contract Tips {
 
     event LogAmounts(uint256 msgvalue, uint256 balance);
 
+    /// @dev Error thrown when receiving empty calldata
+    /// @dev Selector 0xc047a184
+    error EmptyCalldata();
+
     CallBreaker public callbreaker;
 
     constructor(address _callbreaker) {
@@ -16,7 +20,7 @@ contract Tips {
     }
 
     /// @dev Tips should be transferred from each LaminatorProxy to the solver via msg.value
-    fallback() external payable {
+    receive() external payable {
         emit LogAmounts(msg.value, address(this).balance);
         bytes32 tipAddrKey = keccak256(abi.encodePacked("tipYourBartender"));
         bytes memory tipAddrBytes = callbreaker.fetchFromAssociatedDataStore(tipAddrKey);
