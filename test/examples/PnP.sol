@@ -9,6 +9,7 @@ contract PnP {
 
     address[] private addrlist;
 
+    // @TODO: this example will soon be refactored to use the latest associatedValue semantics
     constructor(address callbreakerLocation, uint256 input) {
         _callbreakerAddress = callbreakerLocation;
         // populate addrlist with a hash chain to look "random"

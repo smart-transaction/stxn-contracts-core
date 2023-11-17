@@ -6,8 +6,6 @@ import "../src/timetravel/CallBreaker.sol";
 import "../test/examples/NoopTurner.sol";
 
 contract NoopTurnerTest is Test {
-    // Counter public counter;
-
     CallBreaker public callbreaker;
     NoopTurner public noopturner;
 
@@ -17,7 +15,6 @@ contract NoopTurnerTest is Test {
     }
 
     function test_loop() public {
-        // check vanilla call, just for fun...
         (bool success, bytes memory ret) =
             address(noopturner).call{gas: 1000000, value: 0}(abi.encodeWithSignature("vanilla(uint16)", uint16(42)));
 
@@ -34,21 +31,24 @@ contract NoopTurnerTest is Test {
         });
 
         ReturnObject[] memory returnObjs = new ReturnObject[](1);
-        // note it always returns 52
+
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(uint16(52))});
 
         bytes memory callObjsBytes = abi.encode(callObjs);
         bytes memory returnObjsBytes = abi.encode(returnObjs);
 
-        // Constructing something that'll decode happily
         bytes32[] memory keys = new bytes32[](0);
-        //keys[0] = keccak256(abi.encodePacked("key"));
         bytes[] memory values = new bytes[](0);
-        //values[0] = abi.encode("value");
         bytes memory encodedData = abi.encode(keys, values);
+
+        bytes32[] memory hintdicesKeys = new bytes32[](1);
+        hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
+        uint256[] memory hintindicesVals = new uint256[](1);
+        hintindicesVals[0] = 0;
+        bytes memory hintindices = abi.encode(hintdicesKeys, hintindicesVals);
 
         // call verify
         vm.prank(address(0xdeadbeef));
-        callbreaker.verify(callObjsBytes, returnObjsBytes, encodedData);
+        callbreaker.verify(callObjsBytes, returnObjsBytes, encodedData, hintindices);
     }
 }
