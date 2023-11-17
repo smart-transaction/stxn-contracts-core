@@ -39,7 +39,7 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         kontrol build --rekompile --require lemmas.k --module-import WorkedExampleTest:STXN-LEMMAS
         kontrol prove --match-test WorkedExampleTest.test_workedExample --use-booster --max-depth 3000 --no-break-on-calls --auto-abstract-gas --reinit
     */
-    function test_workedExample() external {
+    function test_workedExample(uint256 swapValue) external {
         uint256 laminatorSequenceNumber;
 
         // Concretize `block.number` to avoid branching
@@ -55,11 +55,13 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         vm.roll(block.number + 1);
 
         vm.startPrank(filler);
-        solverLand(laminatorSequenceNumber, filler, 20);
+        // solverLand(laminatorSequenceNumber, filler, 20);
+        solverLand(laminatorSequenceNumber, filler, swapValue);
         vm.stopPrank();
 
         assertEq(erc20a.balanceOf(pusherLaminated), 0);
-        assertEq(erc20b.balanceOf(pusherLaminated), 20);
+        // assertEq(erc20b.balanceOf(pusherLaminated), 20);
+        assertEq(erc20b.balanceOf(pusherLaminated), swapValue);
         assertEq(erc20a.balanceOf(filler), 10);
         assertEq(erc20b.balanceOf(filler), 0);
         assertFalse(callbreaker.isPortalOpen());

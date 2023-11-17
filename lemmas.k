@@ -54,8 +54,7 @@ module STXN-LEMMAS
     rule { true  #Equals X:Int ==Int Y:Int } => { X #Equals Y } [simplification]
     rule { false #Equals X     ==K   Y     } => #Not ( { X #Equals Y } ) [simplification]
     rule { false #Equals X:Int ==Int Y:Int } => #Not ( { X #Equals Y } ) [simplification]
-
-    rule { true  #Equals notBool X:Bool } => { false #Equals X } [simplification]
+    // rule { true  #Equals notBool X:Bool } => { false #Equals X } [simplification]
     rule { false #Equals notBool X:Bool } => { true  #Equals X } [simplification]
 
     rule { X     ==K   Y     #Equals true  } => { X #Equals Y } [simplification]
@@ -95,12 +94,6 @@ module STXN-LEMMAS
       requires 0 <=Int X andBool X <Int 2 ^Int (256 -Int Y)
        andBool 0 <=Int Y andBool Y <=Int 256 andBool Y modInt 8 ==Int 0
       [simplification, concrete(Y)]
-
-    rule 0 <=Int (X &Int Y) +Int Z => true
-      requires 0 <=Int X &Int Y
-       andBool 0 <=Int Z
-      [simplification]
-
     rule Z <Int X &Int Y => false
       requires #rangeUInt(256, X)
        andBool #rangeUInt(256, Y)
@@ -250,33 +243,36 @@ module STXN-LEMMAS
       [simplification, concrete(A)]
 
     //
+    // Arithmetic
+    //
+    rule chop ( X ) => X
+      requires 0 <=Int X andBool X <Int pow256
+      [simplification]
+    rule 0 <=Int A +Int B => true
+        requires 0 <=Int A andBool 0 <=Int B
+        [simplification]
+    //
     // Sets
     //
 
     // Empty sets has no elements
     rule _ in .Set => false [simplification]
-
     rule { true  #Equals _ in .Set} => #Bottom [simplification]
     rule { false #Equals _ in .Set} => #Top    [simplification]
 
-    // Set membership element-by-elemnent deconstruction
-    rule X in SetItem ( Y ) S:Set =>
-           ( X  ==K Y andBool notBool (X in S) ) orBool
-           ( X =/=K Y andBool          X in S  ) [simplification]
-
-    rule X in S1:Set |Set S2:Set => (X in S1) orBool (X in S2)
-      [simplification]
-
-    rule S:Set |Set SetItem(X) => S
-      requires X in S
-      [simplification]
-
-
+    rule S:Set |Set SetItem( X ) => S requires X in S [simplification]
+    // rule X in _:Set SetItem( Y ) => true   requires X ==Int Y  [simplification]
+    // rule X in S:Set SetItem( Y ) => X in S requires X =/=Int Y [simplification]
+    rule (S1:Set |Set SetItem( X )) |Set S2:Set => S1 |Set S2                requires         X in S2 [simplification, concrete(X, S2)]
+    rule (S1:Set |Set SetItem( X )) |Set S2:Set => S1 |Set ( SetItem(X) S2 ) requires notBool X in S2 [simplification, concrete(X, S2)]
     //
     // #lookup
     //
-
     rule #lookup(.Map, _) => 0
+      [simplification]
+
+    rule #lookup((K:Int |-> _:Int) M:Map, X:Int) => #lookup(M, X)
+      requires X =/=Int K
       [simplification]
 
     rule #lookup(M:Map [K:Int <- _], X:Int) => #lookup(M, X)
@@ -302,12 +298,11 @@ module STXN-LEMMAS
 
     rule [keccak-eq-conc-false-ml]: { keccak(_A) #Equals _B } => #Bottom [symbolic(_A), concrete(_B), simplification, comm]
 
-    // corollary of `keccak-eq-conc-false`
-    rule [keccak-eq-conc-false-extended]:
-      ( ( keccak ( X ) +Int A ) modInt pow256 ) ==Int Y => false
-      requires 0 <Int A andBool A <Int pow256
-      [simplification, symbolic(X), concrete(A, Y)]
-
+    // // WARNING: Extremely unsound: corollary of `keccak-eq-conc-false`
+    // rule [keccak-eq-conc-false-extended]:
+    //   ( ( keccak ( X ) +Int A ) modInt pow256 ) ==Int Y => false
+    //   requires 0 <Int A andBool A <Int pow256
+    //   [simplification, symbolic(X), concrete(A, Y)]
     // keccak is injective
     rule [keccak-inj]: keccak(A) ==Int keccak(B) => A ==K B [simplification]
 
@@ -323,16 +318,6 @@ module STXN-LEMMAS
     rule { X #Equals keccak (_) } => #Bottom
       requires X <Int 0 orBool X >=Int pow256
       [concrete(X), simplification]
-
-    rule #lookup((K:Int |-> _:Int) M:Map, X:Int) => #lookup(M, X)
-      requires X =/=Int K
-      [simplification]
-
-    rule [keccak-new-lemma]:
-      keccak(_) +Int X <Int pow256 => true
-        requires 0 <Int X andBool X <Int 32
-        [concrete(X), simplification]
-
     // lemma that says that anything negative is smaller than a keccak
     rule X <Int keccak ( _ ) => true
       requires X <Int 0
@@ -342,17 +327,7 @@ module STXN-LEMMAS
     rule keccak ( _ ) <Int X => true
       requires (pow256 -Int 32) <Int X
       [concrete(X), simplification]
-
-    rule chop ( X ) => X
-      requires 0 <=Int X andBool X <Int pow256
-      [simplification]
-
-    rule 0 <=Int A +Int B => true 
-        requires 0 <=Int A andBool 0 <=Int B
-        [simplification]
-
 endmodule
-
 
 module STXN-LEMMAS-SPEC
     imports STXN-LEMMAS
