@@ -7,7 +7,9 @@ import "../timetravel/CallBreaker.sol";
 contract Tips {
     event Tip(address indexed from, address indexed to, uint256 amount);
 
-    event LogAmounts(uint256 msgvalue, uint256 balance);
+    /// @dev Error thrown when receiving empty calldata
+    /// @dev Selector 0xc047a184
+    error EmptyCalldata();
 
     CallBreaker public callbreaker;
 
@@ -16,8 +18,7 @@ contract Tips {
     }
 
     /// @dev Tips should be transferred from each LaminatorProxy to the solver via msg.value
-    fallback() external payable {
-        emit LogAmounts(msg.value, address(this).balance);
+    receive() external payable {
         bytes32 tipAddrKey = keccak256(abi.encodePacked("tipYourBartender"));
         bytes memory tipAddrBytes = callbreaker.fetchFromAssociatedDataStore(tipAddrKey);
         address tipAddr = abi.decode(tipAddrBytes, (address));

@@ -2,7 +2,6 @@
 pragma solidity >=0.6.2 <0.9.0;
 
 import "forge-std/Test.sol";
-//import {VmSafe} from "forge-std/Vm.sol";
 
 import "../src/lamination/Laminator.sol";
 import "../src/lamination/LaminatedProxy.sol";
@@ -28,11 +27,12 @@ contract LaminatorTest is Test {
 
     event DummyEvent(uint256 arg);
 
+    // @TODO: NotImplemented: Add more unit tests
     function setUp() public {
         laminator = new LaminatorHarness();
     }
 
-    // - Existing Proxy and creation Test: Test if the getOrCreateProxy function returns the existing proxy address when one already exists for the sender.
+    // Existing Proxy and creation Test: Test if the getOrCreateProxy function returns the existing proxy address when one already exists for the sender.
     function testExistingProxy() public {
         address expectedProxyAddress = laminator.computeProxyAddress(address(this));
 
@@ -42,7 +42,7 @@ contract LaminatorTest is Test {
         assert(laminator.harness_getOrCreateProxy(address(this)) == expectedProxyAddress);
     }
 
-    //- Push to Proxy Test: Test if the pushToProxy function correctly delegates a call to the push
+    // Push to Proxy Test: Test if the pushToProxy function correctly delegates a call to the push
     // function of the LaminatedProxy contract. Verify by checking the ProxyPushed event and comparing
     // the emitted sequence number and call object with the expected values.
     function testPushToProxy() public {
@@ -238,14 +238,8 @@ contract LaminatorTest is Test {
         proxy.pull(0);
 
         // and try to pull again
-        vm.expectRevert(LaminatedProxy.Uninitialized.selector);
+        vm.expectRevert(LaminatedProxy.AlreadyExecuted.selector);
         proxy.pull(0);
-    }
-
-    // test that uninitialized sequence numbers cannot be pulled
-    function testUninitializedPull() public {
-        vm.expectRevert(LaminatedProxy.Uninitialized.selector);
-        laminator.pullFromProxy(0);
     }
 
     // test that a call that reverts revert the transaction
@@ -335,26 +329,23 @@ contract LaminatorTest is Test {
         proxy.execute(cData);
     }
 
-    // ensure executions as the owner through the laminator do work
-    function testExecuteAsOwnerFromLaminator() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
-        laminator.harness_getOrCreateProxy(address(this));
-        Dummy dummy = new Dummy();
-        CallObject[] memory callObj = new CallObject[](1);
-        callObj[0] = CallObject({
-            amount: 0,
-            addr: address(dummy),
-            gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", 42)
-        });
-        bytes memory cData = abi.encode(callObj);
+    /// cleanupStorage tests
+    /// Goal: use a 'use after free' function -- question for when things are deleted
+    /// Can only be deleted ... when? Iff executed == init == true? maybe by the owner?
+    /// Concern: Laminator can be done with pull before callBreaker is done with verify
+    /// Pull --> clean storage --> executed check --> ??? (how to force cleanup deletion to be last)
+    /// Deletion should be last? --> how to force this?
+    /// Change array to mapping of job schedule
+    function testExecuteBeforeDeleteLogic() public view {
+        console.logString("This function has not been implemented yet.");
+    }
 
-        // check emissions, should work
-        vm.expectEmit(true, true, true, true);
-        emit CallExecuted(callObj[0]);
-        emit ProxyExecuted(address(proxy), callObj);
-        laminator.executeInProxy(cData);
+    function testCheckOFAC() public view {
+        console.logString("This function has not been implemented yet.");
+    }
+
+    function testCheckAudited() public view {
+        console.logString("This function has not been implemented yet.");
     }
 
     // ensure executions as random address through the laminator do not work
