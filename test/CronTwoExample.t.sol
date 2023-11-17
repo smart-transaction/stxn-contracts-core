@@ -22,7 +22,7 @@ contract CronTwoTest is Test, CronTwoLib {
         // give the pusher some eth
         vm.deal(pusher, 100 ether);
 
-        // start deployer land
+        // start deployer calls
         vm.startPrank(deployer);
         deployerLand(pusher);
         vm.stopPrank();
@@ -62,7 +62,7 @@ contract CronTwoTest is Test, CronTwoLib {
 
         assertFalse(callbreaker.isPortalOpen());
 
-        //  Should be cleared so init should be false (testFail format is for compliance with Kontrol framework)
+        // Should be cleared so init should be false (testFail format is for compliance with Kontrol framework)
         (bool init, bool exec,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
 
         assertTrue(init);

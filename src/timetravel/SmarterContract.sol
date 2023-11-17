@@ -26,68 +26,71 @@ contract SmarterContract {
     /// @dev Selector 0xd1cb360d
     error IllegalBackrun();
 
+    /// @dev Constructs a new SmarterContract instance
+    /// @param _callbreaker The address of the CallBreaker contract
     constructor(address _callbreaker) {
         callbreaker = CallBreaker(payable(_callbreaker));
     }
 
+    /// @notice Modifier to ensure that the Turner is open
     modifier ensureTurnerOpen() {
-        _ensureTurnerOpen();
+        if (!callbreaker.isPortalOpen()) {
+            revert PortalClosed();
+        }
         _;
     }
 
-    // checks if the portal is open and we're currently in index 0 of the portal
+    /// @notice Modifier to prevent frontrunning
+    /// @dev Checks if the portal is open and we're currently in index 0 of the portal
     modifier noFrontRun() {
         frontrunBlocker();
         _;
     }
 
+    /// @notice Modifier to prevent backrunning
+    modifier noBackRun() {
+        backrunBlocker();
+        _;
+    }
+
+    /// @notice Returns the call index, callobj, and returnobj of the currently executing call
+    /// @dev This function allows for time travel by returning the returnobj of the currently executing call
+    /// @return A pair consisting of the CallObject and ReturnObject of the currently executing call
+    function getCurrentExecutingPair() public view returns (CallObject memory, ReturnObject memory) {
+        uint256 currentlyExecuting = callbreaker.getCurrentlyExecuting();
+        return callbreaker.getPair(currentlyExecuting);
+    }
+
+    /// @notice Prevents frontrunning by ensuring the currently executing call is the first in the list
+    /// @custom:reverts IllegalFrontrun() when the currently executing call has a frontrunning call
     function frontrunBlocker() public view {
         if (callbreaker.getCurrentlyExecuting() != 0) {
             revert IllegalFrontrun();
         }
     }
 
-    modifier noBackRun() {
-        backrunBlocker();
-        _;
-    }
-
+    /// @notice Prevents backrunning by ensuring the currently executing call is the first in the reverse list
+    /// @custom:reverts IllegalBackrun() when the currently executing call has a backrunning call
     function backrunBlocker() public view {
         uint256 currentlyExecuting = callbreaker.getCurrentlyExecuting();
         uint256 reversecurrentlyExecuting = callbreaker.getReverseIndex(currentlyExecuting);
-        require(reversecurrentlyExecuting == 0, "CallBreakerUser: noBackRun expected reverse call index 0");
         if (reversecurrentlyExecuting != 0) {
             revert IllegalBackrun();
         }
     }
 
-    modifier noBackRunOrFrontRun() {
-        soloExecuteBlocker();
-        _;
-    }
-
-    function _ensureTurnerOpen() internal view {
-        if (!callbreaker.isPortalOpen()) {
-            revert PortalClosed();
-        }
-    }
-
-    // no backruns, no frontruns, no problem. you need to tip or you are unlikely to get executed!
+    /// @notice Prevents both frontrunning and backrunning
+    /// @dev This function calls both frontrunBlocker() and backrunBlocker() to ensure no frontrunning or backrunning can occur
+    /// @dev It is recommended to tip to increase the likelihood of execution
     function soloExecuteBlocker() public view {
         frontrunBlocker();
         backrunBlocker();
     }
 
-    // this returns the call index, callobj, and returnobj of the currently executing call
-    // time travel here- it returns the returnobj of the currently executing call
-    function myCallData() public view returns (CallObject memory, ReturnObject memory) {
-        uint256 currentlyExecuting = callbreaker.getCurrentlyExecuting();
-        return callbreaker.getPair(currentlyExecuting);
-    }
-
-    // make sure there's a future call to this callobject after the current call
-    // this iterates over all the call indices and makes sure there's one after the current call
-    // you can add a hint and make it cheaper...
+    /// @notice Ensures that there is a future call to the specified callobject after the current call
+    /// @dev This iterates over all call indices and ensures there's one after the current call.
+    ///      Adding a hintdex makes this cheaper.
+    /// @param callObj The callobject to check for future calls
     function assertFutureCallTo(CallObject memory callObj) public view {
         uint256[] memory cinds = callbreaker.getCallIndex(callObj);
         uint256 currentlyExecuting = callbreaker.getCurrentlyExecuting();
@@ -99,6 +102,11 @@ contract SmarterContract {
         revert FutureCallExpected();
     }
 
+    /// @notice Ensures that there is a future call to the specified callobject after the current call
+    /// @param callObj The callobject to check for future calls
+    /// @param hintdex The hint index to start checking for future calls
+    /// @custom:reverts FutureCallExpected() Hintdexes should always be in the future of the current executing call
+    /// @custom:reverts CallMismatch() The callobject at the hintdex should match the specified callObject
     function assertFutureCallTo(CallObject memory callObj, uint256 hintdex) public view {
         uint256 currentlyExecuting = callbreaker.getCurrentlyExecuting();
         bytes32 callObjHash = keccak256(abi.encode(callObj));
@@ -112,6 +120,9 @@ contract SmarterContract {
     }
 
     /// @dev makes sure the next call is to this callobj
+    /// @notice Ensures that the next call is to the specified callobject
+    /// @param callObj The callobject to check for the next call
+    /// @custom:reverts CallMismatch() The callobject at the next index should match the specified callObject
     function assertNextCallTo(CallObject memory callObj) public view {
         uint256 currentlyExecuting = callbreaker.getCurrentlyExecuting();
         bytes32 callObjHash = keccak256(abi.encode(callObj));

@@ -123,6 +123,10 @@ abstract contract CallBreakerStorage {
         }
     }
 
+    /// @notice Inserts a key-value pair into the hintdicesStore and hintdicesStoreKeyList
+    /// @dev If the key doesn't exist in the hintdicesStore, it initializes it
+    /// @param key The key to be inserted into the hintdicesStore
+    /// @param value The value to be associated with the key in the hintdicesStore
     function _insertIntoHintdices(bytes32 key, uint256 value) internal {
         // If the key doesn't exist in the hintdices, initialize it
         if (!hintdicesStore[key].set) {
@@ -173,6 +177,9 @@ abstract contract CallBreakerStorage {
         blockBuilder.transfer(address(this).balance);
     }
 
+    /// @dev Resets the trace stores with the provided calls and return values.
+    /// @param calls An array of CallObject to be stored in callStore.
+    /// @param returnValues An array of ReturnObject to be stored in returnStore.
     function _resetTraceStoresWith(CallObject[] memory calls, ReturnObject[] memory returnValues) internal {
         delete callStore;
         delete returnStore;
@@ -182,8 +189,10 @@ abstract contract CallBreakerStorage {
         }
     }
 
-    // @dev Helper function to fetch and remove the last ReturnObject from the storage
-    function _getReturn(uint256 index) internal view returns (ReturnObject memory) {
+    /// @dev Helper function to fetch and remove the last ReturnObject from the storage
+    /// @param index The index of the ReturnObject to be fetched
+    /// @return _returnObj The last ReturnObject in the storage
+    function _getReturn(uint256 index) internal view returns (ReturnObject memory _returnObj) {
         return returnStore[index];
     }
 }

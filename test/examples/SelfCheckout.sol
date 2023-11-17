@@ -1,14 +1,3 @@
-// this is cowswap, smart transaction style, and extremely badly designed/shitty.
-
-// i'd like to transfer you 1 eth
-// as long as you transfer me 3 dollars
-
-// push: a call that can be pulled next block
-// it transfers 1 erc20one to tx.origin
-// and it checks that a call happens later to gibmeyourmoney (which transfers 2 erc20two over from tx.origin to self)!
-
-// you can give me extra erc20two if you want. i don't mind :)
-
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.2 <0.9.0;
 
@@ -25,7 +14,6 @@ contract SelfCheckout is SmarterContract {
     IERC20 btoken;
 
     // hardcoded exchange rate (btokens per atoken)
-    // one day this will be pulled from uniswap or something :3
     uint256 exchangeRate = 2;
 
     // your debt to the protocol denominated in btoken
@@ -79,13 +67,9 @@ contract SelfCheckout is SmarterContract {
 
     event LogCallObj(CallObject callObj);
 
-    // take a debt out.
     function takeSomeAtokenFromOwner(uint256 atokenamount) public onlyOwner {
-        // if you're calling me, you'd better be giving me some btoken before you finish.
-        // let's make sure that happens in the timeturner :)
         require(CallBreaker(payable(callbreakerAddress)).isPortalOpen(), "CallBreaker is not open");
 
-        // if checking the balance isn't scheduled, schedule it.
         if (!balanceScheduled) {
             CallObject memory callObj = CallObject({
                 amount: 0,
@@ -94,21 +78,18 @@ contract SelfCheckout is SmarterContract {
                 callvalue: abi.encodeWithSignature("checkBalance()")
             });
             emit LogCallObj(callObj);
-            assertFutureCallTo(callObj, 2);
+            assertFutureCallTo(callObj, 3);
 
             balanceScheduled = true;
         }
 
-        // compute amount owed
         imbalance += atokenamount * exchangeRate;
         require(atoken.transferFrom(owner, getSwapPartner(), atokenamount), "AToken transfer failed");
     }
 
-    // repay your debts.
     function giveSomeBtokenToOwner(uint256 btokenamount) public {
         btoken.transferFrom(getSwapPartner(), owner, btokenamount);
 
-        // if you've paid your debt, set imbalance to zero, if not, reduce accordingly
         if (imbalance > btokenamount) {
             imbalance -= btokenamount;
         } else {
@@ -116,7 +97,6 @@ contract SelfCheckout is SmarterContract {
         }
     }
 
-    // check that you don't owe me anything.
     function checkBalance() public {
         require(imbalance == 0, "You still owe me some btoken!");
         balanceScheduled = false;

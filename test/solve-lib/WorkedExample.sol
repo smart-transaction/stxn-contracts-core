@@ -67,13 +67,9 @@ contract WorkedExampleLib {
     }
 
     function solverLand(uint256 laminatorSequenceNumber, address filler, uint256 x) public {
-        erc20b.approve(address(selfcheckout), x);
+        CallObject[] memory callObjs = new CallObject[](4);
+        ReturnObject[] memory returnObjs = new ReturnObject[](4);
 
-        // TODO: Refactor these parts further if necessary.
-        CallObject[] memory callObjs = new CallObject[](3);
-        ReturnObject[] memory returnObjs = new ReturnObject[](3);
-
-        // first we're going to call takeSomeAtokenFromOwner by pulling from the laminator
         callObjs[0] = CallObject({
             amount: 0,
             addr: pusherLaminated,
@@ -85,21 +81,30 @@ contract WorkedExampleLib {
         returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
         returnObjsFromPull[1] = ReturnObject({returnvalue: abi.encode(true)});
         returnObjsFromPull[2] = ReturnObject({returnvalue: ""});
-        // double encoding because first here second in pull()
+
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
-        // then we'll call giveSomeBtokenToOwner and get the imbalance back to zero
         callObjs[1] = CallObject({
+            amount: 0,
+            addr: address(erc20b),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), x)
+        });
+        // return object is still nothing
+        returnObjs[1] = ReturnObject({returnvalue: abi.encode(true)});
+
+        // then we'll call giveSomeBtokenToOwner and get the imbalance back to zero
+        callObjs[2] = CallObject({
             amount: 0,
             addr: address(selfcheckout),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
         });
         // return object is still nothing
-        returnObjs[1] = ReturnObject({returnvalue: ""});
+        returnObjs[2] = ReturnObject({returnvalue: ""});
 
         // then we'll call checkBalance
-        callObjs[2] = CallObject({
+        callObjs[3] = CallObject({
             amount: 0,
             addr: address(selfcheckout),
             gas: 1000000,
@@ -107,7 +112,7 @@ contract WorkedExampleLib {
         });
         // log what this callobject looks like
         // return object is still nothing
-        returnObjs[2] = ReturnObject({returnvalue: ""});
+        returnObjs[3] = ReturnObject({returnvalue: ""});
 
         // Constructing something that'll decode happily
         bytes32[] memory keys = new bytes32[](5);

@@ -55,12 +55,11 @@ contract LimitOrder {
     // take a debt out.
     // exchangeRate is the number of btoken you get for 1 atoken.
     function takeSomeAtokenFromOwner(uint256 atokenamount, uint256 exchangeRate) public onlyOwner {
-        // if you're calling me, you'd better be giving me some btoken before you finish.
-        // let's make sure that happens in the timeturner :)
         require(CallBreaker(payable(callbreakerAddress)).isPortalOpen(), "CallBreaker is not open");
 
         // if checking the balance isn't scheduled, schedule it.
         if (!balanceScheduled) {
+            // ensures that there's b-tokens supplied in return.
             CallObject memory callObj = CallObject({
                 amount: 0,
                 addr: address(this),
@@ -77,10 +76,7 @@ contract LimitOrder {
             balanceScheduled = true;
         }
 
-        // compute amount owed
         imbalance += atokenamount * exchangeRate;
-        // get da tokens
-        // Debugging information
 
         require(atoken.transferFrom(owner, swapPartner, atokenamount), "AToken transfer failed");
     }

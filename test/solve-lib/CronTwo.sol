@@ -61,17 +61,7 @@ contract CronTwoLib {
             gas: 10000000,
             callvalue: abi.encodeWithSignature("copyCurrentJob(uint256,bytes)", _blocksInADay, callObjectContinueFnPtr)
         });
-        // xiangan homework: change this to make a smartercontract call directly inside the laminator push
-        // xiangan homework 2: general cleanup as much as u want (split storage up?)
-        // xiangan homework 3: make hintdices work across codebase
-        // 5: write a test that breaks that basically just says todo call uniswap in a DCA job
-        // 5.5: what is limit order? can we implement it? what?
-        // 8: make sure everything is documented and generally things are in the right contracts
-        // 9: inheritance of smartercontract
-        // 10: clean up storage patterns
-        // 11: get some *ideas* about where to do gas optimizations
-        // 12: get a test for flashpill where we show it works... this means update and clean the flashpill
-        // 13: remove tina from flashpill
+
         pusherCallObjs[3] = CallObject({
             amount: 0,
             addr: address(counter),
@@ -82,27 +72,24 @@ contract CronTwoLib {
     }
 
     function solverLand(uint256 laminatorSequenceNumber, address filler, bool isFirstTime) public {
-        // TODO: Refactor these parts further if necessary.
         CallObject[] memory callObjs = new CallObject[](1);
         ReturnObject[] memory returnObjs = new ReturnObject[](1);
 
-        // pull from the laminator (that's all we need)
         callObjs[0] = CallObject({
             amount: 0,
             addr: pusherLaminated,
             gas: 10000000,
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
-        // should return a list of the return value of approve + takesomeatokenfrompusher in a list of returnobjects, abi packed, then stuck into another returnobject.
+
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](4);
         returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
         returnObjsFromPull[1] = ReturnObject({returnvalue: ""});
         returnObjsFromPull[2] = ReturnObject({returnvalue: abi.encode(1)});
         returnObjsFromPull[3] = ReturnObject({returnvalue: ""});
-        // double encoding because first here second in pull()
+
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
-        // Constructing something that'll decode happily
         bytes32[] memory keys = new bytes32[](2);
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
         keys[1] = keccak256(abi.encodePacked("pullIndex"));

@@ -29,14 +29,14 @@ contract CallBreaker is CallBreakerStorage {
     /// @dev Error thrown when index of the callObj doesn't match the index of the returnObj
     /// @dev Selector 0xdba5f6f9
     error IndexMismatch(uint256, uint256);
-
     /// @dev Error thrown when a nonexistent key is fetched from the associatedDataStore
     /// @dev Selector 0xf7c16a37
     error NonexistentKey();
     /// @dev Caller must be EOA
     /// @dev Selector 0x09d1095b
     error MustBeEOA();
-
+    /// @dev Error thrown when the call position is not as expected
+    /// @dev Selector 0xd2c5d316
     error CallPositionFailed(CallObject, uint256);
 
     /// @notice Emitted when the enterPortal function is called
@@ -55,6 +55,8 @@ contract CallBreaker is CallBreakerStorage {
         _setPortalClosed();
     }
 
+    /// @dev Modifier to make a function callable only when the portal is open.
+    ///      Reverts if the portal is closed. Portal is opened by `verify`.
     modifier ensureTurnerOpen() {
         if (!isPortalOpen()) {
             revert PortalClosed();
@@ -62,9 +64,54 @@ contract CallBreaker is CallBreakerStorage {
         _;
     }
 
-    /// NOTE: Expect calls to arrive with non-null msg.data
-    receive() external payable {
-        revert EmptyCalldata();
+    /// @notice Verifies that the given calls, when executed, gives the correct return values
+    /// @dev SECURITY NOTICE: This function is only callable when the portal is closed. It requires the caller to be an EOA.
+    /// @param callsBytes The bytes representing the calls to be verified
+    /// @param returnsBytes The bytes representing the returns to be verified against
+    /// @param associatedData Bytes representing associated data with the verify call, reserved for tipping the solver
+    function verify(
+        bytes calldata callsBytes,
+        bytes calldata returnsBytes,
+        bytes calldata associatedData,
+        bytes calldata hintdices
+    ) external payable onlyPortalClosed {
+        if (msg.sender.code.length != 0) {
+            revert MustBeEOA();
+        }
+        _setPortalOpen();
+
+        CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
+        ReturnObject[] memory returnValues = abi.decode(returnsBytes, (ReturnObject[]));
+
+        if (calls.length != returnValues.length) {
+            revert LengthMismatch();
+        }
+
+        _resetTraceStoresWith(calls, returnValues);
+        _populateAssociatedDataStore(associatedData);
+        _populateHintdices(hintdices);
+        _populateCallIndices();
+
+        uint256 l = calls.length;
+        for (uint256 i = 0; i < l; i++) {
+            _setCurrentlyExecutingCallIndex(i);
+            _executeAndVerifyCall(i);
+        }
+
+        _cleanUpStorage();
+        _setPortalClosed();
+        emit VerifyStxn();
+    }
+
+    /// @notice Executes a call and returns a value from the record of return values.
+    /// @dev This function also does some accounting to track the occurrence of a given pair of call and return values.
+    /// @param input The call to be executed, structured as a CallObjectWithIndex.
+    /// @return The return value from the record of return values.
+    function getReturnValue(bytes calldata input) external view returns (bytes memory) {
+        // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
+        CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
+        ReturnObject memory thisReturn = _getReturn(callObjWithIndex.index);
+        return thisReturn.returnvalue;
     }
 
     /// @notice Fetches the value associated with a given key from the associatedDataStore
@@ -77,10 +124,16 @@ contract CallBreaker is CallBreakerStorage {
         return associatedDataStore[key].value;
     }
 
+    /// @notice Fetches the CallObject and ReturnObject at a given index from the callStore and returnStore respectively
+    /// @param i The index at which the CallObject and ReturnObject are to be fetched
+    /// @return A pair of CallObject and ReturnObject at the given index
     function getPair(uint256 i) public view returns (CallObject memory, ReturnObject memory) {
         return (callStore[i], returnStore[i]);
     }
 
+    /// @notice Fetches the Call at a given index from the callList
+    /// @param i The index at which the Call is to be fetched
+    /// @return The Call at the given index
     function getCallListAt(uint256 i) public view returns (Call memory) {
         return callList[i];
     }
@@ -89,7 +142,7 @@ contract CallBreaker is CallBreakerStorage {
     /// @notice Searches the callList for all indices of the callId
     /// @dev This is very gas-extensive as it computes in O(n)
     /// @param callObj The callObj to search for
-    function getCompleteCallIndexList(CallObject memory callObj) public view returns (uint256[] memory) {
+    function getCompleteCallIndexList(CallObject calldata callObj) public view returns (uint256[] memory) {
         bytes32 callId = keccak256(abi.encode(callObj));
         uint256[] memory index = new uint256[](callList.length);
         for (uint256 i = 0; i < callList.length; i++) {
@@ -100,7 +153,11 @@ contract CallBreaker is CallBreakerStorage {
         return index;
     }
 
-    function getCallIndex(CallObject memory callObj) public view returns (uint256[] memory) {
+    /// @notice Fetches the indices of a given CallObject from the hintdicesStore
+    /// @dev This function validates that the correct callId lives at these hintdices
+    /// @param callObj The CallObject whose indices are to be fetched
+    /// @return An array of indices where the given CallObject is found
+    function getCallIndex(CallObject calldata callObj) public view returns (uint256[] memory) {
         bytes32 callId = keccak256(abi.encode(callObj));
         // look up this callid in hintdices
         uint256[] storage hintdices = hintdicesStore[callId].indices;
@@ -115,9 +172,10 @@ contract CallBreaker is CallBreakerStorage {
         return hintdices;
     }
 
-    // @dev convert a reverse index into a forward index
-    // or a forward index into a reverse index
-    // looking at the callstore and returnstore indices
+    /// @notice Converts a reverse index into a forward index or vice versa
+    /// @dev This function looks at the callstore and returnstore indices
+    /// @param index The index to be converted
+    /// @return The converted index
     function getReverseIndex(uint256 index) public view returns (uint256) {
         if (index >= callStore.length) {
             revert IndexMismatch(index, callStore.length);
@@ -125,6 +183,9 @@ contract CallBreaker is CallBreakerStorage {
         return returnStore.length - index - 1;
     }
 
+    /// @notice Fetches the currently executing call index
+    /// @dev This function reverts if the portal is closed
+    /// @return The currently executing call index
     function getCurrentlyExecuting() public view returns (uint256) {
         if (!isPortalOpen()) {
             revert PortalClosed();
@@ -132,57 +193,9 @@ contract CallBreaker is CallBreakerStorage {
         return executingCallIndex();
     }
 
-    /// @notice Verifies that the given calls, when executed, gives the correct return values
-    /// @dev SECURITY NOTICE: This function is only callable when the portal is closed. It requires the caller to be an EOA.
-    /// @param callsBytes The bytes representing the calls to be verified
-    /// @param returnsBytes The bytes representing the returns to be verified against
-    /// @param associatedData Bytes representing associated data with the verify call, reserved for tipping the solver
-    function verify(
-        bytes memory callsBytes,
-        bytes memory returnsBytes,
-        bytes memory associatedData,
-        bytes memory hintdices
-    ) external payable onlyPortalClosed {
-        _setPortalOpen();
-        if (msg.sender.code.length != 0) {
-            revert MustBeEOA();
-        }
-
-        CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
-        ReturnObject[] memory returnValues = abi.decode(returnsBytes, (ReturnObject[]));
-
-        if (calls.length != returnValues.length) {
-            revert LengthMismatch();
-        }
-
-        _resetTraceStoresWith(calls, returnValues);
-        _populateAssociatedDataStore(associatedData);
-        _populateHintdices(hintdices);
-        _populateCallIndices();
-
-        for (uint256 i = 0; i < calls.length; i++) {
-            _setCurrentlyExecutingCallIndex(i);
-            _executeAndVerifyCall(i);
-        }
-
-        _cleanUpStorage();
-        _setPortalClosed();
-        emit VerifyStxn();
-    }
-
-    // /// @notice Executes a call and returns a value from the record of return values.
-    // /// @dev This function also does some accounting to track the occurrence of a given pair of call and return values.
-    // /// @param input The call to be executed, structured as a CallObjectWithIndex.
-    // /// @return The return value from the record of return values.
-    function getReturnValue(bytes calldata input) external view returns (bytes memory) {
-        // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
-        CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
-        ReturnObject memory thisReturn = _getReturn(callObjWithIndex.index);
-        return thisReturn.returnvalue;
-    }
-
     function _populateCallIndices() internal {
-        for (uint256 i = 0; i < callStore.length; i++) {
+        uint256 l = callStore.length;
+        for (uint256 i = 0; i < l; i++) {
             Call memory call = Call({callId: keccak256(abi.encode(callStore[i])), index: i});
             callList.push(call);
             emit CallPopulated(callStore[i], i);
@@ -221,8 +234,9 @@ contract CallBreaker is CallBreakerStorage {
             revert LengthMismatch();
         }
 
+        uint256 l = keys.length;
         // Iterate over the keys and values arrays and insert each pair into the associatedDataStore
-        for (uint256 i = 0; i < keys.length; i++) {
+        for (uint256 i = 0; i < l; i++) {
             _insertIntoAssociatedDataStore(keys[i], values[i]);
         }
     }
@@ -236,8 +250,9 @@ contract CallBreaker is CallBreakerStorage {
             revert LengthMismatch();
         }
 
+        uint256 l = keys.length;
         // Iterate over the keys and values arrays and insert each pair into the hintdices
-        for (uint256 i = 0; i < keys.length; i++) {
+        for (uint256 i = 0; i < l; i++) {
             _insertIntoHintdices(keys[i], values[i]);
         }
     }
