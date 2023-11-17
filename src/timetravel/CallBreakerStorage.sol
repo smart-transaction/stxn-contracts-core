@@ -1,30 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.2 <0.9.0;
 
+import "../CallBreakerTypes.sol";
 import "../interfaces/ICallBreaker.sol";
-
-struct ReturnObjectWithIndex {
-    ReturnObject returnObj;
-    uint256 index;
-}
-
-struct AssociatedData {
-    bool set;
-    bytes value;
-}
-
-// allow solver to provide indices where a call is executed, verified for accuracy on chain, to save gas
-// this is NOT necessarily complete- to get a complete index of everywhere a call is executed, you need to use getCompleteCallIndex
-// getCompleteCallIndex is O(n) and iterates through the entire call list.
-struct Hintdex {
-    bool set;
-    uint256[] indices;
-}
-
-struct Call {
-    bytes32 callId;
-    uint256 index;
-}
 
 abstract contract CallBreakerStorage {
     /// @notice Error thrown when calling a function that can only be called when the portal is open
