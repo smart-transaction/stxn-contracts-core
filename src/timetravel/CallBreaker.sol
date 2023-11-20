@@ -114,7 +114,7 @@ contract CallBreaker is CallBreakerStorage {
         emit VerifyStxn();
     }
 
-    /// @notice Executes a call and returns a value from the record of return values.
+    /// @notice Returns a value from the record of return values from the callObject.
     /// @dev This function also does some accounting to track the occurrence of a given pair of call and return values.
     /// @param input The call to be executed, structured as a CallObjectWithIndex.
     /// @return The return value from the record of return values.
@@ -122,6 +122,16 @@ contract CallBreaker is CallBreakerStorage {
         // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
         CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
         ReturnObject memory thisReturn = _getReturn(callObjWithIndex.index);
+        return thisReturn.returnvalue;
+    }
+
+    /// @notice Gets a return value from the record of return values from the index number.
+    /// @dev This function also does some accounting to track the occurrence of a given pair of call and return values.
+    /// @param index The call to be executed, structured as a CallObjectWithIndex.
+    /// @return The return value from the record of return values.
+    function getReturnValue(uint256 index) external view returns (bytes memory) {
+        // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
+        ReturnObject memory thisReturn = _getReturn(index);
         return thisReturn.returnvalue;
     }
 

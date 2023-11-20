@@ -139,7 +139,7 @@ contract SmarterContract {
     /// @notice Ensures that there is a future call to the specified callobject after the current call
     /// @dev This iterates over all call indices and ensures there's one after the current call.
     ///      Adding a hintdex makes this cheaper.
-    /// @param callObj The callobject to check for future calls
+    /// @param callObj The callobject to check for. This callObject should strictly be a future call
     function assertFutureCallTo(CallObject memory callObj) public view {
         uint256[] memory cinds = callbreaker.getCallIndex(callObj);
         uint256 currentlyExecuting = callbreaker.getCurrentlyExecuting();
@@ -152,7 +152,7 @@ contract SmarterContract {
     }
 
     /// @notice Ensures that there is a future call to the specified callobject after the current call
-    /// @param callObj The callobject to check for future calls
+    /// @param callObj The callobject to check for. This callObject should strictly be a future call
     /// @param hintdex The hint index to start checking for future calls
     /// @custom:reverts FutureCallExpected() Hintdexes should always be in the future of the current executing call
     /// @custom:reverts CallMismatch() The callobject at the hintdex should match the specified callObject

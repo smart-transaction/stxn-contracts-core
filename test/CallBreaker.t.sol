@@ -42,10 +42,6 @@ contract CallBreakerHarness is CallBreaker {
     function expectCallAtHarness(CallObject memory callObj, uint256 index) public view {
         _expectCallAt(callObj, index);
     }
-
-    function getReturnHarness(uint256 index) public view returns (ReturnObject memory) {
-        return _getReturn(index);
-    }
 }
 
 contract CallBreakerTest is Test {

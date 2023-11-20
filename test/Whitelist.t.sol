@@ -64,8 +64,6 @@ contract WhiteListedTest is Test, Whitelist {
         laminatorSequenceNumber = userLandBlackList();
         vm.stopPrank();
 
-        uint256 initialFillerBalance = address(filler).balance;
-
         // go forward in time
         vm.roll(block.number + 1);
 

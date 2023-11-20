@@ -16,7 +16,6 @@ contract Whitelist {
     Laminator public laminator;
     Caller public caller;
     CallBreaker public callbreaker;
-    uint32 _blocksInADay = 7150;
     uint256 _tipWei = 33;
 
     function deployerLand(address pusher) public {
