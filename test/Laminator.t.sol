@@ -58,7 +58,8 @@ contract LaminatorTest is Test {
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", val1)
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val1),
+            delegate: false
         });
         bytes memory cData = abi.encode(callObj1);
         vm.expectEmit(true, true, true, true);
@@ -74,7 +75,8 @@ contract LaminatorTest is Test {
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", val2)
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val2),
+            delegate: false
         });
         cData = abi.encode(callObj2);
         vm.expectEmit(true, true, true, true);
@@ -111,7 +113,8 @@ contract LaminatorTest is Test {
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val),
+            delegate: false
         });
         bytes memory cData = abi.encode(callObj);
         uint256 sequenceNumber = laminator.pushToProxy(cData, 0);
@@ -134,7 +137,8 @@ contract LaminatorTest is Test {
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val),
+            delegate: false
         });
         bytes memory cData = abi.encode(callObj);
         uint256 sequenceNumber = laminator.pushToProxy(cData, 1);
@@ -158,7 +162,8 @@ contract LaminatorTest is Test {
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val),
+            delegate: false
         });
         bytes memory cData = abi.encode(callObj);
         uint256 sequenceNumber = laminator.pushToProxy(cData, 3);
@@ -184,7 +189,8 @@ contract LaminatorTest is Test {
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val),
+            delegate: false
         });
         bytes memory cData = abi.encode(callObj);
         vm.prank(randomFriendAddress);
@@ -206,7 +212,8 @@ contract LaminatorTest is Test {
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val),
+            delegate: false
         });
         bytes memory cData = abi.encode(callObj);
         vm.prank(address(laminator));
@@ -227,7 +234,8 @@ contract LaminatorTest is Test {
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val),
+            delegate: false
         });
         bytes memory cData = abi.encode(callObj);
         uint256 sequenceNumber = laminator.pushToProxy(cData, 0);
@@ -254,7 +262,8 @@ contract LaminatorTest is Test {
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
-            callvalue: abi.encodeWithSignature("reverter()")
+            callvalue: abi.encodeWithSignature("reverter()"),
+            delegate: false
         });
         bytes memory cData = abi.encode(callObj);
         uint256 sequenceNumber = laminator.pushToProxy(cData, 1);
@@ -277,7 +286,8 @@ contract LaminatorTest is Test {
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", 42)
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", 42),
+            delegate: false
         });
         bytes memory cData = abi.encode(callObj);
 
@@ -298,7 +308,8 @@ contract LaminatorTest is Test {
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", 42)
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", 42),
+            delegate: false
         });
         bytes memory cData = abi.encode(callObjs);
 
@@ -320,7 +331,8 @@ contract LaminatorTest is Test {
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", 42)
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", 42),
+            delegate: false
         });
         bytes memory cData = abi.encode(callObj);
 
@@ -358,7 +370,8 @@ contract LaminatorTest is Test {
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", 42)
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", 42),
+            delegate: false
         });
         bytes memory cData = abi.encode(callObj);
 
@@ -378,7 +391,8 @@ contract LaminatorTest is Test {
             amount: 0,
             addr: address(dummy),
             gas: gasleft(),
-            callvalue: abi.encodeWithSignature("emitArg(uint256)", 42)
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", 42),
+            delegate: false
         });
         bytes memory cData = abi.encode(callObj);
 

@@ -45,6 +45,8 @@ contract CallBreaker is CallBreakerStorage {
     /// @param index The index of the return value in the returnStore
     event EnterPortal(CallObject callObj, ReturnObject returnvalue, uint256 index);
 
+    event Tip(address indexed from, address indexed to, uint256 amount);
+
     /// @notice Emitted when the verifyStxn function is called
     event VerifyStxn();
 
@@ -53,6 +55,15 @@ contract CallBreaker is CallBreakerStorage {
     /// @notice Initializes the contract; sets the initial portal status to closed
     constructor() {
         _setPortalClosed();
+    }
+
+    /// @dev Tips should be transferred from each LaminatorProxy to the solver via msg.value
+    receive() external payable {
+        bytes32 tipAddrKey = keccak256(abi.encodePacked("tipYourBartender"));
+        bytes memory tipAddrBytes = fetchFromAssociatedDataStore(tipAddrKey);
+        address tipAddr = abi.decode(tipAddrBytes, (address));
+        emit Tip(msg.sender, tipAddr, msg.value);
+        payable(tipAddr).transfer(msg.value);
     }
 
     /// @dev Modifier to make a function callable only when the portal is open.

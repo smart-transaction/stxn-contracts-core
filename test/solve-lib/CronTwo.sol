@@ -6,7 +6,6 @@ import "forge-std/Vm.sol";
 import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../../test/examples/CronTwoCounter.sol";
-import "../../src/tips/Tips.sol";
 import "../../src/timetravel/SmarterContract.sol";
 
 // for the next year, every day:
@@ -20,7 +19,6 @@ contract CronTwoLib {
     Laminator public laminator;
     CronTwoCounter public counter;
     CallBreaker public callbreaker;
-    Tips public tips;
     uint32 _blocksInADay = 7150;
     uint256 _tipWei = 33;
 
@@ -30,7 +28,6 @@ contract CronTwoLib {
         callbreaker = new CallBreaker();
         counter = new CronTwoCounter(address(callbreaker));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
-        tips = new Tips(address(callbreaker));
     }
 
     function userLand() public returns (uint256) {
@@ -43,30 +40,35 @@ contract CronTwoLib {
             amount: 0,
             addr: address(counter),
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("increment()")
+            callvalue: abi.encodeWithSignature("increment()"),
+            delegate: false
         });
 
-        pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(tips), gas: 10000000, callvalue: ""});
+        pusherCallObjs[1] =
+            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: "", delegate: false});
 
         CallObject memory callObjectContinueFunctionPointer = CallObject({
             amount: 0,
             addr: address(counter),
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("shouldContinue()")
+            callvalue: abi.encodeWithSignature("shouldContinue()"),
+            delegate: false
         });
         bytes memory callObjectContinueFnPtr = abi.encode(callObjectContinueFunctionPointer);
         pusherCallObjs[2] = CallObject({
             amount: 0,
             addr: pusherLaminated,
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("copyCurrentJob(uint256,bytes)", _blocksInADay, callObjectContinueFnPtr)
+            callvalue: abi.encodeWithSignature("copyCurrentJob(uint256,bytes)", _blocksInADay, callObjectContinueFnPtr),
+            delegate: false
         });
 
         pusherCallObjs[3] = CallObject({
             amount: 0,
             addr: address(counter),
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("frontrunBlocker()")
+            callvalue: abi.encodeWithSignature("frontrunBlocker()"),
+            delegate: false
         });
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
@@ -79,7 +81,8 @@ contract CronTwoLib {
             amount: 0,
             addr: pusherLaminated,
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
+            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber),
+            delegate: false
         });
 
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](4);

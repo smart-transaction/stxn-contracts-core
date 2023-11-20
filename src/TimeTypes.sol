@@ -11,6 +11,7 @@ struct CallObject {
     uint256 gas;
     address addr;
     bytes callvalue;
+    bool delegate;
 }
 
 /// @dev Struct for holding a CallObject with an associated index

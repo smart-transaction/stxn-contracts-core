@@ -9,6 +9,8 @@ import "../timetravel/CallBreaker.sol";
 
 contract SmarterContract {
     CallBreaker public callbreaker;
+    mapping(address => bool) public auditedContracts;
+    mapping(address => bool) public ofacCensoredAddresses;
 
     /// @dev Selector 0xab63c583
     error FutureCallExpected();
@@ -25,6 +27,12 @@ contract SmarterContract {
 
     /// @dev Selector 0xd1cb360d
     error IllegalBackrun();
+
+    /// @dev Selector 0xed32fe28
+    error Unaudited();
+
+    /// @dev Selector 0xc19f17a9
+    error NotApproved();
 
     /// @dev Constructs a new SmarterContract instance
     /// @param _callbreaker The address of the CallBreaker contract
@@ -51,6 +59,47 @@ contract SmarterContract {
     modifier noBackRun() {
         backrunBlocker();
         _;
+    }
+
+    modifier onlyAudited(address _address) {
+        auditedBlocker(_address);
+        _;
+    }
+
+    modifier onlyOFACApproved(address _address) {
+        OFAC_censoredBlocker(_address);
+        _;
+    }
+
+    /// @notice Prevents execution by un-audited contracts
+    /// @dev This function checks whether the provided address is in the list of audited contracts
+    /// @param _address The address to check
+    function auditedBlocker(address _address) public view {
+        if (!auditedContracts[_address]) {
+            revert Unaudited();
+        }
+    }
+
+    /// @notice Prevents calls to all addresses in the list
+    /// @dev This function checks whether the provided address is in the list of OFAC censored addresses
+    function OFAC_censoredBlocker(address _address) public view {
+        if (ofacCensoredAddresses[_address]) {
+            revert NotApproved();
+        }
+    }
+
+    /// @notice Sets a contract as OFAC blocked
+    /// @dev This function adds the provided address to the list of OFAC censored addresses
+    /// @param _address The address to be added to the list of OFAC censored addresses
+    function setOFACBlocked(address _address) public {
+        ofacCensoredAddresses[_address] = true;
+    }
+
+    /// @notice Sets a contract as audited
+    /// @dev This function adds the provided address to the list of audited contracts
+    /// @param _address The address to be added to the list of audited contracts
+    function setAuditedContract(address _address) public {
+        auditedContracts[_address] = true;
     }
 
     /// @notice Returns the call index, callobj, and returnobj of the currently executing call

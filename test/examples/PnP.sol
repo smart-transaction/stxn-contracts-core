@@ -42,7 +42,8 @@ contract PnP {
             amount: 0,
             addr: address(this),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("const_loop(uint16)", input)
+            callvalue: abi.encodeWithSignature("const_loop(uint16)", input),
+            delegate: false
         });
 
         // call, hit the fallback.

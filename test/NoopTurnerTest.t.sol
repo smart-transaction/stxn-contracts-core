@@ -27,7 +27,8 @@ contract NoopTurnerTest is Test {
             amount: 0,
             addr: address(noopturner),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("const_loop(uint16)", uint16(42))
+            callvalue: abi.encodeWithSignature("const_loop(uint16)", uint16(42)),
+            delegate: false
         });
 
         ReturnObject[] memory returnObjs = new ReturnObject[](1);
