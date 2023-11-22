@@ -7,6 +7,7 @@ import {LaminatorHarness} from "./Laminator.t.sol";
 contract GasSnapshot is Test {
     LaminatorHarness laminator;
 
+    // TODO: Finish gas snapshots
     function setUp() public {
         laminator = new LaminatorHarness();
     }

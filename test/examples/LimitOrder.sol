@@ -64,7 +64,8 @@ contract LimitOrder {
                 amount: 0,
                 addr: address(this),
                 gas: 1000000,
-                callvalue: abi.encodeWithSignature("checkBalance()")
+                callvalue: abi.encodeWithSignature("checkBalance()"),
+                delegate: false
             });
             emit LogCallObj(callObj);
 

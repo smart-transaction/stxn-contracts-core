@@ -240,8 +240,13 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         bool success;
         bytes memory returnvalue;
 
-        (success, returnvalue) =
-            callToMake.addr.call{gas: callToMake.gas, value: callToMake.amount}(callToMake.callvalue);
+        if (callToMake.delegate) {
+            (success, returnvalue) = callToMake.addr.delegatecall(callToMake.callvalue);
+        } else {
+            (success, returnvalue) =
+                callToMake.addr.call{gas: callToMake.gas, value: callToMake.amount}(callToMake.callvalue);
+        }
+
         if (!success) {
             revert CallFailed();
         }

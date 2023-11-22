@@ -45,6 +45,8 @@ contract CallBreaker is CallBreakerStorage {
     /// @param index The index of the return value in the returnStore
     event EnterPortal(CallObject callObj, ReturnObject returnvalue, uint256 index);
 
+    event Tip(address indexed from, address indexed to, uint256 amount);
+
     /// @notice Emitted when the verifyStxn function is called
     event VerifyStxn();
 
@@ -53,6 +55,15 @@ contract CallBreaker is CallBreakerStorage {
     /// @notice Initializes the contract; sets the initial portal status to closed
     constructor() {
         _setPortalClosed();
+    }
+
+    /// @dev Tips should be transferred from each LaminatorProxy to the solver via msg.value
+    receive() external payable {
+        bytes32 tipAddrKey = keccak256(abi.encodePacked("tipYourBartender"));
+        bytes memory tipAddrBytes = fetchFromAssociatedDataStore(tipAddrKey);
+        address tipAddr = abi.decode(tipAddrBytes, (address));
+        emit Tip(msg.sender, tipAddr, msg.value);
+        payable(tipAddr).transfer(msg.value);
     }
 
     /// @dev Modifier to make a function callable only when the portal is open.
@@ -103,7 +114,7 @@ contract CallBreaker is CallBreakerStorage {
         emit VerifyStxn();
     }
 
-    /// @notice Executes a call and returns a value from the record of return values.
+    /// @notice Returns a value from the record of return values from the callObject.
     /// @dev This function also does some accounting to track the occurrence of a given pair of call and return values.
     /// @param input The call to be executed, structured as a CallObjectWithIndex.
     /// @return The return value from the record of return values.
@@ -111,6 +122,16 @@ contract CallBreaker is CallBreakerStorage {
         // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
         CallObjectWithIndex memory callObjWithIndex = abi.decode(input, (CallObjectWithIndex));
         ReturnObject memory thisReturn = _getReturn(callObjWithIndex.index);
+        return thisReturn.returnvalue;
+    }
+
+    /// @notice Gets a return value from the record of return values from the index number.
+    /// @dev This function also does some accounting to track the occurrence of a given pair of call and return values.
+    /// @param index The call to be executed, structured as a CallObjectWithIndex.
+    /// @return The return value from the record of return values.
+    function getReturnValue(uint256 index) external view returns (bytes memory) {
+        // Decode the input to obtain the CallObject and calculate a unique ID representing the call-return pair
+        ReturnObject memory thisReturn = _getReturn(index);
         return thisReturn.returnvalue;
     }
 

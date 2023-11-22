@@ -82,7 +82,8 @@ contract FlashPill is IERC20 {
             amount: 0,
             addr: address(this),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("moneyWasReturnedCheck()")
+            callvalue: abi.encodeWithSignature("moneyWasReturnedCheck()"),
+            delegate: false
         });
 
         (bool success,) = _callbreakerAddress.call(abi.encode(callObjs));
