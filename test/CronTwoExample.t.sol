@@ -33,11 +33,18 @@ contract CronTwoTest is Test, CronTwoLib {
         vm.label(filler, "filler");
     }
 
-    function testrun1CronTwo() external {
+    function testrun1CronTwo_concrete() external {
+        testrun1CronTwo_symbolic(_tipWei);
+    }
+
+    function testrun1CronTwo_symbolic(uint256 tip) public {
+        vm.roll(123);
+        vm.coinbase(address(123));
+
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
-        laminatorSequenceNumber = userLand();
+        laminatorSequenceNumber = userLand(tip);
         vm.stopPrank();
 
         uint256 initialFillerBalance = address(filler).balance;
@@ -58,7 +65,7 @@ contract CronTwoTest is Test, CronTwoLib {
         vm.stopPrank();
 
         assertEq(counter.getCount(pusherLaminated), 2);
-        assertEq(address(filler).balance, initialFillerBalance + 2 * 33);
+        assertEq(address(filler).balance, initialFillerBalance + 2 * tip);
 
         assertFalse(callbreaker.isPortalOpen());
 

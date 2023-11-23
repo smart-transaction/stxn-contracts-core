@@ -30,7 +30,7 @@ contract CronTwoLib {
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
     }
 
-    function userLand() public returns (uint256) {
+    function userLand(uint256 tip) public returns (uint256) {
         // send proxy some eth
         pusherLaminated.transfer(1 ether);
 
@@ -45,7 +45,7 @@ contract CronTwoLib {
         });
 
         pusherCallObjs[1] =
-            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: "", delegate: false});
+            CallObject({amount: tip, addr: address(callbreaker), gas: 10000000, callvalue: "", delegate: false});
 
         CallObject memory callObjectContinueFunctionPointer = CallObject({
             amount: 0,
