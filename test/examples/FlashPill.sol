@@ -11,10 +11,8 @@ contract FlashPill is IERC20 {
 
     mapping(address => mapping(address => uint256)) private _allowances;
 
-    // tracks nonzero balances
     address[] private _nonzeroBalances;
 
-    // 1-based indexing into the balance tracker array. 0 represents non-existence.
     mapping(address => uint256) private _indexOf;
 
     struct AddressTuple {
@@ -23,7 +21,6 @@ contract FlashPill is IERC20 {
         bool isValue;
     }
 
-    // list all allowances so we can zero them back out after (they're allowed to be nonzero at the end, but they get reset)
     bytes32[] private _allowanceList;
     mapping(bytes32 => AddressTuple) private _allowanceExists;
 
@@ -38,8 +35,8 @@ contract FlashPill is IERC20 {
 
     constructor(address callbreakerLocation) {
         _callbreakerAddress = callbreakerLocation;
-        _name = "TinaFromFlashBotsCoin";
-        _symbol = "HITINA";
+        _name = "TOKEN";
+        _symbol = "TKN";
     }
 
     function getHashOfAllowancePair(address owner, address spender) public pure returns (bytes32) {
@@ -47,9 +44,7 @@ contract FlashPill is IERC20 {
     }
 
     function moneyWasReturnedCheck() public {
-        // todo: do there need to be any checks on who the caller is?
-
-        // and it should have been scheduled! i think this is just a sanity check. i hope...
+        // TODO: consider whether or not there need to be any checks on who the caller is?
         require(_moneyWasReturnedScheduled, "moneyWasReturned was not scheduled");
 
         // ensure the totalSupply was reset to zero.
@@ -62,20 +57,14 @@ contract FlashPill is IERC20 {
             require(nonzeroBalance == 0, "there was a nonzero balance. haram!");
         }
 
-        // and... reset all the variables for the next user if we succeeded! :)
+        // Reset all the variables for the next user on success
         _moneyWasReturnedScheduled = false;
 
-        // BALANCES SHOULD ALL BE ZERO
-        // not going to check, but it should be if our code is right. whoever fuzzes this... that's on you.
-
-        // clear indexOf
         for (uint256 i = 0; i < _nonzeroBalances.length; i++) {
             address nonzeroBalanceAddress = _nonzeroBalances[i];
             _indexOf[nonzeroBalanceAddress] = 0;
         }
         delete _nonzeroBalances;
-
-        // totalSupply is already zero (we already checked)
 
         // clear allowances
         for (uint256 i = 0; i < _allowanceList.length; i++) {
@@ -93,7 +82,8 @@ contract FlashPill is IERC20 {
             amount: 0,
             addr: address(this),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("moneyWasReturnedCheck()")
+            callvalue: abi.encodeWithSignature("moneyWasReturnedCheck()"),
+            delegate: false
         });
 
         (bool success,) = _callbreakerAddress.call(abi.encode(callObjs));
@@ -136,15 +126,13 @@ contract FlashPill is IERC20 {
         bool ownerWasZero = _balances[owner] == 0;
         bool toWasZero = _balances[to] == 0;
 
-        // yeehaw the overflow and balance checks, we literally do not care at all.
-        // future us will figure it out ;)
         _balances[owner] -= value;
         _balances[to] += value;
 
         bool ownerIsZeroNow = _balances[owner] == 0;
         bool toIsZeroNow = _balances[to] == 0;
 
-        // did a value become nonzero? if so, add it to nonzero balances
+        // If a value becomes nonzero add it to the nonzero balances
         if (ownerWasZero && !ownerIsZeroNow) {
             addNonZeroBalanceMarker(owner);
         }
@@ -152,7 +140,7 @@ contract FlashPill is IERC20 {
             addNonZeroBalanceMarker(to);
         }
 
-        // did a value that was nonzero become zero? if so, remove it from nonzero balances
+        // If a nonzero value becomes zero remove it from the nonzero balances
         if (!ownerWasZero && ownerIsZeroNow) {
             removeNonZeroBalanceMarker(owner);
         }
@@ -210,14 +198,12 @@ contract FlashPill is IERC20 {
         bool fromWasZero = _balances[from] == 0;
         bool toWasZero = _balances[to] == 0;
 
-        // yeehaw the overflow and balance checks, we literally do not care at all.
         _balances[from] -= value;
         _balances[to] += value;
 
         bool fromIsZeroNow = _balances[from] == 0;
         bool toIsZeroNow = _balances[to] == 0;
 
-        // did a value become nonzero? if so, add it to nonzero balances
         if (fromWasZero && !fromIsZeroNow) {
             addNonZeroBalanceMarker(from);
         }
@@ -225,7 +211,6 @@ contract FlashPill is IERC20 {
             addNonZeroBalanceMarker(to);
         }
 
-        // did a value that was nonzero become zero? if so, remove it from nonzero balances
         if (!fromWasZero && fromIsZeroNow) {
             removeNonZeroBalanceMarker(from);
         }

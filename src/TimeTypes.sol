@@ -8,9 +8,10 @@ pragma solidity >=0.6.2 <0.9.0;
 /// @param callvalue The optional ABI-encoded data payload for the call
 struct CallObject {
     uint256 amount;
-    address addr;
     uint256 gas;
+    address addr;
     bytes callvalue;
+    bool delegate;
 }
 
 /// @dev Struct for holding a CallObject with an associated index
@@ -33,6 +34,7 @@ struct ReturnObject {
 /// @param callObj The actual CallObject instance
 struct CallObjectHolder {
     bool initialized;
+    bool executed;
     uint256 firstCallableBlock;
     CallObject[] callObjs;
 }

@@ -1,22 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
+
 pragma solidity >=0.6.2 <0.9.0;
 
 import "forge-std/Test.sol";
-import "forge-std/Vm.sol";
-
-import "./solve-lib/WorkedExample.sol";
-
-import "../src/lamination/Laminator.sol";
 import "../src/timetravel/CallBreaker.sol";
-import "../test/examples/SelfCheckout.sol";
-import "../test/examples/MyErc20.sol";
+import "../test/examples/PnP.sol";
+import "../test/solve-lib/PnPExample.sol";
 
-contract WorkedExampleTest is Test, WorkedExampleLib {
+contract PnPTest is Test, PnPExampleLib {
     address deployer;
     address pusher;
     address filler;
 
-    function setUp() external {
+    function setUp() public {
         deployer = address(100);
         pusher = address(200);
         filler = address(300);
@@ -26,7 +22,7 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
 
         // start deployer land
         vm.startPrank(deployer);
-        deployerLand(pusher, filler);
+        deployerLand(pusher);
         vm.stopPrank();
 
         // Label operations in the run function.
@@ -35,7 +31,7 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         vm.label(filler, "filler");
     }
 
-    function test_workedExample() external {
+    function testPnP() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
@@ -46,13 +42,9 @@ contract WorkedExampleTest is Test, WorkedExampleLib {
         vm.roll(block.number + 1);
 
         vm.startPrank(filler);
-        solverLand(laminatorSequenceNumber, filler, 20);
+        solverLand(laminatorSequenceNumber, filler);
         vm.stopPrank();
 
-        assertEq(erc20a.balanceOf(pusherLaminated), 0);
-        assertEq(erc20b.balanceOf(pusherLaminated), 20);
-        assertEq(erc20a.balanceOf(filler), 10);
-        assertEq(erc20b.balanceOf(filler), 0);
         assertFalse(callbreaker.isPortalOpen());
 
         (bool init, bool exec,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);

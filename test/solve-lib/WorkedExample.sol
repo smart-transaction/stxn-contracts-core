@@ -7,7 +7,6 @@ import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../../test/examples/SelfCheckout.sol";
 import "../../test/examples/MyErc20.sol";
-import "../../src/tips/Tips.sol";
 
 contract WorkedExampleLib {
     CallBreaker public callbreaker;
@@ -16,7 +15,6 @@ contract WorkedExampleLib {
     Laminator public laminator;
     MyErc20 public erc20a;
     MyErc20 public erc20b;
-    Tips public tips;
 
     uint256 _tipWei = 100000000000000000;
 
@@ -24,9 +22,9 @@ contract WorkedExampleLib {
         // Initializing contracts
         laminator = new Laminator();
         callbreaker = new CallBreaker();
+
         erc20a = new MyErc20("A", "A");
         erc20b = new MyErc20("B", "B");
-        tips = new Tips(address(callbreaker));
 
         // give the pusher 10 erc20a
         erc20a.mint(pusher, 10);
@@ -46,19 +44,22 @@ contract WorkedExampleLib {
         pusherLaminated.transfer(1 ether);
         erc20a.transfer(pusherLaminated, 10);
         CallObject[] memory pusherCallObjs = new CallObject[](3);
-        pusherCallObjs[0] = CallObject({amount: _tipWei, addr: address(tips), gas: 10000000, callvalue: ""});
+        pusherCallObjs[0] =
+            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: "", delegate: false});
         pusherCallObjs[1] = CallObject({
             amount: 0,
             addr: address(erc20a),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), 10)
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), 10),
+            delegate: false
         });
 
         pusherCallObjs[2] = CallObject({
             amount: 0,
             addr: address(selfcheckout),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("takeSomeAtokenFromOwner(uint256)", 10)
+            callvalue: abi.encodeWithSignature("takeSomeAtokenFromOwner(uint256)", 10),
+            delegate: false
         });
         laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
 
@@ -68,23 +69,22 @@ contract WorkedExampleLib {
     function solverLand(uint256 laminatorSequenceNumber, address filler, uint256 x) public {
         erc20b.approve(address(selfcheckout), x);
 
-        // TODO: Refactor these parts further if necessary.
         CallObject[] memory callObjs = new CallObject[](3);
         ReturnObject[] memory returnObjs = new ReturnObject[](3);
 
-        // first we're going to call takeSomeAtokenFromOwner by pulling from the laminator
         callObjs[0] = CallObject({
             amount: 0,
             addr: pusherLaminated,
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
+            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber),
+            delegate: false
         });
         // should return a list of the return value of approve + takesomeatokenfrompusher in a list of returnobjects, abi packed, then stuck into another returnobject.
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](3);
         returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
         returnObjsFromPull[1] = ReturnObject({returnvalue: abi.encode(true)});
         returnObjsFromPull[2] = ReturnObject({returnvalue: ""});
-        // double encoding because first here second in pull()
+
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
         // then we'll call giveSomeBtokenToOwner and get the imbalance back to zero
@@ -92,7 +92,8 @@ contract WorkedExampleLib {
             amount: 0,
             addr: address(selfcheckout),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
+            callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x),
+            delegate: false
         });
         // return object is still nothing
         returnObjs[1] = ReturnObject({returnvalue: ""});
@@ -102,7 +103,8 @@ contract WorkedExampleLib {
             amount: 0,
             addr: address(selfcheckout),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("checkBalance()")
+            callvalue: abi.encodeWithSignature("checkBalance()"),
+            delegate: false
         });
         // log what this callobject looks like
         // return object is still nothing
@@ -123,6 +125,16 @@ contract WorkedExampleLib {
         values[4] = abi.encode(laminatorSequenceNumber);
         bytes memory encodedData = abi.encode(keys, values);
 
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData);
+        bytes32[] memory hintdicesKeys = new bytes32[](3);
+        hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
+        hintdicesKeys[1] = keccak256(abi.encode(callObjs[1]));
+        hintdicesKeys[2] = keccak256(abi.encode(callObjs[2]));
+        uint256[] memory hintindicesVals = new uint256[](3);
+        hintindicesVals[0] = 0;
+        hintindicesVals[1] = 1;
+        hintindicesVals[2] = 2;
+        bytes memory hintindices = abi.encode(hintdicesKeys, hintindicesVals);
+
+        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintindices);
     }
 }
