@@ -75,8 +75,7 @@ contract SelfCheckout is SmarterContract {
                 amount: 0,
                 addr: address(this),
                 gas: 1000000,
-                callvalue: abi.encodeWithSignature("checkBalance()"),
-                delegate: false
+                callvalue: abi.encodeWithSignature("checkBalance()")
             });
             emit LogCallObj(callObj);
             assertFutureCallTo(callObj, 2);

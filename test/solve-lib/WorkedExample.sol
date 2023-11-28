@@ -45,21 +45,19 @@ contract WorkedExampleLib {
         erc20a.transfer(pusherLaminated, 10);
         CallObject[] memory pusherCallObjs = new CallObject[](3);
         pusherCallObjs[0] =
-            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: "", delegate: false});
+            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
         pusherCallObjs[1] = CallObject({
             amount: 0,
             addr: address(erc20a),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), 10),
-            delegate: false
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), 10)
         });
 
         pusherCallObjs[2] = CallObject({
             amount: 0,
             addr: address(selfcheckout),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("takeSomeAtokenFromOwner(uint256)", 10),
-            delegate: false
+            callvalue: abi.encodeWithSignature("takeSomeAtokenFromOwner(uint256)", 10)
         });
         laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
 
@@ -76,8 +74,7 @@ contract WorkedExampleLib {
             amount: 0,
             addr: pusherLaminated,
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber),
-            delegate: false
+            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
         // should return a list of the return value of approve + takesomeatokenfrompusher in a list of returnobjects, abi packed, then stuck into another returnobject.
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](3);
@@ -92,8 +89,7 @@ contract WorkedExampleLib {
             amount: 0,
             addr: address(selfcheckout),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x),
-            delegate: false
+            callvalue: abi.encodeWithSignature("giveSomeBtokenToOwner(uint256)", x)
         });
         // return object is still nothing
         returnObjs[1] = ReturnObject({returnvalue: ""});
@@ -103,8 +99,7 @@ contract WorkedExampleLib {
             amount: 0,
             addr: address(selfcheckout),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("checkBalance()"),
-            delegate: false
+            callvalue: abi.encodeWithSignature("checkBalance()")
         });
         // log what this callobject looks like
         // return object is still nothing

@@ -41,12 +41,11 @@ contract PnPExampleLib {
             amount: 0,
             addr: address(pnp),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("callBreakerNp(address)", fifthInList),
-            delegate: false
+            callvalue: abi.encodeWithSignature("callBreakerNp(address)", fifthInList)
         });
 
         pusherCallObjs[1] =
-            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: "", delegate: false});
+            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
 
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
@@ -59,8 +58,7 @@ contract PnPExampleLib {
             amount: 0,
             addr: pusherLaminated,
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber),
-            delegate: false
+            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
 
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](2);

@@ -42,12 +42,11 @@ contract Whitelist {
                 "callWhitelisted(address,bytes)",
                 address(noopturner_audited),
                 abi.encodeWithSignature("vanilla(uint16)", uint16(42))
-                ),
-            delegate: false
+                )
         });
 
         pusherCallObjs[1] =
-            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: "", delegate: false});
+            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
 
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
@@ -60,8 +59,7 @@ contract Whitelist {
             amount: 0,
             addr: pusherLaminated,
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber),
-            delegate: false
+            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
 
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](2);
@@ -100,12 +98,11 @@ contract Whitelist {
                 "callAnyButBlacklisted(address,bytes)",
                 address(noopturner_ofacBlocked),
                 abi.encodeWithSignature("vanilla(uint16)", uint16(42))
-                ),
-            delegate: false
+                )
         });
 
         pusherCallObjs[1] =
-            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: "", delegate: false});
+            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
 
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
@@ -118,8 +115,7 @@ contract Whitelist {
             amount: 0,
             addr: pusherLaminated,
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber),
-            delegate: false
+            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
 
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](2);

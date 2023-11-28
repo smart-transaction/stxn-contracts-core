@@ -40,35 +40,31 @@ contract CronTwoLib {
             amount: 0,
             addr: address(counter),
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("increment()"),
-            delegate: false
+            callvalue: abi.encodeWithSignature("increment()")
         });
 
         pusherCallObjs[1] =
-            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: "", delegate: false});
+            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
 
         CallObject memory callObjectContinueFunctionPointer = CallObject({
             amount: 0,
             addr: address(counter),
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("shouldContinue()"),
-            delegate: false
+            callvalue: abi.encodeWithSignature("shouldContinue()")
         });
         bytes memory callObjectContinueFnPtr = abi.encode(callObjectContinueFunctionPointer);
         pusherCallObjs[2] = CallObject({
             amount: 0,
             addr: pusherLaminated,
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("copyCurrentJob(uint256,bytes)", _blocksInADay, callObjectContinueFnPtr),
-            delegate: false
+            callvalue: abi.encodeWithSignature("copyCurrentJob(uint256,bytes)", _blocksInADay, callObjectContinueFnPtr)
         });
 
         pusherCallObjs[3] = CallObject({
             amount: 0,
             addr: address(counter),
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("frontrunBlocker()"),
-            delegate: false
+            callvalue: abi.encodeWithSignature("frontrunBlocker()")
         });
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
@@ -81,8 +77,7 @@ contract CronTwoLib {
             amount: 0,
             addr: pusherLaminated,
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber),
-            delegate: false
+            callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
 
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](4);
