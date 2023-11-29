@@ -5,8 +5,9 @@ pragma solidity >=0.6.2 <0.9.0;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "../../src/timetravel/CallBreaker.sol";
+import "../../src/timetravel/SmarterContract.sol";
 
-contract FlashPill is IERC20 {
+contract FlashPill is IERC20, SmarterContract {
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -33,7 +34,7 @@ contract FlashPill is IERC20 {
 
     bool _moneyWasReturnedScheduled = false;
 
-    constructor(address callbreakerLocation) {
+    constructor(address callbreakerLocation) SmarterContract(callbreakerLocation) {
         _callbreakerAddress = callbreakerLocation;
         _name = "TOKEN";
         _symbol = "TKN";
@@ -85,11 +86,7 @@ contract FlashPill is IERC20 {
             callvalue: abi.encodeWithSignature("moneyWasReturnedCheck()")
         });
 
-        (bool success,) = _callbreakerAddress.call(abi.encode(callObjs));
-
-        if (!success) {
-            revert("turner CallFailed");
-        }
+        assertFutureCallTo(callObjs[0]);
 
         _moneyWasReturnedScheduled = true;
     }
