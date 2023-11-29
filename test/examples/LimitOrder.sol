@@ -1,100 +1,91 @@
-// TODO
-// vlad didn't ask me to write this, but i think it'll be illustrative
-// use the timeturner to enforce slippage on a uniswap trade
-// set slippage really high, let yourself slip, then use the timeturner to revert the trade if the price was above some number.
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.2 <0.9.0;
 
-import "openzeppelin/token/ERC20/IERC20.sol";
-import "../../src/TimeTypes.sol";
-import "../../src/timetravel/CallBreaker.sol";
+import "forge-std/Test.sol";
+import "forge-std/console.sol";
 
-contract LimitOrder {
-    address public owner;
-    address public callbreakerAddress;
+import 'v3-periphery/interfaces/ISwapRouter.sol';
+import "openzeppelin/token/ERC20/ERC20.sol";
+import '../../src/timetravel/CallBreaker.sol';
+import '../../src/timetravel/SmarterContract.sol';
+import '../../src/TimeTypes.sol';
 
-    IERC20 public atoken;
-    IERC20 public btoken;
+address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+address constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+address constant SwapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
 
-    // hardcoded slippage
-    uint256 public slippage = 50;
+// pool fee, 0.3%.
+uint24 constant poolFee = 3000;
 
-    // your debt to the protocol denominated in btoken
-    uint256 public imbalance = 0;
+interface IWETH is IERC20 {
+    function deposit() external payable;
 
-    // tracks if we've called checkBalance yet. if not it needs to be.
-    bool public balanceScheduled = false;
+    function withdraw(uint amount) external;
+}
 
-    // when a debt is taken out of the protocol, it goes here. should be called right before executing a pull...
-    address public swapPartner;
+contract SelfCheckout is SmarterContract {
+    address owner;
+    address callbreakerAddress;
+
+    IWETH private weth = IWETH(WETH9);
+    IERC20 private dai = IERC20(DAI);
+    ISwapRouter constant router =
+        ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    uint256 currentMarketPrice;
 
     event DebugAddress(string message, address value);
     event DebugInfo(string message, string value);
     event DebugUint(string message, uint256 value);
 
-    constructor(address _owner, address _atoken, address _btoken, address _callbreakerAddress) {
-        owner = _owner;
-
-        atoken = IERC20(_atoken);
-        btoken = IERC20(_btoken);
-
+    // FORK_URL=https://eth-mainnet.g.alchemy.com/v2/613t3mfjTevdrCwDl28CVvuk6wSIxRPi
+    // forge test -vv --gas-report --fork-url $FORK_URL --match-path test/LimitOrder.t.sol
+    constructor(address _callbreakerAddress)
+        SmarterContract(_callbreakerAddress)
+    {
         callbreakerAddress = _callbreakerAddress;
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Proxy: Not the owner");
-        _;
-    }
+    // use the timeturner to enforce slippage on a uniswap trade
+    // set slippage really high, let yourself slip, then use the timeturner to revert the trade if the price was above some number.
+    function swapDAIForWETH(uint256 _amountIn, uint256 slippagePercent) public {
+        uint256 amountIn = _amountIn * 1e18;
+        require(dai.transferFrom(msg.sender, address(this), amountIn), 'transferFrom failed.');
+        require(dai.approve(address(router), amountIn), 'approve failed.');
 
-    function setSwapPartner(address _swapPartner) public {
-        swapPartner = _swapPartner;
-    }
-
-    event LogCallObj(CallObject callObj);
-
-    // take a debt out.
-    // exchangeRate is the number of btoken you get for 1 atoken.
-    function takeSomeAtokenFromOwner(uint256 atokenamount, uint256 exchangeRate) public onlyOwner {
-        require(CallBreaker(payable(callbreakerAddress)).isPortalOpen(), "CallBreaker is not open");
-
-        // if checking the balance isn't scheduled, schedule it.
-        if (!balanceScheduled) {
-            // ensures that there's b-tokens supplied in return.
-            CallObject memory callObj = CallObject({
-                amount: 0,
-                addr: address(this),
-                gas: 1000000,
-                callvalue: abi.encodeWithSignature("checkBalance()")
+        // perform the swap with no slippage limits
+        ISwapRouter.ExactInputSingleParams memory params =
+            ISwapRouter.ExactInputSingleParams({
+                tokenIn: address(dai),
+                tokenOut: address(weth),
+                fee: poolFee,
+                recipient: msg.sender,
+                deadline: block.timestamp,
+                amountIn: amountIn,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
             });
-            emit LogCallObj(callObj);
 
-            (bool success,) = callbreakerAddress.call(abi.encode(callObj));
+        // The call to `exactInputSingle` executes the swap.
+        uint256 amountOut = router.exactInputSingle(params);
+        console.log("WETH", amountOut);
 
-            if (!success) {
-                revert("turner CallFailed");
-            }
-            balanceScheduled = true;
-        }
-
-        imbalance += atokenamount * exchangeRate;
-
-        require(atoken.transferFrom(owner, swapPartner, atokenamount), "AToken transfer failed");
+        // check whether or not 
+        CallObject memory callObj = CallObject({
+            amount: 0,
+            addr: address(this),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature("checkSlippage(uint256)", slippagePercent)
+        });
+        
+        assertFutureCallTo(callObj, 2);
     }
 
-    // repay your debts.
-    function giveSomeBtokenToOwner(uint256 btokenamount) public {
-        btoken.transferFrom(swapPartner, owner, btokenamount);
-
-        if (imbalance > btokenamount) {
-            imbalance -= btokenamount;
-        } else {
-            imbalance = 0;
+    function checkSlippage(uint256 targetSlippage) internal view {
+        // If the slippage is too high, revert the transaction
+        // By separating the slippage check into a separate function, we can use the timeturner to revert the transaction if the slippage is too high.
+        uint256 slippage = ((currentMarketPrice - targetSlippage) * 100) / targetSlippage;
+        if (slippage > targetSlippage) {
+            revert("Slippage too high");
         }
-    }
-
-    // check that you don't owe me anything.
-    function checkBalance() public {
-        require(imbalance == 0, "You still owe me some btoken!");
-        balanceScheduled = false;
     }
 }

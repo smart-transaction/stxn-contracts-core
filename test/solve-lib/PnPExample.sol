@@ -44,8 +44,7 @@ contract PnPExampleLib {
             callvalue: abi.encodeWithSignature("callBreakerNp(address)", fifthInList)
         });
 
-        pusherCallObjs[1] =
-            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
+        pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
 
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
