@@ -73,12 +73,7 @@ contract CallBreakerTest is Test {
 
     function testExpectCallAt() external {
         CallObject[] memory calls = new CallObject[](1);
-        calls[0] = CallObject({
-            amount: 0,
-            addr: address(0xdeadbeef),
-            gas: 1000000,
-            callvalue: ""
-        });
+        calls[0] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
 
         ReturnObject[] memory returnValues = new ReturnObject[](1);
         returnValues[0] = ReturnObject({returnvalue: ""});
@@ -89,12 +84,7 @@ contract CallBreakerTest is Test {
         callbreaker.expectCallAtHarness(calls[0], 0);
 
         CallObject[] memory falseCalls = new CallObject[](1);
-        falseCalls[0] = CallObject({
-            amount: 0,
-            addr: address(0xbabe),
-            gas: 1000000,
-            callvalue: ""
-        });
+        falseCalls[0] = CallObject({amount: 0, addr: address(0xbabe), gas: 1000000, callvalue: ""});
 
         vm.expectRevert(abi.encodeWithSelector(CallBreaker.CallPositionFailed.selector, falseCalls[0], 0));
         callbreaker.expectCallAtHarness(falseCalls[0], 0);
@@ -102,18 +92,8 @@ contract CallBreakerTest is Test {
 
     function testPopulateCallIndices() external {
         CallObject[] memory calls = new CallObject[](2);
-        calls[0] = CallObject({
-            amount: 0,
-            addr: address(0xdeadbeef),
-            gas: 1000000,
-            callvalue: ""
-        });
-        calls[1] = CallObject({
-            amount: 0,
-            addr: address(0xdeadbeef),
-            gas: 1000000,
-            callvalue: ""
-        });
+        calls[0] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
+        calls[1] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
 
         ReturnObject[] memory returnValues = new ReturnObject[](2);
         returnValues[0] = ReturnObject({returnvalue: ""});
@@ -126,12 +106,7 @@ contract CallBreakerTest is Test {
         callbreaker.expectCallAtHarness(calls[1], 1);
 
         CallObject[] memory falseCalls = new CallObject[](1);
-        falseCalls[0] = CallObject({
-            amount: 0,
-            addr: address(0xbabe),
-            gas: 1000000,
-            callvalue: ""
-        });
+        falseCalls[0] = CallObject({amount: 0, addr: address(0xbabe), gas: 1000000, callvalue: ""});
 
         vm.expectRevert(abi.encodeWithSelector(CallBreaker.CallPositionFailed.selector, falseCalls[0], 0));
         callbreaker.expectCallAtHarness(falseCalls[0], 0);
@@ -139,12 +114,7 @@ contract CallBreakerTest is Test {
 
     function testExecuteAndVerifyCall() external {
         CallObject[] memory calls = new CallObject[](1);
-        calls[0] = CallObject({
-            amount: 0,
-            addr: address(0xdeadbeef),
-            gas: 1000000,
-            callvalue: ""
-        });
+        calls[0] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
 
         ReturnObject[] memory returnValues = new ReturnObject[](1);
         returnValues[0] = ReturnObject({returnvalue: ""});
@@ -173,18 +143,8 @@ contract CallBreakerTest is Test {
         assertEq(callbreaker.getHintdicesStoreKeyListLengthHarness(), 0);
 
         CallObject[] memory calls = new CallObject[](2);
-        calls[0] = CallObject({
-            amount: 0,
-            addr: address(0xdeadbeef),
-            gas: 1000000,
-            callvalue: ""
-        });
-        calls[1] = CallObject({
-            amount: 0,
-            addr: address(0xdeadbeef),
-            gas: 1000000,
-            callvalue: ""
-        });
+        calls[0] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
+        calls[1] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
 
         ReturnObject[] memory returnValues = new ReturnObject[](2);
         returnValues[0] = ReturnObject({returnvalue: ""});
@@ -213,18 +173,8 @@ contract CallBreakerTest is Test {
 
     function testPopulateAssociatedDataStore() external {
         CallObject[] memory calls = new CallObject[](2);
-        calls[0] = CallObject({
-            amount: 0,
-            addr: address(0xdeadbeef),
-            gas: 1000000,
-            callvalue: ""
-        });
-        calls[1] = CallObject({
-            amount: 0,
-            addr: address(0xdeadbeef),
-            gas: 1000000,
-            callvalue: ""
-        });
+        calls[0] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
+        calls[1] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
 
         ReturnObject[] memory returnValues = new ReturnObject[](2);
         returnValues[0] = ReturnObject({returnvalue: ""});
@@ -249,18 +199,8 @@ contract CallBreakerTest is Test {
 
     function testPopulateHintdices() external {
         CallObject[] memory calls = new CallObject[](2);
-        calls[0] = CallObject({
-            amount: 0,
-            addr: address(0xdeadbeef),
-            gas: 1000000,
-            callvalue: ""
-        });
-        calls[1] = CallObject({
-            amount: 0,
-            addr: address(0xdeadbeef),
-            gas: 1000000,
-            callvalue: ""
-        });
+        calls[0] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
+        calls[1] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
 
         ReturnObject[] memory returnValues = new ReturnObject[](2);
         returnValues[0] = ReturnObject({returnvalue: ""});
@@ -295,18 +235,8 @@ contract CallBreakerTest is Test {
 
     function testInsertIntoHintdices() external {
         CallObject[] memory calls = new CallObject[](2);
-        calls[0] = CallObject({
-            amount: 0,
-            addr: address(0xdeadbeef),
-            gas: 1000000,
-            callvalue: ""
-        });
-        calls[1] = CallObject({
-            amount: 0,
-            addr: address(0xdeadbeef),
-            gas: 1000000,
-            callvalue: ""
-        });
+        calls[0] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
+        calls[1] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
 
         ReturnObject[] memory returnValues = new ReturnObject[](2);
         returnValues[0] = ReturnObject({returnvalue: ""});
@@ -343,18 +273,8 @@ contract CallBreakerTest is Test {
 
     function testInsertIntoAssociatedDataStore() external {
         CallObject[] memory calls = new CallObject[](2);
-        calls[0] = CallObject({
-            amount: 0,
-            addr: address(0xdeadbeef),
-            gas: 1000000,
-            callvalue: ""
-        });
-        calls[1] = CallObject({
-            amount: 0,
-            addr: address(0xdeadbeef),
-            gas: 1000000,
-            callvalue: ""
-        });
+        calls[0] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
+        calls[1] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
 
         ReturnObject[] memory returnValues = new ReturnObject[](2);
         returnValues[0] = ReturnObject({returnvalue: ""});

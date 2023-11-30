@@ -14,6 +14,7 @@ contract FlashPillExampleLib {
     Laminator public laminator;
     CallBreaker public callbreaker;
     uint256 _tipWei = 33;
+
     function deployerLand(address pusher) public {
         // Initializing contracts
         laminator = new Laminator();
@@ -28,12 +29,7 @@ contract FlashPillExampleLib {
 
         // Userland operations
         CallObject[] memory pusherCallObjs = new CallObject[](2);
-        pusherCallObjs[0] = CallObject({
-            amount: 0,
-            addr: address(fp),
-            gas: 1000000,
-            callvalue: ""
-        });
+        pusherCallObjs[0] = CallObject({amount: 0, addr: address(fp), gas: 1000000, callvalue: ""});
 
         pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
 

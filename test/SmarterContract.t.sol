@@ -9,7 +9,7 @@ import "../src/timetravel/CallBreaker.sol";
 import "../src/lamination/Laminator.sol";
 
 contract SmarterContractHarness is SmarterContract {
-    constructor (address callbreakerAddress) SmarterContract(callbreakerAddress) {}
+    constructor(address callbreakerAddress) SmarterContract(callbreakerAddress) {}
 }
 
 contract SmarterContractTest is Test {
@@ -53,12 +53,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("pull(uint256)", 0)
         });
         // Blank Callobj
-        callObjs[1] = CallObject({
-            amount: 0,
-            addr: address(0xbabe),
-            gas: 1000000,
-            callvalue: ""
-        });
+        callObjs[1] = CallObject({amount: 0, addr: address(0xbabe), gas: 1000000, callvalue: ""});
 
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](1);
         returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
@@ -75,7 +70,7 @@ contract SmarterContractTest is Test {
         uint256[] memory hintindicesVals = new uint256[](1);
         hintindicesVals[0] = 0;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
-        
+
         vm.prank(address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
@@ -100,12 +95,7 @@ contract SmarterContractTest is Test {
         ReturnObject[] memory returnObjs = new ReturnObject[](2);
 
         // Blank Callobj
-        callObjs[0] = CallObject({
-            amount: 0,
-            addr: address(0xbabe),
-            gas: 1000000,
-            callvalue: ""
-        });
+        callObjs[0] = CallObject({amount: 0, addr: address(0xbabe), gas: 1000000, callvalue: ""});
 
         callObjs[1] = CallObject({
             amount: 0,
@@ -129,7 +119,7 @@ contract SmarterContractTest is Test {
         uint256[] memory hintindicesVals = new uint256[](1);
         hintindicesVals[0] = 0;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
-        
+
         vm.prank(address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
@@ -154,12 +144,7 @@ contract SmarterContractTest is Test {
         ReturnObject[] memory returnObjs = new ReturnObject[](2);
 
         // Blank Callobj
-        callObjs[0] = CallObject({
-            amount: 0,
-            addr: address(0xbabe),
-            gas: 1000000,
-            callvalue: ""
-        });
+        callObjs[0] = CallObject({amount: 0, addr: address(0xbabe), gas: 1000000, callvalue: ""});
 
         callObjs[1] = CallObject({
             amount: 0,
@@ -183,7 +168,7 @@ contract SmarterContractTest is Test {
         uint256[] memory hintindicesVals = new uint256[](1);
         hintindicesVals[0] = 0;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
-        
+
         vm.prank(address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
@@ -215,16 +200,10 @@ contract SmarterContractTest is Test {
         });
 
         // Blank Callobj
-        callObjs[1] = CallObject({
-            amount: 0,
-            addr: address(0xbabe),
-            gas: 1000000,
-            callvalue: ""
-        });
+        callObjs[1] = CallObject({amount: 0, addr: address(0xbabe), gas: 1000000, callvalue: ""});
 
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](1);
         returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
-
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
         returnObjs[1] = ReturnObject({returnvalue: ""});
@@ -238,21 +217,15 @@ contract SmarterContractTest is Test {
         uint256[] memory hintindicesVals = new uint256[](1);
         hintindicesVals[0] = 0;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
-        
+
         vm.prank(address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
 
     // TODO
-    function testAssertFutureCallTo() external {
-        
-    }
+    function testAssertFutureCallTo() external {}
 
-    function testAssertFutureCallToWithHintdex() external {
+    function testAssertFutureCallToWithHintdex() external {}
 
-    }
-    
-    function testAssertNextCallTo() external {
-
-    }
+    function testAssertNextCallTo() external {}
 }
