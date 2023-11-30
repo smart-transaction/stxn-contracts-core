@@ -121,7 +121,6 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     ///      the deferred call object from the `deferredCalls` mapping.
     /// @param seqNumber The sequence number of the deferred call to be executed.
     /// @return returnValue The return value of the executed deferred call.
-
     function pull(uint256 seqNumber) external nonReentrant returns (bytes memory returnValue) {
         CallObjectHolder storage coh = deferredCalls[seqNumber];
         _checkPrePush(coh);
@@ -271,24 +270,32 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         return push(abi.encode(coh.callObjs), delay);
     }
 
+    /// @dev Safety checks before pushing calls to the LaminatedProxy
+    /// @param coh The CallObjectHolder to be checked.
     function _checkPrePush(CallObjectHolder memory coh) internal view {
         _checkInitialized(coh);
         _checkExecuted(coh);
         _checkCallTime(coh);
     }
 
+    /// @dev Checks if the CallObjectHolder is initialized.
+    /// @param coh The CallObjectHolder to be checked.
     function _checkInitialized(CallObjectHolder memory coh) internal pure {
         if (!coh.initialized) {
             revert Uninitialized();
         }
     }
 
+    /// @dev Checks if the CallObjectHolder has already been executed.
+    /// @param coh The CallObjectHolder to be checked.
     function _checkExecuted(CallObjectHolder memory coh) internal pure {
         if (coh.executed) {
             revert AlreadyExecuted();
         }
     }
 
+    /// @dev Checks if the CallObjectHolder is ready to be executed based on the current block number.
+    /// @param coh The CallObjectHolder to be checked.
     function _checkCallTime(CallObjectHolder memory coh) internal view {
         if (coh.firstCallableBlock > block.number) {
             revert TooEarly();

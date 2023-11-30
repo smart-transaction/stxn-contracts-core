@@ -81,11 +81,6 @@ contract SelfCheckout is SmarterContract {
     }
 
     function checkSlippage(uint256 targetSlippage) internal view {
-        // If the slippage is too high, revert the transaction
-        // By separating the slippage check into a separate function, we can use the timeturner to revert the transaction if the slippage is too high.
-        uint256 slippage = ((currentMarketPrice - targetSlippage) * 100) / targetSlippage;
-        if (slippage > targetSlippage) {
-            revert("Slippage too high");
-        }
+        // TODO: Implement slippage check
     }
 }
