@@ -52,7 +52,6 @@ contract WorkedExampleLib {
             gas: 1000000,
             callvalue: abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), 10)
         });
-
         pusherCallObjs[2] = CallObject({
             amount: 0,
             addr: address(selfcheckout),

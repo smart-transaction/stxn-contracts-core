@@ -9,3 +9,7 @@ out/
 
 # Dotenv file
 .env
+
+# Ignore coverage reports
+report-gen.txt
+summary-gen.txt
