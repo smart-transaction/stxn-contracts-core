@@ -35,7 +35,7 @@ contract CallBreaker is CallBreakerStorage {
     /// @dev Caller must be EOA
     /// @dev Selector 0x09d1095b
     error MustBeEOA();
-    /// @dev Error thrown when the call position is not as expected
+    /// @dev Error thrown when the call position of the incoming call is not as expected.
     /// @dev Selector 0xd2c5d316
     error CallPositionFailed(CallObject, uint256);
 

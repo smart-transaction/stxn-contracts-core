@@ -43,8 +43,7 @@ contract CronTwoLib {
             callvalue: abi.encodeWithSignature("increment()")
         });
 
-        pusherCallObjs[1] =
-            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
+        pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
 
         CallObject memory callObjectContinueFunctionPointer = CallObject({
             amount: 0,

@@ -135,7 +135,7 @@ abstract contract CallBreakerStorage {
         associatedDataKeyList.push(key);
     }
 
-    /// @dev Cleans up storage by resetting returnStore
+    /// @dev Cleans up storage by resetting all stores
     function _cleanUpStorage() internal {
         delete callStore;
         delete returnStore;

@@ -1,0 +1,12 @@
+[1;33mWarning (3420)[0m[1;37m: Source file does not specify required compiler version! Consider adding "pragma solidity ^0.8.23;"[0m
+
+[1;33mWarning (3420)[0m[1;37m: Source file does not specify required compiler version! Consider adding "pragma solidity ^0.8.23;"[0m
+
+| File                                  | % Lines          | % Statements     | % Branches      | % Funcs         |
+|---------------------------------------|------------------|------------------|-----------------|-----------------|
+| src/lamination/LaminatedProxy.sol     | 80.00% (52/65)   | 80.49% (66/82)   | 55.56% (10/18)  | 75.00% (12/16)  |
+| src/lamination/LaminatedStorage.sol   | 33.33% (11/33)   | 38.18% (21/55)   | 0.00% (0/10)    | 66.67% (10/15)  |
+| src/lamination/Laminator.sol          | 68.00% (17/25)   | 73.68% (28/38)   | 50.00% (2/4)    | 75.00% (3/4)    |
+| src/timetravel/CallBreaker.sol        | 58.44% (45/77)   | 60.19% (65/108)  | 46.15% (12/26)  | 73.33% (11/15)  |
+| src/timetravel/CallBreakerStorage.sol | 91.43% (32/35)   | 93.48% (43/46)   | 75.00% (3/4)    | 100.00% (10/10) |
+| src/timetravel/SmarterContract.sol    | 21.43% (6/28)    | 21.95% (9/41)    | 25.00% (3/12)   | 28.57% (2/7)    |

@@ -39,20 +39,19 @@ contract WorkedExampleLib {
         selfcheckout = new SelfCheckout(pusherLaminated, address(erc20a), address(erc20b), address(callbreaker));
     }
 
+    // msg.sender here is the user. all transfers of funds and approvals are made by the user.
     function userLand() public returns (uint256) {
         // Userland operations
         pusherLaminated.transfer(1 ether);
         erc20a.transfer(pusherLaminated, 10);
         CallObject[] memory pusherCallObjs = new CallObject[](3);
-        pusherCallObjs[0] =
-            CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
+        pusherCallObjs[0] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
         pusherCallObjs[1] = CallObject({
             amount: 0,
             addr: address(erc20a),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("approve(address,uint256)", address(selfcheckout), 10)
         });
-
         pusherCallObjs[2] = CallObject({
             amount: 0,
             addr: address(selfcheckout),
@@ -64,6 +63,7 @@ contract WorkedExampleLib {
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
 
+    // msg.sender here is the filler. all transfers of funds and approvals are made by the filler.
     function solverLand(uint256 laminatorSequenceNumber, address filler, uint256 x) public {
         erc20b.approve(address(selfcheckout), x);
 
