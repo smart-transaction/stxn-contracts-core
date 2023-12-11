@@ -5,6 +5,9 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import "v3-periphery/interfaces/ISwapRouter.sol";
+import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import "v3-core/contracts/libraries/TickMath.sol";
+
 import "openzeppelin/token/ERC20/ERC20.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../../src/timetravel/SmarterContract.sol";
@@ -23,7 +26,10 @@ interface IWETH is IERC20 {
     function withdraw(uint256 amount) external;
 }
 
-contract SelfCheckout is SmarterContract {
+// This example uses fork test:
+// FORK_URL=https://eth-mainnet.g.alchemy.com/v2/613t3mfjTevdrCwDl28CVvuk6wSIxRPi
+// forge test -vv --gas-report --fork-url $FORK_URL --match-path test/LimitOrder.t.sol
+contract LimitOrder is SmarterContract {
     address owner;
     address callbreakerAddress;
 
@@ -36,11 +42,11 @@ contract SelfCheckout is SmarterContract {
     event DebugInfo(string message, string value);
     event DebugUint(string message, uint256 value);
 
-    // FORK_URL=https://eth-mainnet.g.alchemy.com/v2/613t3mfjTevdrCwDl28CVvuk6wSIxRPi
-    // forge test -vv --gas-report --fork-url $FORK_URL --match-path test/LimitOrder.t.sol
     constructor(address _callbreakerAddress) SmarterContract(_callbreakerAddress) {
         callbreakerAddress = _callbreakerAddress;
     }
+
+    error InvalidPriceLimit();
 
     // use the timeturner to enforce slippage on a uniswap trade
     // set slippage really high, let yourself slip, then use the timeturner to revert the trade if the price was above some number.
@@ -73,10 +79,24 @@ contract SelfCheckout is SmarterContract {
             callvalue: abi.encodeWithSignature("checkSlippage(uint256)", slippagePercent)
         });
 
-        assertFutureCallTo(callObj, 2);
+        assertFutureCallTo(callObj, 1);
     }
 
-    function checkSlippage(uint256 targetSlippage) internal view {
-        // TODO: Implement slippage check
+    function checkSlippage(uint160 targetSlippage) public view {
+        IUniswapV3Pool pool = IUniswapV3Pool(address(0xC2e9F25Be6257c210d7Adf0D4Cd6E3E881ba25f8));
+
+        (uint160 sqrtPriceX96,,,,,,) = pool.slot0();
+
+        int24 tickLower = sqrtPriceX96 > TickMath.MIN_SQRT_RATIO
+            ? TickMath.getTickAtSqrtRatio(sqrtPriceX96 - (sqrtPriceX96 / targetSlippage))
+            : TickMath.MIN_TICK;
+        int24 tickUpper = sqrtPriceX96 < TickMath.MAX_SQRT_RATIO
+            ? TickMath.getTickAtSqrtRatio(sqrtPriceX96 + (sqrtPriceX96 / targetSlippage))
+            : TickMath.MAX_TICK;
+
+        uint160 sqrtPriceLowerX96 = TickMath.getSqrtRatioAtTick(tickLower);
+        uint160 sqrtPriceUpperX96 = TickMath.getSqrtRatioAtTick(tickUpper);
+
+        if (sqrtPriceX96 > sqrtPriceLowerX96 || sqrtPriceX96 < sqrtPriceUpperX96) revert InvalidPriceLimit();
     }
 }
