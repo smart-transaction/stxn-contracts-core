@@ -56,7 +56,7 @@ contract LimitOrder is SmarterContract {
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
 
     error InvalidPriceLimit();
-    
+
     // use the timeturner to enforce slippage on a uniswap trade
     // set slippage really high, let yourself slip, then use the timeturner to revert the trade if the price was above some number.
     function swapDAIForWETH(uint256 _amountIn, uint256 slippagePercent) public {
@@ -116,7 +116,7 @@ contract LimitOrder is SmarterContract {
     /// at the given tick
     function getSqrtRatioAtTick(int24 tick) internal pure returns (uint160 sqrtPriceX96) {
         uint256 absTick = tick < 0 ? uint256(-int256(tick)) : uint256(int256(tick));
-        require(absTick <= uint256(int256(MAX_TICK)), 'T');
+        require(absTick <= uint256(int256(MAX_TICK)), "T");
 
         uint256 ratio = absTick & 0x1 != 0 ? 0xfffcb933bd6fad37aa2d162d1a594001 : 0x100000000000000000000000000000000;
         if (absTick & 0x2 != 0) ratio = (ratio * 0xfff97272373d413259a46990580e213a) >> 128;
@@ -154,7 +154,7 @@ contract LimitOrder is SmarterContract {
     /// @return tick The greatest tick for which the ratio is less than or equal to the input ratio
     function getTickAtSqrtRatio(uint160 sqrtPriceX96) internal pure returns (int24 tick) {
         // second inequality must be < because the price can never reach the price at the max tick
-        require(sqrtPriceX96 >= MIN_SQRT_RATIO && sqrtPriceX96 < MAX_SQRT_RATIO, 'R');
+        require(sqrtPriceX96 >= MIN_SQRT_RATIO && sqrtPriceX96 < MAX_SQRT_RATIO, "R");
         uint256 ratio = uint256(sqrtPriceX96) << 32;
 
         uint256 r = ratio;
