@@ -78,7 +78,7 @@ contract SelfCheckout is SmarterContract {
                 callvalue: abi.encodeWithSignature("checkBalance()")
             });
             emit LogCallObj(callObj);
-            assertFutureCallTo(callObj, 2);
+            assertFutureCallTo(callObj);
 
             balanceScheduled = true;
         }
