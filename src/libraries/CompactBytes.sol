@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.8 <0.9.0;
 
+import "./Basics.sol";
+
 /**
  * @dev Stores the first 4-bytes of the data along with its length. Uses 8-bytes total and can be
  * packed along with other values into a struct. First 4-bytes store the first 4-bytes of the actual
@@ -23,9 +25,6 @@ using CompactBytesLib for compactCdTailSlot global;
 
 /// @author philogy <https://github.com/philogy>
 library CompactBytesLib {
-    uint256 internal constant DATA_LEN_BYTES = 32;
-    uint256 internal constant WORD_SIZE = 0x20;
-
     uint256 internal constant HEAD_CHUNK_MASK = 0xffffffff; // 4-byte mask
     uint256 internal constant HEAD_MASK = 0xffffffffffffffff;
     uint256 internal constant HEAD_BYTES_OFFSET_IN_DATA = 4;
