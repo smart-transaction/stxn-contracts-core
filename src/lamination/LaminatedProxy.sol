@@ -122,13 +122,14 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @param seqNumber The sequence number of the deferred call to be executed.
     /// @return returnValue The return value of the executed deferred call.
     function pull(uint256 seqNumber) external nonReentrant returns (bytes memory returnValue) {
-        CallObjectHolder storage coh = deferredCalls[seqNumber];
-        _checkPrePush(coh);
+        CallObjectHolderStorage storage cohStorage = _deferredCalls[seqNumber];
+        _checkPrePush(cohStorage);
 
-        coh.executed = true;
+        cohStorage.executed = true;
         _setCurrentlyExecutingSeqNum(seqNumber);
         _setCurrentlyExecutingCallIndex(0);
         _setExecuting();
+        CallObjectHolder memory coh = cohStorage.load();
         emit CallableBlock(coh.firstCallableBlock, block.number);
 
         returnValue = _executeAll(coh.callObjs);
@@ -163,15 +164,15 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @dev Sets the executed flag to true for all pending calls
     function cancelAllPending() external onlyOwner {
         for (uint256 i = 0; i < executingSequenceNumber(); i++) {
-            if (deferredCalls[i].executed == false) {
-                deferredCalls[i].executed = true;
+            if (_deferredCalls[i].executed == false) {
+                _deferredCalls[i].executed = true;
             }
         }
     }
 
     function cancelPending(uint256 callSequenceNumber) external onlyOwner {
-        if (deferredCalls[callSequenceNumber].executed == false) {
-            deferredCalls[callSequenceNumber].executed = true;
+        if (_deferredCalls[callSequenceNumber].executed == false) {
+            _deferredCalls[callSequenceNumber].executed = true;
         }
     }
 
@@ -182,16 +183,16 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @return exists A boolean indicating whether the deferred call exists.
     /// @return callObj The CallObject containing details of the deferred function call.
     function viewDeferredCall(uint256 seqNumber) public view returns (bool, bool, CallObject[] memory) {
-        CallObjectHolder memory coh = deferredCalls[seqNumber];
+        CallObjectHolder memory coh = deferredCalls(seqNumber);
         return (coh.initialized, coh.executed, coh.callObjs);
     }
 
     function getExecutingCallObject() public view onlyWhileExecuting returns (CallObject memory) {
-        return deferredCalls[executingSequenceNumber()].callObjs[executingCallIndex()];
+        return _deferredCalls[executingSequenceNumber()].getCallObj(executingCallIndex()).load();
     }
 
     function getExecutingCallObjectHolder() public view onlyWhileExecuting returns (CallObjectHolder memory) {
-        return deferredCalls[executingSequenceNumber()];
+        return deferredCalls(executingSequenceNumber());
     }
 
     /// @notice Pushes a deferred function call to be executed after a certain delay.
@@ -203,18 +204,16 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     ///      Use 0 for no delay.
     /// @return callSequenceNumber The sequence number assigned to this deferred call.
     function push(bytes memory input, uint256 delay) public onlyLaminatorOrProxy returns (uint256 callSequenceNumber) {
-        CallObject[] memory callObjs = abi.decode(input, (CallObject[]));
+        CallObjectHolder memory holder;
+        holder.callObjs = abi.decode(input, (CallObject[]));
         callSequenceNumber = count();
-        CallObjectHolder storage holder = deferredCalls[callSequenceNumber];
         holder.initialized = true;
         holder.executed = false;
         holder.firstCallableBlock = block.number + delay;
-        for (uint256 i = 0; i < callObjs.length; ++i) {
-            holder.callObjs.push(callObjs[i]);
-        }
+        _deferredCalls[callSequenceNumber].store(holder);
 
         emit CallableBlock(block.number + delay, block.number);
-        emit CallPushed(callObjs, callSequenceNumber);
+        emit CallPushed(holder.callObjs, callSequenceNumber);
         _incrementSequenceNumber();
     }
 
@@ -264,15 +263,15 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
             }
         }
 
-        CallObjectHolder storage coh = deferredCalls[seqNumber];
+        CallObjectHolderStorage storage coh = _deferredCalls[seqNumber];
         _checkInitialized(coh);
 
-        return push(abi.encode(coh.callObjs), delay);
+        return push(abi.encode(coh.load().callObjs), delay);
     }
 
     /// @dev Safety checks before pushing calls to the LaminatedProxy
     /// @param coh The CallObjectHolder to be checked.
-    function _checkPrePush(CallObjectHolder memory coh) internal view {
+    function _checkPrePush(CallObjectHolderStorage storage coh) internal view {
         _checkInitialized(coh);
         _checkExecuted(coh);
         _checkCallTime(coh);
@@ -280,7 +279,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
 
     /// @dev Checks if the CallObjectHolder is initialized.
     /// @param coh The CallObjectHolder to be checked.
-    function _checkInitialized(CallObjectHolder memory coh) internal pure {
+    function _checkInitialized(CallObjectHolderStorage storage coh) internal view {
         if (!coh.initialized) {
             revert Uninitialized();
         }
@@ -288,7 +287,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
 
     /// @dev Checks if the CallObjectHolder has already been executed.
     /// @param coh The CallObjectHolder to be checked.
-    function _checkExecuted(CallObjectHolder memory coh) internal pure {
+    function _checkExecuted(CallObjectHolderStorage storage coh) internal view {
         if (coh.executed) {
             revert AlreadyExecuted();
         }
@@ -296,7 +295,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
 
     /// @dev Checks if the CallObjectHolder is ready to be executed based on the current block number.
     /// @param coh The CallObjectHolder to be checked.
-    function _checkCallTime(CallObjectHolder memory coh) internal view {
+    function _checkCallTime(CallObjectHolderStorage storage coh) internal view {
         if (coh.firstCallableBlock > block.number) {
             revert TooEarly();
         }

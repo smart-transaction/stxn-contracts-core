@@ -149,7 +149,7 @@ contract CallBreaker is CallBreakerStorage {
     /// @param i The index at which the CallObject and ReturnObject are to be fetched
     /// @return A pair of CallObject and ReturnObject at the given index
     function getPair(uint256 i) public view returns (CallObject memory, ReturnObject memory) {
-        return (callStore[i], returnStore[i]);
+        return (_getCall(i), returnStore[i]);
     }
 
     /// @notice Fetches the Call at a given index from the callList
@@ -217,9 +217,9 @@ contract CallBreaker is CallBreakerStorage {
     function _populateCallIndices() internal {
         uint256 l = callStore.length;
         for (uint256 i = 0; i < l; i++) {
-            Call memory call = Call({callId: keccak256(abi.encode(callStore[i])), index: i});
+            Call memory call = Call({callId: keccak256(abi.encode(_getCall(i))), index: i});
             callList.push(call);
-            emit CallPopulated(callStore[i], i);
+            emit CallPopulated(_getCall(i), i);
         }
     }
 
@@ -279,7 +279,7 @@ contract CallBreaker is CallBreakerStorage {
     }
 
     function _expectCallAt(CallObject memory callObj, uint256 index) internal view {
-        if (keccak256(abi.encode(callStore[index])) != keccak256(abi.encode(callObj))) {
+        if (keccak256(abi.encode(_getCall(index))) != keccak256(abi.encode(callObj))) {
             revert CallPositionFailed(callObj, index);
         }
     }

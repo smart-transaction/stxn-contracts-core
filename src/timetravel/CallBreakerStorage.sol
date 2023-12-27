@@ -30,7 +30,7 @@ abstract contract CallBreakerStorage {
     bytes32 public constant EXECUTING_CALL_INDEX_SLOT =
         bytes32(uint256(keccak256("LaminatorStorage.EXEC_CALL_INDEX_SLOT")) - 1);
 
-    CallObject[] public callStore;
+    CallObjectStorage[] public callStore;
     ReturnObject[] public returnStore;
 
     bytes32[] public associatedDataKeyList;
@@ -162,7 +162,7 @@ abstract contract CallBreakerStorage {
         delete callStore;
         delete returnStore;
         for (uint256 i = 0; i < calls.length; i++) {
-            callStore.push(calls[i]);
+            callStore.push().store(calls[i]);
             returnStore.push(returnValues[i]);
         }
     }
@@ -172,5 +172,9 @@ abstract contract CallBreakerStorage {
     /// @return _returnObj The last ReturnObject in the storage
     function _getReturn(uint256 index) internal view returns (ReturnObject memory _returnObj) {
         return returnStore[index];
+    }
+
+    function _getCall(uint256 index) internal view returns (CallObject memory callobj) {
+        return callStore[index].load();
     }
 }
