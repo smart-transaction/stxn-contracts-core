@@ -62,7 +62,7 @@ contract SelfCheckout is SmarterContract {
         bytes32 swapPartnerKey = keccak256(abi.encodePacked("swapPartner"));
         bytes memory swapPartnerBytes =
             CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(swapPartnerKey);
-        return abi.decode(swapPartnerBytes, (address));
+        return address(bytes20(swapPartnerBytes));
     }
 
     event LogCallObj(CallObject callObj);

@@ -113,8 +113,8 @@ contract WorkedExampleLib {
         keys[3] = keccak256(abi.encodePacked("x"));
         keys[4] = keccak256(abi.encodePacked("seqNum"));
         bytes[] memory values = new bytes[](5);
-        values[0] = abi.encode(filler);
-        values[1] = abi.encode(filler);
+        values[0] = abi.encodePacked(filler);
+        values[1] = abi.encodePacked(filler);
         values[2] = abi.encode(pusherLaminated);
         values[3] = abi.encode(x);
         values[4] = abi.encode(laminatorSequenceNumber);

@@ -34,7 +34,7 @@ abstract contract CallBreakerStorage {
     ReturnObject[] public returnStore;
 
     bytes32[] public associatedDataKeyList;
-    mapping(bytes32 => AssociatedData) public associatedDataStore;
+    mapping(bytes32 => AssociatedDataStorage) public associatedDataStore;
 
     bytes32[] public hintdicesStoreKeyList;
     mapping(bytes32 => Hintdex) public hintdicesStore;
@@ -122,14 +122,13 @@ abstract contract CallBreakerStorage {
     /// @param value The value to be associated with the key in the associatedDataStore
     function _insertIntoAssociatedDataStore(bytes32 key, bytes memory value) internal {
         // Check if the key already exists in the associatedDataStore
-        if (associatedDataStore[key].set) {
+        if (associatedDataStore[key].set()) {
             revert KeyAlreadyExists();
         }
 
         emit InsertIntoAssociatedDataStore(key, value);
         // Insert the key-value pair into the associatedDataStore
-        associatedDataStore[key].set = true;
-        associatedDataStore[key].value = value;
+        associatedDataStore[key].store(value);
 
         // Add the key to the associatedDataKeyList
         associatedDataKeyList.push(key);
@@ -141,7 +140,7 @@ abstract contract CallBreakerStorage {
         delete returnStore;
         delete callList;
         for (uint256 i = 0; i < associatedDataKeyList.length; i++) {
-            delete associatedDataStore[associatedDataKeyList[i]];
+            associatedDataStore[associatedDataKeyList[i]].wipe();
         }
         delete associatedDataKeyList;
 

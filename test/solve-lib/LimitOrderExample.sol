@@ -73,7 +73,7 @@ contract LimitOrderExampleLib {
         keys[1] = keccak256(abi.encodePacked("pullIndex"));
         keys[2] = keccak256(abi.encodePacked("hintdex"));
         bytes[] memory values = new bytes[](3);
-        values[0] = abi.encode(filler);
+        values[0] = abi.encodePacked(filler);
         values[1] = abi.encode(laminatorSequenceNumber);
         values[2] = abi.encode(2);
         bytes memory encodedData = abi.encode(keys, values);

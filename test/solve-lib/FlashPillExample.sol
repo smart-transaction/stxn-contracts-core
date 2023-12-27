@@ -58,7 +58,7 @@ contract FlashPillExampleLib {
         keys[1] = keccak256(abi.encodePacked("pullIndex"));
         // keys[2] = keccak256(abi.encodePacked("hintdex"));
         bytes[] memory values = new bytes[](2);
-        values[0] = abi.encode(filler);
+        values[0] = abi.encodePacked(filler);
         values[1] = abi.encode(laminatorSequenceNumber);
         // values[2] = abi.encode(4);
         bytes memory encodedData = abi.encode(keys, values);

@@ -61,7 +61,7 @@ contract CallBreaker is CallBreakerStorage {
     receive() external payable {
         bytes32 tipAddrKey = keccak256(abi.encodePacked("tipYourBartender"));
         bytes memory tipAddrBytes = fetchFromAssociatedDataStore(tipAddrKey);
-        address tipAddr = abi.decode(tipAddrBytes, (address));
+        address tipAddr = address(bytes20(tipAddrBytes));
         emit Tip(msg.sender, tipAddr, msg.value);
         payable(tipAddr).transfer(msg.value);
     }
@@ -139,10 +139,10 @@ contract CallBreaker is CallBreakerStorage {
     /// @param key The key whose associated value is to be fetched
     /// @return The value associated with the given key
     function fetchFromAssociatedDataStore(bytes32 key) public view returns (bytes memory) {
-        if (!associatedDataStore[key].set) {
+        if (!associatedDataStore[key].set()) {
             revert NonexistentKey();
         }
-        return associatedDataStore[key].value;
+        return associatedDataStore[key].load();
     }
 
     /// @notice Fetches the CallObject and ReturnObject at a given index from the callStore and returnStore respectively
