@@ -1,0 +1,21 @@
+- solidity call completer: example
+- look into prolog for DSL
+- time travel nested turners?
+- account abstraction
+- gas paymaster: example
+- 1RTT laminators (optionally)
+- one timeturner per invariant
+- an airdrop with gas paid in airdrop tokens, whoever pays the gas gets a certain number of tokens, eventually make that an reverse/decayed increasing-pay auction like uniswapx
+- gas optimization
+- examples cleanup
+- gas profiling
+- audit
+- stxn DSL design
+- DSL submission infra
+- solver/fuzzer on easymode
+- technical partnerships
+- time traveling ethereum
+- shitty cowswap
+- slippage check/limit order
+- cron job
+- insurance/derivative products: how much do i have to pay for "some outcome", that can be minimized across txns that do the same thing, auction your risk... virtual securities? securities across a bundle.
