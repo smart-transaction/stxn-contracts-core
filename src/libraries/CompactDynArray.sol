@@ -12,7 +12,6 @@ struct genericDynArrayElementsSlot {
 using CompactDynArray for genericDynArrayHead global;
 using CompactDynArray for genericDynArrayElementsSlot global;
 
-/// @author philogy <https://github.com/philogy>
 library CompactDynArray {
     uint256 internal constant DYN_ARRAY_HEAD_MASK = 0xffffffff;
 

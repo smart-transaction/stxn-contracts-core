@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import {Test} from "forge-std/Test.sol";
 import {AssociatedDataStorage, AssociatedDataLib} from "../src/CallBreakerTypes.sol";
 
-/// @author philogy <https://github.com/philogy>
 contract AssociatedDataStorageTest is Test {
     AssociatedDataStorage assocData;
 

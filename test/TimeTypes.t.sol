@@ -4,7 +4,6 @@ pragma solidity >=0.6.2 <0.9.0;
 import {Test} from "forge-std/Test.sol";
 import {CallObject, CallObjectStorage} from "../src/TimeTypes.sol";
 
-/// @author philogy <https://github.com/philogy>
 contract TimeTypesTest is Test {
     CallObjectStorage callObjStorage;
 

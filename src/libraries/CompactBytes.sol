@@ -23,7 +23,6 @@ struct compactCdTailSlot {
 using CompactBytesLib for compactCdHead global;
 using CompactBytesLib for compactCdTailSlot global;
 
-/// @author philogy <https://github.com/philogy>
 library CompactBytesLib {
     uint256 internal constant HEAD_CHUNK_MASK = 0xffffffff; // 4-byte mask
     uint256 internal constant HEAD_MASK = 0xffffffffffffffff;
