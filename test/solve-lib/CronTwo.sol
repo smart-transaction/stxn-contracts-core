@@ -91,7 +91,7 @@ contract CronTwoLib {
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
         keys[1] = keccak256(abi.encodePacked("pullIndex"));
         bytes[] memory values = new bytes[](2);
-        values[0] = abi.encode(filler);
+        values[0] = abi.encodePacked(filler);
         values[1] = abi.encode(laminatorSequenceNumber);
         bytes memory encodedData = abi.encode(keys, values);
 

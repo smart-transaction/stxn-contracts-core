@@ -30,11 +30,11 @@ abstract contract CallBreakerStorage {
     bytes32 public constant EXECUTING_CALL_INDEX_SLOT =
         bytes32(uint256(keccak256("LaminatorStorage.EXEC_CALL_INDEX_SLOT")) - 1);
 
-    CallObject[] public callStore;
+    CallObjectStorage[] public callStore;
     ReturnObject[] public returnStore;
 
     bytes32[] public associatedDataKeyList;
-    mapping(bytes32 => AssociatedData) public associatedDataStore;
+    mapping(bytes32 => AssociatedDataStorage) public associatedDataStore;
 
     bytes32[] public hintdicesStoreKeyList;
     mapping(bytes32 => Hintdex) public hintdicesStore;
@@ -122,14 +122,13 @@ abstract contract CallBreakerStorage {
     /// @param value The value to be associated with the key in the associatedDataStore
     function _insertIntoAssociatedDataStore(bytes32 key, bytes memory value) internal {
         // Check if the key already exists in the associatedDataStore
-        if (associatedDataStore[key].set) {
+        if (associatedDataStore[key].set()) {
             revert KeyAlreadyExists();
         }
 
         emit InsertIntoAssociatedDataStore(key, value);
         // Insert the key-value pair into the associatedDataStore
-        associatedDataStore[key].set = true;
-        associatedDataStore[key].value = value;
+        associatedDataStore[key].store(value);
 
         // Add the key to the associatedDataKeyList
         associatedDataKeyList.push(key);
@@ -141,7 +140,7 @@ abstract contract CallBreakerStorage {
         delete returnStore;
         delete callList;
         for (uint256 i = 0; i < associatedDataKeyList.length; i++) {
-            delete associatedDataStore[associatedDataKeyList[i]];
+            associatedDataStore[associatedDataKeyList[i]].wipe();
         }
         delete associatedDataKeyList;
 
@@ -162,7 +161,7 @@ abstract contract CallBreakerStorage {
         delete callStore;
         delete returnStore;
         for (uint256 i = 0; i < calls.length; i++) {
-            callStore.push(calls[i]);
+            callStore.push().store(calls[i]);
             returnStore.push(returnValues[i]);
         }
     }
@@ -172,5 +171,9 @@ abstract contract CallBreakerStorage {
     /// @return _returnObj The last ReturnObject in the storage
     function _getReturn(uint256 index) internal view returns (ReturnObject memory _returnObj) {
         return returnStore[index];
+    }
+
+    function _getCall(uint256 index) internal view returns (CallObject memory callobj) {
+        return callStore[index].load();
     }
 }

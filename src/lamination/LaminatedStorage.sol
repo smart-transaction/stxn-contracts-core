@@ -22,7 +22,7 @@ abstract contract LaminatedStorage {
     bytes32 public constant CALL_STATUS_SLOT = bytes32(uint256(keccak256("LaminatorStorage.CALL_STATUS_SLOT")) - 1);
 
     /// @notice The map from sequence number to calls held in the mempool.
-    mapping(uint256 => CallObjectHolder) public deferredCalls;
+    mapping(uint256 => CallObjectHolderStorage) internal _deferredCalls;
 
     /// @dev Indicates that the owner or laminator has already been set and cannot be set again.
     /// @dev Selector 0xef34ca5c
@@ -36,12 +36,16 @@ abstract contract LaminatedStorage {
     /// @dev Selector 0xc77a0100
     error NullOwner();
 
+    function deferredCalls(uint256 index) public view returns (CallObjectHolder memory holder) {
+        holder = _deferredCalls[index].load();
+    }
+
     function cleanupLaminatorStorage(uint256[] memory seqNumbers) public {
         for (uint256 i = 0; i < seqNumbers.length; i++) {
-            if (!deferredCalls[seqNumbers[i]].executed) {
+            if (!_deferredCalls[seqNumbers[i]].executed) {
                 continue;
             }
-            delete deferredCalls[seqNumbers[i]];
+            delete _deferredCalls[seqNumbers[i]];
         }
     }
 
