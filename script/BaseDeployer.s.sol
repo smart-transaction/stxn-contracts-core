@@ -5,13 +5,13 @@ import {Script} from "forge-std/Script.sol";
 
 /* solhint-disable max-states-count */
 contract BaseDeployer is Script {
-    bytes32 internal counterProxySalt;
-    bytes32 internal counterSalt;
+    bytes32 internal _counterProxySalt;
+    bytes32 internal _counterSalt;
 
-    uint256 internal deployerPrivateKey;
+    uint256 internal _deployerPrivateKey;
 
-    address internal ownerAddress;
-    address internal proxyCounterAddress;
+    address internal _ownerAddress;
+    address internal _proxyCounterAddress;
 
     enum Chains {
         LocalGoerli,
@@ -103,6 +103,7 @@ contract BaseDeployer is Script {
         forks[Chains.OptimismGoerli] = "optimismgoerli";
         forks[Chains.Moonriver] = "moonriver";
         forks[Chains.Shiden] = "shiden";
+        // @TODO Add Base
 
         // Mainnet
         forks[Chains.Etherum] = "etherum";
