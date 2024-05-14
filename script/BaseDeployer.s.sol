@@ -12,6 +12,7 @@ contract BaseDeployer is Script {
 
     address internal _ownerAddress;
     address internal _proxyCounterAddress;
+    address internal _create2addrCounter;
 
     enum Chains {
         LocalGoerli,
@@ -48,14 +49,14 @@ contract BaseDeployer is Script {
     /// @param cycle deployment cycle (dev, test, prod)
     modifier setEnvDeploy(Cycle cycle) {
         if (cycle == Cycle.Dev) {
-            deployerPrivateKey = vm.envUint("LOCAL_DEPLOYER_KEY");
-            ownerAddress = vm.envAddress("LOCAL_OWNER_ADDRESS");
+            _deployerPrivateKey = vm.envUint("LOCAL_DEPLOYER_KEY");
+            _ownerAddress = vm.envAddress("LOCAL_OWNER_ADDRESS");
         } else if (cycle == Cycle.Test) {
-            deployerPrivateKey = vm.envUint("TEST_DEPLOYER_KEY");
-            ownerAddress = vm.envAddress("TEST_OWNER_ADDRESS");
+            _deployerPrivateKey = vm.envUint("TEST_DEPLOYER_KEY");
+            _ownerAddress = vm.envAddress("TEST_OWNER_ADDRESS");
         } else {
-            deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
-            ownerAddress = vm.envAddress("OWNER_ADDRESS");
+            _deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
+            _ownerAddress = vm.envAddress("OWNER_ADDRESS");
         }
 
         _;
@@ -65,14 +66,14 @@ contract BaseDeployer is Script {
     /// @param cycle deployment cycle (dev, test, prod)
     modifier setEnvUpgrade(Cycle cycle) {
         if (cycle == Cycle.Dev) {
-            deployerPrivateKey = vm.envUint("LOCAL_DEPLOYER_KEY");
-            proxyCounterAddress = vm.envAddress("LOCAL_COUNTER_PROXY_ADDRESS");
+            _deployerPrivateKey = vm.envUint("LOCAL_DEPLOYER_KEY");
+            _proxyCounterAddress = vm.envAddress("LOCAL_COUNTER_PROXY_ADDRESS");
         } else if (cycle == Cycle.Test) {
-            deployerPrivateKey = vm.envUint("TEST_DEPLOYER_KEY");
-            proxyCounterAddress = vm.envAddress("TEST_COUNTER_PROXY_ADDRESS");
+            _deployerPrivateKey = vm.envUint("TEST_DEPLOYER_KEY");
+            _proxyCounterAddress = vm.envAddress("TEST_COUNTER_PROXY_ADDRESS");
         } else {
-            deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
-            proxyCounterAddress = vm.envAddress("COUNTER_PROXY_ADDRESS");
+            _deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
+            _proxyCounterAddress = vm.envAddress("COUNTER_PROXY_ADDRESS");
         }
 
         _;
