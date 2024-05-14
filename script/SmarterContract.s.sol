@@ -10,10 +10,13 @@ import {SmarterContract} from "../src/timetravel/SmarterContract.sol";
 import {console2} from "forge-std/console2.sol";
 
 contract DeploySmarterContract is Script, BaseDeployer {
+    address private _callBreaker;
+
     /// @dev Compute the CREATE2 addresses for contracts (proxy, counter).
     /// @param salt The salt for the SmarterContract contract.
     modifier computeCreate2(bytes32 salt) {
-        _create2addrCounter = computeCreate2Address(salt, hashInitCode(type(SmarterContract).creationCode));
+        _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
+        _create2addrCounter = computeCreate2Address(salt, hashInitCode(type(SmarterContract).creationCode, abi.encode(_callBreaker)));
 
         _;
     }
@@ -38,10 +41,9 @@ contract DeploySmarterContract is Script, BaseDeployer {
 
     /// @dev Function to perform actual deployment.
     function chainDeploySmartedContract() private broadcast(_deployerPrivateKey) {
-        SmarterContract sc = new SmarterContract{salt: _counterSalt}(vm.envAddress("CALL_BREAKER_ADDRESS"));
+        SmarterContract sc = new SmarterContract{salt: _counterSalt}(_callBreaker);
 
-        // TODO: fails as of now
-        // require(_create2addrCounter == address(sc), "Address mismatch SmarterContract");
+        require(_create2addrCounter == address(sc), "Address mismatch SmarterContract");
 
         console2.log("SmarterContract deployed at address:", address(sc), "\n");
     }
