@@ -13,23 +13,18 @@ contract DeployCallBreaker is Script, BaseDeployer {
     /// @dev Compute the CREATE2 address for CallBreaker contract.
     /// @param salt The salt for the CallBreaker contract.
     modifier computeCreate2(bytes32 salt) {
-        _create2addrCounter = computeCreate2Address(
-            salt,
-            hashInitCode(type(CallBreaker).creationCode)
-        );
+        _create2addrCounter = computeCreate2Address(salt, hashInitCode(type(CallBreaker).creationCode));
 
         _;
     }
 
     /// @dev Helper to iterate over chains and select fork.
     /// @param deployForks The chains to deploy to.
-    function createDeployMultichain(
-        Chains[] memory deployForks
-    ) internal override computeCreate2(_counterSalt) {
+    function createDeployMultichain(Chains[] memory deployForks) internal override computeCreate2(_counterSalt) {
         console2.log("CallBreaker create2 address:", _create2addrCounter, "\n");
 
-        for (uint256 i; i < deployForks.length; ) {
-            console2.log("Deploying CallBreaker to chain: ", uint(deployForks[i]), "\n");
+        for (uint256 i; i < deployForks.length;) {
+            console2.log("Deploying CallBreaker to chain: ", uint256(deployForks[i]), "\n");
 
             createSelectFork(deployForks[i]);
 

@@ -145,9 +145,7 @@ abstract contract BaseDeployer is Script {
     }
 
     /// @dev Deploy contracts to testnet.
-    function deployTestnet(
-        uint256 counterSalt
-    ) public setEnvDeploy(Cycle.Test) {
+    function deployTestnet(uint256 counterSalt) public setEnvDeploy(Cycle.Test) {
         Chains[] memory deployForks = new Chains[](2);
 
         _counterSalt = bytes32(counterSalt);
@@ -166,7 +164,7 @@ abstract contract BaseDeployer is Script {
 
     /// @dev Deploy contracts to local.
     function deployLocal() external setEnvDeploy(Cycle.Dev) {
-        Chains[] memory deployForks = new Chains[](3);
+        Chains[] memory deployForks = new Chains[](2);
         _counterSalt = bytes32(uint256(1));
         _counterProxySalt = bytes32(uint256(2));
 
@@ -181,11 +179,10 @@ abstract contract BaseDeployer is Script {
     /// @param salt The salt for the SmarterContract contract.
     /// @param deployForks The chains to deploy to.
     /// @param cycle The development cycle to set env variables (dev, test, prod).
-    function deploySelectedChains(
-        uint256 salt,
-        Chains[] calldata deployForks,
-        Cycle cycle
-    ) external setEnvDeploy(cycle) {
+    function deploySelectedChains(uint256 salt, Chains[] calldata deployForks, Cycle cycle)
+        external
+        setEnvDeploy(cycle)
+    {
         _counterSalt = bytes32(salt);
 
         createDeployMultichain(deployForks);

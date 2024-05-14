@@ -13,23 +13,18 @@ contract DeploySmarterContract is Script, BaseDeployer {
     /// @dev Compute the CREATE2 addresses for contracts (proxy, counter).
     /// @param salt The salt for the SmarterContract contract.
     modifier computeCreate2(bytes32 salt) {
-        _create2addrCounter = computeCreate2Address(
-            salt,
-            hashInitCode(type(SmarterContract).creationCode)
-        );
+        _create2addrCounter = computeCreate2Address(salt, hashInitCode(type(SmarterContract).creationCode));
 
         _;
     }
 
     /// @dev Helper to iterate over chains and select fork.
     /// @param deployForks The chains to deploy to.
-    function createDeployMultichain(
-        Chains[] memory deployForks
-    ) internal override computeCreate2(_counterSalt) {
+    function createDeployMultichain(Chains[] memory deployForks) internal override computeCreate2(_counterSalt) {
         console2.log("SmarterContract create2 address:", _create2addrCounter, "\n");
 
-        for (uint256 i; i < deployForks.length; ) {
-            console2.log("Deploying SmarterContract to chain: ", uint(deployForks[i]), "\n");
+        for (uint256 i; i < deployForks.length;) {
+            console2.log("Deploying SmarterContract to chain: ", uint256(deployForks[i]), "\n");
 
             createSelectFork(deployForks[i]);
 
