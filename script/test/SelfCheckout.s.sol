@@ -23,7 +23,8 @@ contract DeploySelfCheckout is Script, BaseDeployer {
         _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
 
         _create2addrCounter = computeCreate2Address(
-            salt, hashInitCode(type(SelfCheckout).creationCode, abi.encode(_ownerAddress, _tokenA, _tokenB, _callBreaker))
+            salt,
+            hashInitCode(type(SelfCheckout).creationCode, abi.encode(_ownerAddress, _tokenA, _tokenB, _callBreaker))
         );
 
         _;
@@ -49,12 +50,7 @@ contract DeploySelfCheckout is Script, BaseDeployer {
 
     /// @dev Function to perform actual deployment.
     function chainDeploySmartedContract() private broadcast(_deployerPrivateKey) {
-        SelfCheckout sc = new SelfCheckout{salt: _counterSalt}(
-            _ownerAddress,
-            _tokenA,
-            _tokenB,
-            _callBreaker
-        );
+        SelfCheckout sc = new SelfCheckout{salt: _counterSalt}(_ownerAddress, _tokenA, _tokenB, _callBreaker);
 
         require(_create2addrCounter == address(sc), "Address mismatch SelfCheckout");
 

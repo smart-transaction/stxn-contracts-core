@@ -16,7 +16,8 @@ contract DeploySmarterContract is Script, BaseDeployer {
     /// @param salt The salt for the SmarterContract contract.
     modifier computeCreate2(bytes32 salt) {
         _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
-        _create2addrCounter = computeCreate2Address(salt, hashInitCode(type(SmarterContract).creationCode, abi.encode(_callBreaker)));
+        _create2addrCounter =
+            computeCreate2Address(salt, hashInitCode(type(SmarterContract).creationCode, abi.encode(_callBreaker)));
 
         _;
     }
