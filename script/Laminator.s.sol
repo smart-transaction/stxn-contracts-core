@@ -3,48 +3,30 @@
 pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
-import {Counter} from "../src/Counter.sol";
-
 import {BaseDeployer} from "./BaseDeployer.s.sol";
+import {Laminator} from "../src/lamination/Laminator.sol";
 
 /* solhint-disable no-console*/
 import {console2} from "forge-std/console2.sol";
 
-contract DeployCounter is Script, BaseDeployer {
-    address private create2addrCounter;
-    address private create2addrProxy;
-
-    Counter private wrappedProxy;
-
+contract DeployLaminator is Script, BaseDeployer {
     /// @dev Compute the CREATE2 addresses for contracts (proxy, counter).
-    /// @param saltCounter The salt for the counter contract.
-    /// @param saltProxy The salt for the proxy contract.
-    modifier computeCreate2(bytes32 saltCounter, bytes32 saltProxy) {
-        create2addrCounter = computeCreate2Address(
-            saltCounter,
-            hashInitCode(type(Counter).creationCode)
-        );
-
-        create2addrProxy = computeCreate2Address(
-            saltProxy,
-            hashInitCode(
-                type(UUPSProxy).creationCode,
-                abi.encode(
-                    create2addrCounter,
-                    abi.encodeWithSelector(Counter.initialize.selector, ownerAddress)
-                )
-            )
+    /// @param salt The salt for the Laminator contract.
+    modifier computeCreate2(bytes32 salt) {
+        _create2addrCounter = computeCreate2Address(
+            salt,
+            hashInitCode(type(Laminator).creationCode)
         );
 
         _;
     }
 
     /// @dev Deploy contracts to mainnet.
-    function deployCounterMainnet() external setEnvDeploy(Cycle.Prod) {
+    function deployMainnet() external setEnvDeploy(Cycle.Prod) {
         Chains[] memory deployForks = new Chains[](8);
 
-        counterSalt = bytes32(uint256(10));
-        counterProxySalt = bytes32(uint256(11));
+        _counterSalt = bytes32(uint256(10));
+        _counterProxySalt = bytes32(uint256(11));
 
         deployForks[0] = Chains.Etherum;
         deployForks[1] = Chains.Polygon;
@@ -59,14 +41,12 @@ contract DeployCounter is Script, BaseDeployer {
     }
 
     /// @dev Deploy contracts to testnet.
-    function deployCounterTestnet(
-        uint256 _counterSalt,
-        uint256 _counterProxySalt
+    function deployTestnet(
+        uint256 counterSalt
     ) public setEnvDeploy(Cycle.Test) {
         Chains[] memory deployForks = new Chains[](8);
 
-        counterSalt = bytes32(_counterSalt);
-        counterProxySalt = bytes32(_counterProxySalt);
+        _counterSalt = bytes32(counterSalt);
 
         deployForks[0] = Chains.Goerli;
         deployForks[1] = Chains.Mumbai;
@@ -81,10 +61,10 @@ contract DeployCounter is Script, BaseDeployer {
     }
 
     /// @dev Deploy contracts to local.
-    function deployCounterLocal() external setEnvDeploy(Cycle.Dev) {
+    function deployLocal() external setEnvDeploy(Cycle.Dev) {
         Chains[] memory deployForks = new Chains[](3);
-        counterSalt = bytes32(uint256(1));
-        counterProxySalt = bytes32(uint256(2));
+        _counterSalt = bytes32(uint256(1));
+        _counterProxySalt = bytes32(uint256(2));
 
         deployForks[0] = Chains.LocalGoerli;
         deployForks[1] = Chains.LocalFuji;
@@ -94,18 +74,15 @@ contract DeployCounter is Script, BaseDeployer {
     }
 
     /// @dev Deploy contracts to selected chains.
-    /// @param _counterSalt The salt for the counter contract.
-    /// @param _counterProxySalt The salt for the proxy contract.
+    /// @param salt The salt for the Laminator contract.
     /// @param deployForks The chains to deploy to.
     /// @param cycle The development cycle to set env variables (dev, test, prod).
-    function deployCounterSelectedChains(
-        uint256 _counterSalt,
-        uint256 _counterProxySalt,
+    function deploySelectedChains(
+        uint256 salt,
         Chains[] calldata deployForks,
         Cycle cycle
     ) external setEnvDeploy(cycle) {
-        counterSalt = bytes32(_counterSalt);
-        counterProxySalt = bytes32(_counterProxySalt);
+        _counterSalt = bytes32(salt);
 
         createDeployMultichain(deployForks);
     }
@@ -114,12 +91,11 @@ contract DeployCounter is Script, BaseDeployer {
     /// @param deployForks The chains to deploy to.
     function createDeployMultichain(
         Chains[] memory deployForks
-    ) private computeCreate2(counterSalt, counterProxySalt) {
-        console2.log("Counter create2 address:", create2addrCounter, "\n");
-        console2.log("Counter proxy create2 address:", create2addrProxy, "\n");
+    ) private computeCreate2(_counterSalt) {
+        console2.log("Laminator create2 address:", _create2addrCounter, "\n");
 
         for (uint256 i; i < deployForks.length; ) {
-            console2.log("Deploying Counter to chain: ", uint(deployForks[i]), "\n");
+            console2.log("Deploying Laminator to chain: ", uint(deployForks[i]), "\n");
 
             createSelectFork(deployForks[i]);
 
@@ -132,26 +108,11 @@ contract DeployCounter is Script, BaseDeployer {
     }
 
     /// @dev Function to perform actual deployment.
-    function chainDeployCounter() private broadcast(deployerPrivateKey) {
-        Counter counter = new Counter{salt: counterSalt}();
+    function chainDeployCounter() private broadcast(_deployerPrivateKey) {
+        Laminator counter = new Laminator{salt: _counterSalt}();
 
-        require(create2addrCounter == address(counter), "Address mismatch Counter");
+        require(_create2addrCounter == address(counter), "Address mismatch Laminator");
 
-        console2.log("Counter address:", address(counter), "\n");
-
-        proxyCounter = new UUPSProxy{salt: counterProxySalt}(
-            address(counter),
-            abi.encodeWithSelector(Counter.initialize.selector, ownerAddress)
-        );
-
-        proxyCounterAddress = address(proxyCounter);
-
-        require(create2addrProxy == proxyCounterAddress, "Address mismatch ProxyCounter");
-
-        wrappedProxy = Counter(proxyCounterAddress);
-
-        require(wrappedProxy.owner() == ownerAddress, "Owner role mismatch");
-
-        console2.log("Counter Proxy address:", address(proxyCounter), "\n");
+        console2.log("Laminator deployed at address:", address(counter), "\n");
     }
 }
