@@ -164,7 +164,7 @@ abstract contract BaseDeployer is Script {
 
     /// @dev Deploy contracts to local.
     function deployLocal() external setEnvDeploy(Cycle.Dev) {
-        Chains[] memory deployForks = new Chains[](2);
+        Chains[] memory deployForks = new Chains[](3);
         _counterSalt = bytes32(uint256(1));
         _counterProxySalt = bytes32(uint256(2));
 
