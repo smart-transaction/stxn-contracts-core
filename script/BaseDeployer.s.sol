@@ -31,7 +31,10 @@ abstract contract BaseDeployer is Script {
         Arbitrum,
         Optimism,
         Moonbeam,
-        Astar
+        Astar,
+        Sepolia,
+        Base,
+        BaseSepolia
     }
 
     enum Cycle {
@@ -99,6 +102,8 @@ abstract contract BaseDeployer is Script {
         forks[Chains.OptimismGoerli] = "optimismgoerli";
         forks[Chains.Shiden] = "shiden";
         forks[Chains.Moonriver] = "moonriver";
+        forks[Chains.Sepolia] = "sepolia";
+        forks[Chains.BaseSepolia] = "basesepolia";
         // @TODO Add Base
 
         // Mainnet
@@ -110,6 +115,7 @@ abstract contract BaseDeployer is Script {
         forks[Chains.Optimism] = "optimism";
         forks[Chains.Moonbeam] = "moonbeam";
         forks[Chains.Astar] = "astar";
+        forks[Chains.Base] = "base";
     }
 
     function createFork(Chains chain) public {
@@ -122,7 +128,7 @@ abstract contract BaseDeployer is Script {
 
     /// @dev Deploy contracts to mainnet.
     function deployMainnet() external setEnvDeploy(Cycle.Prod) {
-        Chains[] memory deployForks = new Chains[](8);
+        Chains[] memory deployForks = new Chains[](9);
 
         _salt = bytes32(uint256(10));
 
@@ -134,13 +140,14 @@ abstract contract BaseDeployer is Script {
         deployForks[5] = Chains.Optimism;
         deployForks[6] = Chains.Moonbeam;
         deployForks[7] = Chains.Astar;
+        deployForks[8] = Chains.Base;
 
         createDeployMultichain(deployForks);
     }
 
     /// @dev Deploy contracts to testnet.
     function deployTestnet(uint256 counterSalt) public setEnvDeploy(Cycle.Test) {
-        Chains[] memory deployForks = new Chains[](8);
+        Chains[] memory deployForks = new Chains[](10);
 
         _salt = bytes32(counterSalt);
 
@@ -152,6 +159,8 @@ abstract contract BaseDeployer is Script {
         deployForks[5] = Chains.OptimismGoerli;
         deployForks[6] = Chains.Shiden;
         deployForks[7] = Chains.Moonriver;
+        deployForks[8] = Chains.Sepolia;
+        deployForks[9] = Chains.BaseSepolia;
 
         createDeployMultichain(deployForks);
     }
