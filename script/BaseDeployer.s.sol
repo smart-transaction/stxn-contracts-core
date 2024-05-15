@@ -104,7 +104,6 @@ abstract contract BaseDeployer is Script {
         forks[Chains.Moonriver] = "moonriver";
         forks[Chains.Sepolia] = "sepolia";
         forks[Chains.BaseSepolia] = "basesepolia";
-        // @TODO Add Base
 
         // Mainnet
         forks[Chains.Etherum] = "etherum";
