@@ -18,18 +18,16 @@ contract DeployCronTwoCounter is Script, BaseDeployer {
     modifier computeCreate2(bytes32 salt) {
         _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
 
-        _create2addrCounter = computeCreate2Address(
-            salt,
-            hashInitCode(type(CronTwoCounter).creationCode, abi.encode(_callBreaker))
-        );
+        _create2addr =
+            computeCreate2Address(salt, hashInitCode(type(CronTwoCounter).creationCode, abi.encode(_callBreaker)));
 
         _;
     }
 
     /// @dev Helper to iterate over chains and select fork.
     /// @param deployForks The chains to deploy to.
-    function createDeployMultichain(Chains[] memory deployForks) internal override computeCreate2(_counterSalt) {
-        console2.log("CronTwoCounter create2 address:", _create2addrCounter, "\n");
+    function createDeployMultichain(Chains[] memory deployForks) internal override computeCreate2(_salt) {
+        console2.log("CronTwoCounter create2 address:", _create2addr, "\n");
 
         for (uint256 i; i < deployForks.length;) {
             console2.log("Deploying CronTwoCounter to chain: ", uint256(deployForks[i]), "\n");
@@ -46,9 +44,9 @@ contract DeployCronTwoCounter is Script, BaseDeployer {
 
     /// @dev Function to perform actual deployment.
     function chainDeploySmartedContract() private broadcast(_deployerPrivateKey) {
-        address cronTwoCounter = address(new CronTwoCounter{salt: _counterSalt}(_callBreaker));
+        address cronTwoCounter = address(new CronTwoCounter{salt: _salt}(_callBreaker));
 
-        require(_create2addrCounter == cronTwoCounter, "Address mismatch CronTwoCounter");
+        require(_create2addr == cronTwoCounter, "Address mismatch CronTwoCounter");
 
         console2.log("CronTwoCounter deployed at address:", cronTwoCounter, "\n");
     }

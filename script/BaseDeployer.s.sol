@@ -5,14 +5,12 @@ import {Script} from "forge-std/Script.sol";
 
 /* solhint-disable max-states-count */
 abstract contract BaseDeployer is Script {
-    bytes32 internal _counterProxySalt;
-    bytes32 internal _counterSalt;
+    bytes32 internal _salt;
 
     uint256 internal _deployerPrivateKey;
 
     address internal _ownerAddress;
-    address internal _proxyCounterAddress;
-    address internal _create2addrCounter;
+    address internal _create2addr;
 
     enum Chains {
         LocalGoerli,
@@ -67,13 +65,10 @@ abstract contract BaseDeployer is Script {
     modifier setEnvUpgrade(Cycle cycle) {
         if (cycle == Cycle.Dev) {
             _deployerPrivateKey = vm.envUint("LOCAL_DEPLOYER_KEY");
-            _proxyCounterAddress = vm.envAddress("LOCAL_COUNTER_PROXY_ADDRESS");
         } else if (cycle == Cycle.Test) {
             _deployerPrivateKey = vm.envUint("TEST_DEPLOYER_KEY");
-            _proxyCounterAddress = vm.envAddress("TEST_COUNTER_PROXY_ADDRESS");
         } else {
             _deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
-            _proxyCounterAddress = vm.envAddress("COUNTER_PROXY_ADDRESS");
         }
 
         _;
@@ -129,8 +124,7 @@ abstract contract BaseDeployer is Script {
     function deployMainnet() external setEnvDeploy(Cycle.Prod) {
         Chains[] memory deployForks = new Chains[](8);
 
-        _counterSalt = bytes32(uint256(10));
-        _counterProxySalt = bytes32(uint256(11));
+        _salt = bytes32(uint256(10));
 
         deployForks[0] = Chains.Etherum;
         deployForks[1] = Chains.Polygon;
@@ -146,9 +140,9 @@ abstract contract BaseDeployer is Script {
 
     /// @dev Deploy contracts to testnet.
     function deployTestnet(uint256 counterSalt) public setEnvDeploy(Cycle.Test) {
-        Chains[] memory deployForks = new Chains[](2);
+        Chains[] memory deployForks = new Chains[](8);
 
-        _counterSalt = bytes32(counterSalt);
+        _salt = bytes32(counterSalt);
 
         deployForks[0] = Chains.Goerli;
         deployForks[1] = Chains.Mumbai;
@@ -165,8 +159,7 @@ abstract contract BaseDeployer is Script {
     /// @dev Deploy contracts to local.
     function deployLocal() external setEnvDeploy(Cycle.Dev) {
         Chains[] memory deployForks = new Chains[](3);
-        _counterSalt = bytes32(uint256(1));
-        _counterProxySalt = bytes32(uint256(2));
+        _salt = bytes32(uint256(1));
 
         deployForks[0] = Chains.LocalGoerli;
         deployForks[1] = Chains.LocalFuji;
@@ -183,7 +176,7 @@ abstract contract BaseDeployer is Script {
         external
         setEnvDeploy(cycle)
     {
-        _counterSalt = bytes32(salt);
+        _salt = bytes32(salt);
 
         createDeployMultichain(deployForks);
     }

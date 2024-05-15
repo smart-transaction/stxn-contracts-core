@@ -22,7 +22,7 @@ contract DeploySelfCheckout is Script, BaseDeployer {
         _tokenB = address(new MyErc20("TokenB", "B"));
         _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
 
-        _create2addrCounter = computeCreate2Address(
+        _create2addr = computeCreate2Address(
             salt,
             hashInitCode(type(SelfCheckout).creationCode, abi.encode(_ownerAddress, _tokenA, _tokenB, _callBreaker))
         );
@@ -32,8 +32,8 @@ contract DeploySelfCheckout is Script, BaseDeployer {
 
     /// @dev Helper to iterate over chains and select fork.
     /// @param deployForks The chains to deploy to.
-    function createDeployMultichain(Chains[] memory deployForks) internal override computeCreate2(_counterSalt) {
-        console2.log("SelfCheckout create2 address:", _create2addrCounter, "\n");
+    function createDeployMultichain(Chains[] memory deployForks) internal override computeCreate2(_salt) {
+        console2.log("SelfCheckout create2 address:", _create2addr, "\n");
 
         for (uint256 i; i < deployForks.length;) {
             console2.log("Deploying SelfCheckout to chain: ", uint256(deployForks[i]), "\n");
@@ -50,9 +50,9 @@ contract DeploySelfCheckout is Script, BaseDeployer {
 
     /// @dev Function to perform actual deployment.
     function chainDeploySmartedContract() private broadcast(_deployerPrivateKey) {
-        address selfCheckout = address(new SelfCheckout{salt: _counterSalt}(_ownerAddress, _tokenA, _tokenB, _callBreaker));
+        address selfCheckout = address(new SelfCheckout{salt: _salt}(_ownerAddress, _tokenA, _tokenB, _callBreaker));
 
-        require(_create2addrCounter == selfCheckout, "Address mismatch SelfCheckout");
+        require(_create2addr == selfCheckout, "Address mismatch SelfCheckout");
 
         console2.log("SelfCheckout deployed at address:", selfCheckout, "\n");
     }

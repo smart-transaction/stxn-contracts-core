@@ -13,15 +13,15 @@ contract DeployLaminator is Script, BaseDeployer {
     /// @dev Compute the CREATE2 addresses for contracts (proxy, counter).
     /// @param salt The salt for the Laminator contract.
     modifier computeCreate2(bytes32 salt) {
-        _create2addrCounter = computeCreate2Address(salt, hashInitCode(type(Laminator).creationCode));
+        _create2addr = computeCreate2Address(salt, hashInitCode(type(Laminator).creationCode));
 
         _;
     }
 
     /// @dev Helper to iterate over chains and select fork.
     /// @param deployForks The chains to deploy to.
-    function createDeployMultichain(Chains[] memory deployForks) internal override computeCreate2(_counterSalt) {
-        console2.log("Laminator create2 address:", _create2addrCounter, "\n");
+    function createDeployMultichain(Chains[] memory deployForks) internal override computeCreate2(_salt) {
+        console2.log("Laminator create2 address:", _create2addr, "\n");
 
         for (uint256 i; i < deployForks.length;) {
             console2.log("Deploying Laminator to chain: ", uint256(deployForks[i]), "\n");
@@ -38,9 +38,9 @@ contract DeployLaminator is Script, BaseDeployer {
 
     /// @dev Function to perform actual deployment.
     function chainDeployLaminator() private broadcast(_deployerPrivateKey) {
-        Laminator counter = new Laminator{salt: _counterSalt}();
+        Laminator counter = new Laminator{salt: _salt}();
 
-        require(_create2addrCounter == address(counter), "Address mismatch Laminator");
+        require(_create2addr == address(counter), "Address mismatch Laminator");
 
         console2.log("Laminator deployed at address:", address(counter), "\n");
     }

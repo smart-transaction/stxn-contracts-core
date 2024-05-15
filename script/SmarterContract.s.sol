@@ -16,7 +16,7 @@ contract DeploySmarterContract is Script, BaseDeployer {
     /// @param salt The salt for the SmarterContract contract.
     modifier computeCreate2(bytes32 salt) {
         _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
-        _create2addrCounter =
+        _create2addr =
             computeCreate2Address(salt, hashInitCode(type(SmarterContract).creationCode, abi.encode(_callBreaker)));
 
         _;
@@ -24,8 +24,8 @@ contract DeploySmarterContract is Script, BaseDeployer {
 
     /// @dev Helper to iterate over chains and select fork.
     /// @param deployForks The chains to deploy to.
-    function createDeployMultichain(Chains[] memory deployForks) internal override computeCreate2(_counterSalt) {
-        console2.log("SmarterContract create2 address:", _create2addrCounter, "\n");
+    function createDeployMultichain(Chains[] memory deployForks) internal override computeCreate2(_salt) {
+        console2.log("SmarterContract create2 address:", _create2addr, "\n");
 
         for (uint256 i; i < deployForks.length;) {
             console2.log("Deploying SmarterContract to chain: ", uint256(deployForks[i]), "\n");
@@ -42,9 +42,9 @@ contract DeploySmarterContract is Script, BaseDeployer {
 
     /// @dev Function to perform actual deployment.
     function chainDeploySmartedContract() private broadcast(_deployerPrivateKey) {
-        SmarterContract sc = new SmarterContract{salt: _counterSalt}(_callBreaker);
+        SmarterContract sc = new SmarterContract{salt: _salt}(_callBreaker);
 
-        require(_create2addrCounter == address(sc), "Address mismatch SmarterContract");
+        require(_create2addr == address(sc), "Address mismatch SmarterContract");
 
         console2.log("SmarterContract deployed at address:", address(sc), "\n");
     }
