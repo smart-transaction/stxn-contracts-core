@@ -4,27 +4,23 @@ pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
 import {BaseDeployer} from "../BaseDeployer.s.sol";
-import {SelfCheckout} from "test/examples/SelfCheckout.sol";
+import {CronTwoCounter} from "test/examples/CronTwoCounter.sol";
 import {MyErc20} from "test/examples/MyErc20.sol";
 
 /* solhint-disable no-console*/
 import {console2} from "forge-std/console2.sol";
 
-contract DeploySelfCheckout is Script, BaseDeployer {
-    address private _tokenA;
-    address private _tokenB;
+contract DeployCronTwoCounter is Script, BaseDeployer {
     address private _callBreaker;
 
     /// @dev Compute the CREATE2 addresses for contracts (proxy, counter).
-    /// @param salt The salt for the SelfCheckout contract.
+    /// @param salt The salt for the CronTwoCounter contract.
     modifier computeCreate2(bytes32 salt) {
-        _tokenA = address(new MyErc20("TokenA", "A"));
-        _tokenB = address(new MyErc20("TokenB", "B"));
         _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
 
         _create2addrCounter = computeCreate2Address(
             salt,
-            hashInitCode(type(SelfCheckout).creationCode, abi.encode(_ownerAddress, _tokenA, _tokenB, _callBreaker))
+            hashInitCode(type(CronTwoCounter).creationCode, abi.encode(_callBreaker))
         );
 
         _;
@@ -33,10 +29,10 @@ contract DeploySelfCheckout is Script, BaseDeployer {
     /// @dev Helper to iterate over chains and select fork.
     /// @param deployForks The chains to deploy to.
     function createDeployMultichain(Chains[] memory deployForks) internal override computeCreate2(_counterSalt) {
-        console2.log("SelfCheckout create2 address:", _create2addrCounter, "\n");
+        console2.log("CronTwoCounter create2 address:", _create2addrCounter, "\n");
 
         for (uint256 i; i < deployForks.length;) {
-            console2.log("Deploying SelfCheckout to chain: ", uint256(deployForks[i]), "\n");
+            console2.log("Deploying CronTwoCounter to chain: ", uint256(deployForks[i]), "\n");
 
             createSelectFork(deployForks[i]);
 
@@ -50,10 +46,10 @@ contract DeploySelfCheckout is Script, BaseDeployer {
 
     /// @dev Function to perform actual deployment.
     function chainDeploySmartedContract() private broadcast(_deployerPrivateKey) {
-        address selfCheckout = address(new SelfCheckout{salt: _counterSalt}(_ownerAddress, _tokenA, _tokenB, _callBreaker));
+        address cronTwoCounter = address(new CronTwoCounter{salt: _counterSalt}(_callBreaker));
 
-        require(_create2addrCounter == selfCheckout, "Address mismatch SelfCheckout");
+        require(_create2addrCounter == cronTwoCounter, "Address mismatch CronTwoCounter");
 
-        console2.log("SelfCheckout deployed at address:", selfCheckout, "\n");
+        console2.log("CronTwoCounter deployed at address:", cronTwoCounter, "\n");
     }
 }
