@@ -20,7 +20,10 @@ contract LaminatorHarness is Laminator {
 
 contract LaminatorTest is Test {
     CallBreaker public callBreaker;
+    Dummy public dummy;
     LaminatorHarness public laminator;
+    LaminatedProxy public proxy;
+    address public expectedProxyAddress;
 
     address randomFriendAddress = address(0xbeefd3ad);
 
@@ -37,12 +40,13 @@ contract LaminatorTest is Test {
     function setUp() public {
         callBreaker = new CallBreaker();
         laminator = new LaminatorHarness(address(callBreaker));
+        expectedProxyAddress = laminator.computeProxyAddress(address(this));
+        proxy = LaminatedProxy(payable(expectedProxyAddress));
+        dummy = new Dummy();
     }
 
     // Existing Proxy and creation Test: Test if the getOrCreateProxy function returns the existing proxy address when one already exists for the sender.
     function testExistingProxy() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-
         vm.expectEmit(true, true, true, true);
         emit ProxyCreated(address(this), expectedProxyAddress);
 
@@ -53,10 +57,8 @@ contract LaminatorTest is Test {
     // function of the LaminatedProxy contract. Verify by checking the ProxyPushed event and comparing
     // the emitted sequence number and call object with the expected values.
     function testPushToProxy() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
-
-        Dummy dummy = new Dummy();
+        uint256 nextSeq = laminator.getNextSeqNumber();
+        assertEq(nextSeq, 0);
 
         // push sequence number 0. it should emit 42.
         uint256 val1 = 42;
@@ -74,6 +76,9 @@ contract LaminatorTest is Test {
         uint256 sequenceNumber1 = laminator.pushToProxy(cData, 1);
         assertEq(sequenceNumber1, 0);
 
+        nextSeq = laminator.getNextSeqNumber();
+        assertEq(nextSeq, 1);
+
         // push sequence number 1. it should emit 43.
         uint256 val2 = 43;
         CallObject[] memory callObj2 = new CallObject[](1);
@@ -89,6 +94,9 @@ contract LaminatorTest is Test {
         emit CallPushed(callObj2, 1);
         uint256 sequenceNumber2 = laminator.pushToProxy(cData, 1);
         assertEq(sequenceNumber2, 1);
+
+        nextSeq = laminator.getNextSeqNumber();
+        assertEq(nextSeq, 2);
 
         // fastforward a block
         vm.roll(block.number + 1);
@@ -108,13 +116,10 @@ contract LaminatorTest is Test {
 
     // test delays in pushToProxy- 0 delay is immediately possible
     function testDelayedPushToProxy0delayWorks() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
-        Dummy dummy = new Dummy();
-
         // push sequence number 0. it should emit 42.
         uint256 val = 42;
-        CallObject memory callObj = CallObject({
+        CallObject[] memory callObj = new CallObject[](1);
+        callObj[0] = CallObject({
             amount: 0,
             addr: address(dummy),
             gas: saneGasLeft(),
@@ -125,15 +130,14 @@ contract LaminatorTest is Test {
         assertEq(sequenceNumber, 0);
 
         vm.prank(address(callBreaker));
+        // try pulls as a random address, make sure the events were emitted
+        vm.expectEmit(true, true, true, true);
+        emit CallPulled(callObj, 0);
         proxy.pull(0);
     }
 
     // test delays in pushToProxy- 1 delay with no block rollforward is not possible
     function testDelayedPushToProxy1delayNoRollFails() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
-        Dummy dummy = new Dummy();
-
         // push sequence number 0. it should emit 42.
         uint256 val = 42;
         CallObject memory callObj = CallObject({
@@ -154,10 +158,6 @@ contract LaminatorTest is Test {
 
     // test delays in pushToProxy- 3 delay with 1 block rollforward is not possible
     function testDelayedPushToProxy3delay1rollFails() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
-        Dummy dummy = new Dummy();
-
         // push sequence number 0. it should emit 42.
         uint256 val = 42;
         CallObject memory callObj = CallObject({
@@ -180,10 +180,7 @@ contract LaminatorTest is Test {
 
     // ensure pushes as a random address when you push directly to someone else's proxy
     function testPushToProxyAsRandomAddress() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
         laminator.harness_getOrCreateProxy(address(this));
-        Dummy dummy = new Dummy();
 
         uint256 val = 42;
         CallObject memory callObj = CallObject({
@@ -200,11 +197,7 @@ contract LaminatorTest is Test {
 
     // ensure pushes as the laminator work
     function testPushToProxyAsLaminator() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
         laminator.harness_getOrCreateProxy(address(this));
-
-        Dummy dummy = new Dummy();
 
         uint256 val = 42;
         CallObject[] memory callObj = new CallObject[](1);
@@ -221,11 +214,64 @@ contract LaminatorTest is Test {
         proxy.push(cData, 1);
     }
 
+    // test cancel pending call
+    function testCancelPending() public {
+        // push once
+        uint256 val = 42;
+        CallObject[] memory callObj = new CallObject[](1);
+        callObj[0] = CallObject({
+            amount: 0,
+            addr: address(dummy),
+            gas: saneGasLeft(),
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+        });
+        bytes memory cData = abi.encode(callObj);
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 0);
+        assertEq(sequenceNumber, 0);
+
+        // pull once
+        vm.prank(address(randomFriendAddress));
+        vm.expectRevert(LaminatedProxy.NotCallBreaker.selector);
+        proxy.pull(0);
+    }
+
+    // test cancel pending call
+    function testCancelAllPending() public {
+        uint256 val = 42;
+        // push twice
+        CallObject[] memory callObj1 = new CallObject[](1);
+        callObj1[0] = CallObject({
+            amount: 0,
+            addr: address(dummy),
+            gas: saneGasLeft(),
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+        });
+        bytes memory cData = abi.encode(callObj1);
+        laminator.pushToProxy(cData, 0);
+
+        CallObject[] memory callObj2 = new CallObject[](1);
+        callObj2[0] = CallObject({
+            amount: 0,
+            addr: address(dummy),
+            gas: saneGasLeft(),
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+        });
+        cData = abi.encode(callObj2);
+        laminator.pushToProxy(cData, 0);
+
+        proxy.cancelAllPending();
+
+        vm.prank(randomFriendAddress);
+        vm.expectRevert(LaminatedProxy.AlreadyExecuted.selector);
+        proxy.pull(0);
+
+        vm.prank(randomFriendAddress);
+        vm.expectRevert(LaminatedProxy.AlreadyExecuted.selector);
+        proxy.pull(1);
+    }
+
     // ensure pulls from proxy as a random address reverts
     function testPullFromProxyAsRandomAddress() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
-        Dummy dummy = new Dummy();
         // push once
         uint256 val = 42;
         CallObject[] memory callObj = new CallObject[](1);
@@ -247,9 +293,6 @@ contract LaminatorTest is Test {
 
     // test that double-pulling the same sequence number does not work
     function testDoublePull() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
-        Dummy dummy = new Dummy();
         // push once
         uint256 val = 42;
         CallObject[] memory callObj = new CallObject[](1);
@@ -273,12 +316,34 @@ contract LaminatorTest is Test {
         proxy.pull(0);
     }
 
+    function testUninitializedPull() public {
+        // push once
+        uint256 val = 42;
+        CallObject[] memory callObj = new CallObject[](2);
+        callObj[0] = CallObject({
+            amount: 0,
+            addr: address(dummy),
+            gas: saneGasLeft(),
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+        });
+        callObj[1] = CallObject({
+            amount: 0,
+            addr: address(dummy),
+            gas: saneGasLeft(),
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+        });
+        bytes memory cData = abi.encode(callObj);
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 0);
+        assertEq(sequenceNumber, 0);
+
+        // try to pull out of order
+        vm.expectRevert(LaminatedProxy.Uninitialized.selector);
+        proxy.pull(1);
+    }
+
     // test that a call that reverts revert the transaction
     function testRevertCall() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
         laminator.harness_getOrCreateProxy(address(this));
-        Dummy dummy = new Dummy();
 
         CallObject[] memory callObj = new CallObject[](1);
         callObj[0] = CallObject({
@@ -300,10 +365,7 @@ contract LaminatorTest is Test {
 
     // ensure executions called directly to proxy as a random address don't work
     function testExecuteAsRandomAddress() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
         laminator.harness_getOrCreateProxy(address(this));
-        Dummy dummy = new Dummy();
         CallObject memory callObj = CallObject({
             amount: 0,
             addr: address(dummy),
@@ -320,10 +382,7 @@ contract LaminatorTest is Test {
 
     // ensure executions called into proxy directly as the laminator do work
     function testExecuteAsLaminator() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
         laminator.harness_getOrCreateProxy(address(this));
-        Dummy dummy = new Dummy();
         CallObject[] memory callObjs = new CallObject[](1);
         callObjs[0] = CallObject({
             amount: 0,
@@ -343,10 +402,7 @@ contract LaminatorTest is Test {
     // ensure executions as the owner directly into the proxy contract do NOT work
     function testExecuteAsOwner() public {
         address me = address(this);
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
         laminator.harness_getOrCreateProxy(address(this));
-        Dummy dummy = new Dummy();
         CallObject memory callObj = CallObject({
             amount: 0,
             addr: address(dummy),
@@ -381,10 +437,7 @@ contract LaminatorTest is Test {
 
     // ensure executions as random address through the laminator do not work
     function testExecuteAsRandomAddressFromLaminator() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
         laminator.harness_getOrCreateProxy(address(this));
-        Dummy dummy = new Dummy();
         CallObject memory callObj = CallObject({
             amount: 0,
             addr: address(dummy),
@@ -401,10 +454,7 @@ contract LaminatorTest is Test {
 
     // ensure executions as laminator through the laminator do work
     function testExecuteAsLaminatorAddressFromLaminator() public {
-        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
-        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
         laminator.harness_getOrCreateProxy(address(this));
-        Dummy dummy = new Dummy();
         CallObject memory callObj = CallObject({
             amount: 0,
             addr: address(dummy),
@@ -416,6 +466,42 @@ contract LaminatorTest is Test {
         // pretend to be laminator and call directly, should succeed
         vm.prank(address(laminator));
         proxy.execute(cData);
+    }
+
+    function testGetExecutingCallObject() public {
+        laminator.harness_getOrCreateProxy(address(this));
+        CallObject[] memory callObj = new CallObject[](1);
+        callObj[0] = CallObject({
+            amount: 0,
+            addr: address(proxy),
+            gas: saneGasLeft(),
+            callvalue: abi.encodeWithSignature("getExecutingCallObject()")
+        });
+        bytes memory cData = abi.encode(callObj);
+        laminator.pushToProxy(cData, 0);
+
+        bytes memory returnValue = proxy.pull(0);
+        ReturnObject[] memory returnObj = abi.decode(returnValue, (ReturnObject[]));
+        CallObject memory returnCallObject = abi.decode(returnObj[0].returnvalue, (CallObject));
+        assertEq(abi.encode(returnCallObject), abi.encode(callObj[0]));
+    }
+
+    function testGetExecutingCallObjectHolder() public {
+        laminator.harness_getOrCreateProxy(address(this));
+        CallObject[] memory callObj = new CallObject[](1);
+        callObj[0] = CallObject({
+            amount: 0,
+            addr: address(proxy),
+            gas: saneGasLeft(),
+            callvalue: abi.encodeWithSignature("getExecutingCallObjectHolder()")
+        });
+        bytes memory cData = abi.encode(callObj);
+        laminator.pushToProxy(cData, 0);
+
+        bytes memory returnValue = proxy.pull(0);
+        ReturnObject[] memory returnObj = abi.decode(returnValue, (ReturnObject[]));
+        CallObjectHolder memory returnCallObjectHolder = abi.decode(returnObj[0].returnvalue, (CallObjectHolder));
+        assertEq(abi.encode(returnCallObjectHolder.callObjs[0]), abi.encode(callObj[0]));
     }
 
     function saneGasLeft() internal view returns (uint256) {

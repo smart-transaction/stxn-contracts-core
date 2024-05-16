@@ -178,7 +178,8 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @notice Cancels all pending calls
     /// @dev Sets the executed flag to true for all pending calls
     function cancelAllPending() external onlyOwner {
-        for (uint256 i = 0; i < executingSequenceNumber(); i++) {
+        uint256 _count = nextSequenceNumber();
+        for (uint256 i = executingSequenceNumber(); i < _count; i++) {
             if (_deferredCalls[i].executed == false) {
                 _deferredCalls[i].executed = true;
             }
