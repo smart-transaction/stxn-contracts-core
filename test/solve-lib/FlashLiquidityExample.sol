@@ -29,12 +29,13 @@ contract FlashLiquidityExampleLib {
         // Userland operations
         // Temporarily, this example uses a call to swap but only sets slippage protection in
         // sqrtPriceLimitX96 (not within the call to Uniswaps)
+        // TODO: On swap, needs to also enforce invariant: funds must get returned to the user.
         CallObject[] memory pusherCallObjs = new CallObject[](2);
         pusherCallObjs[0] = CallObject({
             amount: 0,
             addr: address(limitOrder),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint160)", 100, 1)
+            callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint160)", 100, 200)
         });
 
         pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
@@ -46,7 +47,15 @@ contract FlashLiquidityExampleLib {
         CallObject[] memory callObjs = new CallObject[](2);
         ReturnObject[] memory returnObjs = new ReturnObject[](2);
 
+        //TODO: Solver should provide liquidity here before the call to checkSlippage
         callObjs[0] = CallObject({
+            amount: 0,
+            addr: address(limitOrder),
+            gas: 10000000,
+            callvalue: abi.encodeWithSignature("provideLiquidityToDAIETHPool(uint256)", laminatorSequenceNumber)
+        });
+
+        callObjs[1] = CallObject({
             amount: 0,
             addr: pusherLaminated,
             gas: 10000000,

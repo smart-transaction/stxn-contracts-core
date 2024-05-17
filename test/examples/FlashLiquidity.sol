@@ -39,9 +39,11 @@ contract FlashLiquidity is SmarterContract {
     event DebugAddress(string message, address value);
     event DebugInfo(string message, string value);
     event DebugUint(string message, uint256 value);
+    event LiquidityAdded(address indexed user, uint256 amountA, uint256 amountB, uint256 liquidity);
 
-    constructor(address _callbreakerAddress) SmarterContract(_callbreakerAddress) {
+    constructor(address _callbreakerAddress, address _owner) SmarterContract(_callbreakerAddress) {
         callbreakerAddress = _callbreakerAddress;
+        owner = _owner;
     }
 
     /// @dev Porting over the UniswapV3 TickMath library to here was necessary due to TickMath being outdated in Sol. version.
@@ -49,7 +51,6 @@ contract FlashLiquidity is SmarterContract {
     int24 internal constant MIN_TICK = -887272;
     /// @dev The maximum tick that may be passed to #getSqrtRatioAtTick computed from log base 1.0001 of 2**128
     int24 internal constant MAX_TICK = -MIN_TICK;
-
     /// @dev The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
     uint160 internal constant MIN_SQRT_RATIO = 4295128739;
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
@@ -59,7 +60,7 @@ contract FlashLiquidity is SmarterContract {
 
     // use the timeturner to enforce slippage on a uniswap trade
     // set slippage really high, let yourself slip, then use the timeturner to revert the trade if the price was above some number.
-    function swapDAIForWETH(uint256 _amountIn, uint256 slippagePercent) public {
+    function swapDAIForWETH(uint256 _amountIn, uint256 _expectedAmountOut) public {
         uint256 amountIn = _amountIn * 1e18;
         require(dai.transferFrom(msg.sender, address(this), amountIn), "transferFrom failed.");
         require(dai.approve(address(router), amountIn), "approve failed.");
@@ -85,28 +86,15 @@ contract FlashLiquidity is SmarterContract {
             amount: 0,
             addr: address(this),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("checkSlippage(uint256)", slippagePercent)
+            callvalue: abi.encodeWithSignature("checkUserBalance(address,uint256)", address(dai), _expectedAmountOut)
         });
 
         assertFutureCallTo(callObj, 1);
     }
 
-    function checkSlippage(uint160 targetSlippage) public view {
-        IUniswapV3Pool pool = IUniswapV3Pool(address(0xC2e9F25Be6257c210d7Adf0D4Cd6E3E881ba25f8));
-
-        (uint160 sqrtPriceX96,,,,,,) = pool.slot0();
-
-        int24 tickLower = sqrtPriceX96 > MIN_SQRT_RATIO
-            ? getTickAtSqrtRatio(sqrtPriceX96 - (sqrtPriceX96 / targetSlippage))
-            : MIN_TICK;
-        int24 tickUpper = sqrtPriceX96 < MAX_SQRT_RATIO
-            ? getTickAtSqrtRatio(sqrtPriceX96 + (sqrtPriceX96 / targetSlippage))
-            : MAX_TICK;
-
-        uint160 sqrtPriceLowerX96 = getSqrtRatioAtTick(tickLower);
-        uint160 sqrtPriceUpperX96 = getSqrtRatioAtTick(tickUpper);
-
-        if (sqrtPriceX96 > sqrtPriceLowerX96 || sqrtPriceX96 < sqrtPriceUpperX96) revert InvalidPriceLimit();
+    function checkUserBalance(address token, uint256 expectedAmount) public view {
+        uint256 balance = IERC20(token).balanceOf(msg.sender);
+        require(balance >= expectedAmount, "User has less than the expected amount.");
     }
 
     /// @notice Calculates sqrt(1.0001^tick) * 2^96
