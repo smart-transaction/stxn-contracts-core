@@ -27,18 +27,6 @@ abstract contract LaminatedStorage {
     /// @notice The map from sequence number to calls held in the mempool.
     mapping(uint256 => CallObjectHolderStorage) internal _deferredCalls;
 
-    /// @dev Indicates that the owner or laminator has already been set and cannot be set again.
-    /// @dev Selector 0xef34ca5c
-    error AlreadyInit();
-
-    /// @dev Cannot set Laminator to null address
-    /// @dev Selector 0x9c89a95b
-    error NullLaminator();
-
-    /// @dev Cannot set Owner to null address
-    /// @dev Selector 0xc77a0100
-    error NullOwner();
-
     function deferredCalls(uint256 index) public view returns (CallObjectHolder memory holder) {
         holder = _deferredCalls[index].load();
     }
@@ -134,15 +122,7 @@ abstract contract LaminatedStorage {
     /// @notice Set the owner address
     /// @dev This function is called once during initialization.
     /// @param _owner The address of the contract's owner.
-    /// @custom:reverts AlreadyInit() when owner has already been initialized.
-    /// @custom:reverts NullOwner() when owner is the null address.
     function _setOwner(address _owner) internal {
-        if (owner() != address(0)) {
-            revert AlreadyInit();
-        }
-        if (_owner == address(0)) {
-            revert NullOwner();
-        }
         uint256 slot = uint256(OWNER_SLOT);
         assembly ("memory-safe") {
             sstore(slot, _owner)
@@ -152,15 +132,7 @@ abstract contract LaminatedStorage {
     /// @notice Set the laminator address
     /// @dev This function is called once during initialization.
     /// @param _laminator The address of the contract's laminator.
-    /// @custom:reverts AlreadyInit() when laminator has already been initialized.
-    /// @custom:reverts NullOwner() when laminator is the null address.
     function _setLaminator(address _laminator) internal {
-        if (address(laminator()) != address(0)) {
-            revert AlreadyInit();
-        }
-        if (_laminator == address(0)) {
-            revert NullLaminator();
-        }
         uint256 slot = uint256(LAMINATOR_SLOT);
         assembly ("memory-safe") {
             sstore(slot, _laminator)

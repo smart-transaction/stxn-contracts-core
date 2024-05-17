@@ -504,6 +504,35 @@ contract LaminatorTest is Test {
         assertEq(abi.encode(returnCallObjectHolder.callObjs[0]), abi.encode(callObj[0]));
     }
 
+    function testCleanupLaminatorStorage() public {
+        laminator.harness_getOrCreateProxy(address(this));
+        uint256 val = 42;
+        // push twice
+        CallObject[] memory callObj1 = new CallObject[](1);
+        callObj1[0] = CallObject({
+            amount: 0,
+            addr: address(dummy),
+            gas: saneGasLeft(),
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+        });
+        bytes memory cData = abi.encode(callObj1);
+        uint256[] memory sequenceNumber = new uint256[](1);
+        sequenceNumber[0] = laminator.pushToProxy(cData, 0);
+
+        // clean before any pull changess nothing
+        proxy.cleanupLaminatorStorage(sequenceNumber);
+        CallObjectHolder memory holder = proxy.deferredCalls(0);
+        assertEq(holder.callObjs.length, callObj1.length);
+
+        // pull one
+        proxy.pull(0);
+
+        // clean after pull clears executed call objects
+        proxy.cleanupLaminatorStorage(sequenceNumber);
+        holder = proxy.deferredCalls(0);
+        assertEq(holder.callObjs.length, 0);
+    }
+
     function saneGasLeft() internal view returns (uint256) {
         return Math.min(gasleft(), CallObjectLib.MAX_PACKED_GAS);
     }
