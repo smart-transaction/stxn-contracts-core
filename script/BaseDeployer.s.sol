@@ -68,13 +68,10 @@ abstract contract BaseDeployer is Script {
     modifier setEnvUpgrade(Cycle cycle) {
         if (cycle == Cycle.Dev) {
             _deployerPrivateKey = vm.envUint("LOCAL_DEPLOYER_KEY");
-            _proxyCounterAddress = vm.envAddress("LOCAL_COUNTER_PROXY_ADDRESS");
         } else if (cycle == Cycle.Test) {
             _deployerPrivateKey = vm.envUint("TEST_DEPLOYER_KEY");
-            _proxyCounterAddress = vm.envAddress("TEST_COUNTER_PROXY_ADDRESS");
         } else {
             _deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
-            _proxyCounterAddress = vm.envAddress("COUNTER_PROXY_ADDRESS");
         }
 
         _;
