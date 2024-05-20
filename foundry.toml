@@ -2,6 +2,8 @@
 src = 'src'
 out = 'out'
 libs = ['lib']
+evm_version = "cancun"
+solc = "0.8.23"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 auto_detect_solc = true

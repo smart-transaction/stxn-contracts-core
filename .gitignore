@@ -2,6 +2,9 @@
 cache/
 out/
 
+# Coverage
+coverage/
+
 # Ignores development broadcast logs
 /broadcast
 /broadcast/*/31337/
