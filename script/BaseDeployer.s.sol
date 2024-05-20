@@ -126,7 +126,7 @@ abstract contract BaseDeployer is Script {
     }
 
     /// @dev Deploy contracts to mainnet.
-    function deployMainnet() external setEnvDeploy(Cycle.Prod) {
+    function deployMainnet() external setEnvDeploy(Cycle.Prod) returns (address deploymentAddress) {
         Chains[] memory deployForks = new Chains[](9);
 
         _salt = bytes32(uint256(10));
@@ -141,11 +141,11 @@ abstract contract BaseDeployer is Script {
         deployForks[7] = Chains.Astar;
         deployForks[8] = Chains.Base;
 
-        createDeployMultichain(deployForks);
+        deploymentAddress = createDeployMultichain(deployForks);
     }
 
     /// @dev Deploy contracts to testnet.
-    function deployTestnet(uint256 counterSalt) public setEnvDeploy(Cycle.Test) {
+    function deployTestnet(uint256 counterSalt) public setEnvDeploy(Cycle.Test) returns (address deploymentAddress) {
         Chains[] memory deployForks = new Chains[](10);
 
         _salt = bytes32(counterSalt);
@@ -161,11 +161,11 @@ abstract contract BaseDeployer is Script {
         deployForks[8] = Chains.Sepolia;
         deployForks[9] = Chains.BaseSepolia;
 
-        createDeployMultichain(deployForks);
+        deploymentAddress = createDeployMultichain(deployForks);
     }
 
     /// @dev Deploy contracts to local.
-    function deployLocal() external setEnvDeploy(Cycle.Dev) {
+    function deployLocal() external setEnvDeploy(Cycle.Dev) returns (address deploymentAddress) {
         Chains[] memory deployForks = new Chains[](3);
         _salt = bytes32(uint256(1));
 
@@ -173,7 +173,7 @@ abstract contract BaseDeployer is Script {
         deployForks[1] = Chains.LocalFuji;
         deployForks[2] = Chains.LocalBSCTest;
 
-        createDeployMultichain(deployForks);
+        deploymentAddress = createDeployMultichain(deployForks);
     }
 
     /// @dev Deploy contracts to selected chains.
@@ -183,13 +183,14 @@ abstract contract BaseDeployer is Script {
     function deploySelectedChains(uint256 salt, Chains[] calldata deployForks, Cycle cycle)
         external
         setEnvDeploy(cycle)
+        returns (address deploymentAddress)
     {
         _salt = bytes32(salt);
 
-        createDeployMultichain(deployForks);
+        deploymentAddress = createDeployMultichain(deployForks);
     }
 
     /// @dev Helper to iterate over chains and select fork.
     /// @param deployForks The chains to deploy to.
-    function createDeployMultichain(Chains[] memory deployForks) internal virtual;
+    function createDeployMultichain(Chains[] memory deployForks) internal virtual returns (address);
 }
