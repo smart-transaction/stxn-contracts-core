@@ -16,15 +16,14 @@ abstract contract BaseDeployer is Script {
         LocalGoerli,
         LocalFuji,
         LocalBSCTest,
-        Goerli,
-        Mumbai,
+        Amoy,
         BscTest,
         Fuji,
-        ArbitrumGoerli,
-        OptimismGoerli,
+        ArbitrumSepolia,
+        OptimismSepolia,
         Moonriver,
         Shiden,
-        Etherum,
+        Ethereum,
         Polygon,
         Bsc,
         Avalanche,
@@ -94,27 +93,26 @@ abstract contract BaseDeployer is Script {
         forks[Chains.LocalBSCTest] = "localBSCTest";
 
         // Testnet
-        forks[Chains.Goerli] = "goerli";
-        forks[Chains.Mumbai] = "mumbai";
-        forks[Chains.BscTest] = "bsctest";
-        forks[Chains.Fuji] = "fuji";
-        forks[Chains.ArbitrumGoerli] = "arbitrumgoerli";
-        forks[Chains.OptimismGoerli] = "optimismgoerli";
-        forks[Chains.Shiden] = "shiden";
-        forks[Chains.Moonriver] = "moonriver";
-        forks[Chains.Sepolia] = "sepolia";
-        forks[Chains.BaseSepolia] = "basesepolia";
+        forks[Chains.Amoy] = vm.rpcUrl("AMOY_RPC");
+        forks[Chains.BscTest] = vm.rpcUrl("BSC_TEST_RPC");
+        forks[Chains.Fuji] = vm.rpcUrl("FUJI_RPC");
+        forks[Chains.ArbitrumSepolia] = vm.rpcUrl("ARBITRUM_SEPOLIA_RPC");
+        forks[Chains.OptimismSepolia] = vm.rpcUrl("OPTIMISM_SEPOLIA_RPC");
+        forks[Chains.Shiden] = vm.rpcUrl("SHIDEN_RPC");
+        forks[Chains.Moonriver] = vm.rpcUrl("MOONRIVER_RPC");
+        forks[Chains.Sepolia] = vm.rpcUrl("SEPOLIA_RPC");
+        forks[Chains.BaseSepolia] = vm.rpcUrl("BASE_SEPOLIA_RPC");
 
         // Mainnet
-        forks[Chains.Etherum] = "etherum";
-        forks[Chains.Polygon] = "polygon";
-        forks[Chains.Bsc] = "bsc";
-        forks[Chains.Avalanche] = "avalanche";
-        forks[Chains.Arbitrum] = "arbitrum";
-        forks[Chains.Optimism] = "optimism";
-        forks[Chains.Moonbeam] = "moonbeam";
-        forks[Chains.Astar] = "astar";
-        forks[Chains.Base] = "base";
+        forks[Chains.Ethereum] = vm.rpcUrl("ETHEREUM_RPC");
+        forks[Chains.Polygon] = vm.rpcUrl("POLYGON_RPC");
+        forks[Chains.Bsc] = vm.rpcUrl("BSC_RPC");
+        forks[Chains.Avalanche] = vm.rpcUrl("AVALANCE_RPC");
+        forks[Chains.Arbitrum] = vm.rpcUrl("ARBITRUM_RPC");
+        forks[Chains.Optimism] = vm.rpcUrl("OPTIMISM_RPC");
+        forks[Chains.Moonbeam] = vm.rpcUrl("MOONBEAM_RPC");
+        forks[Chains.Astar] = vm.rpcUrl("ASTAR_RPC");
+        forks[Chains.Base] = vm.rpcUrl("BASE_RPC");
     }
 
     function createFork(Chains chain) public {
@@ -131,7 +129,7 @@ abstract contract BaseDeployer is Script {
 
         _salt = bytes32(uint256(10));
 
-        deployForks[0] = Chains.Etherum;
+        deployForks[0] = Chains.Ethereum;
         deployForks[1] = Chains.Polygon;
         deployForks[2] = Chains.Bsc;
         deployForks[3] = Chains.Avalanche;
@@ -150,12 +148,11 @@ abstract contract BaseDeployer is Script {
 
         _salt = bytes32(counterSalt);
 
-        deployForks[0] = Chains.Goerli;
-        deployForks[1] = Chains.Mumbai;
+        deployForks[1] = Chains.Amoy;
         deployForks[2] = Chains.BscTest;
         deployForks[3] = Chains.Fuji;
-        deployForks[4] = Chains.ArbitrumGoerli;
-        deployForks[5] = Chains.OptimismGoerli;
+        deployForks[4] = Chains.ArbitrumSepolia;
+        deployForks[5] = Chains.OptimismSepolia;
         deployForks[6] = Chains.Shiden;
         deployForks[7] = Chains.Moonriver;
         deployForks[8] = Chains.Sepolia;

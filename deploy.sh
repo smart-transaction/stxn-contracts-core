@@ -8,40 +8,45 @@ fi
 
 # Get the contract name
 CONTRACT=$1
+
 SCRIPT_NAME="Deploy${CONTRACT}"
 
-Get the network
+SALT=$2
+
+# Get the network
 echo "Select Network (local/testnet/mainnet)"
 read NETWORK
 
 # TODO: Deploy selected chains
-SIGNATURE=""
-if [ $NETWORK=="mainnet" ]
-then
+if [ "$NETWORK" = "mainnet" ]; then
    SIGNATURE="deployMainnet()"
-elif [ $NETWORK=="testnet" ]
-then
-   SIGNATURE="deployTestnet()" # TODO: pass counter salt
-elif [ $NETWORK=="local" ]
-then
+elif [ "$NETWORK" = "testnet" ]; then
+   SIGNATURE="deployTestnet(uint256)" # TODO: pass counter salt
+elif [ "$NETWORK" = "local" ]; then
    SIGNATURE="deployLocal()"
 else
    echo "INVALID INPUT"
+   exit 1
 fi
 
-cmd="forge script $SCRIPT_NAME --sig '$SIGNATURE'"
+if [ "$NETWORK" = "testnet" ]
+then
+    cmd="forge script $SCRIPT_NAME $SALT --sig '$SIGNATURE'"
+else
+    cmd="forge script $SCRIPT_NAME --sig '$SIGNATURE'"
+fi
 
 echo "Broadcast deployment? (y/n)"
 read BROADCAST
 
-if [ $BROADCAST=="y" ]
+if [ "$BROADCAST" = "y" ]
 then
     cmd="$cmd --broadcast"
 fi
 
-Execute the built command
+# Execute the built command
 echo "Executing: $cmd"
-DEPLOYMENT=`eval "$cmd" | grep address | awk '{print $3}'`
+DEPLOYMENT=$(eval "$cmd" | grep -oE '0x[[:xdigit:]]{40}' | uniq)
 
 if [ $BROADCAST=="y" ]
 then
@@ -68,6 +73,3 @@ then
         forge verify-contract --chain-id 11155420 $ADDRESS $CONTRACT --constructor-args $(cast abi-encode $CONSTRUCTOR_SIG $CONSTRUCTOR_ARGS) --etherscan-api-key TC3T9FWYY68DCW41EHDZMX52Z6I4T293EB --watch
     fi
 fi
-
-
-
