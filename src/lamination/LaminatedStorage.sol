@@ -2,10 +2,13 @@
 pragma solidity >=0.6.2 <0.9.0;
 
 import "../interfaces/ILaminator.sol";
+import "../interfaces/ICallBreaker.sol";
 
 abstract contract LaminatedStorage {
     /// @notice The slot at which the Laminator address is stored
     bytes32 public constant LAMINATOR_SLOT = bytes32(uint256(keccak256("LaminatorStorage.LAMINATOR_SLOT")) - 1);
+    /// @notice The slot at which the CallBreaker address is stored
+    bytes32 public constant CALL_BREAKER_SLOT = bytes32(uint256(keccak256("LaminatorStorage.CALL_BREAKER_SLOT")) - 1);
     /// @notice The slot at which the owner address is stored
     bytes32 public constant OWNER_SLOT = bytes32(uint256(keccak256("LaminatorStorage.OWNER_SLOT")) - 1);
     /// @notice The slot at which the sequence number is stored
@@ -54,6 +57,14 @@ abstract contract LaminatedStorage {
         uint256 slot = uint256(LAMINATOR_SLOT);
         assembly ("memory-safe") {
             _laminator := sload(slot)
+        }
+    }
+
+    /// @notice Get Laminator contract
+    function callBreaker() public view returns (ICallBreaker _callBreaker) {
+        uint256 slot = uint256(CALL_BREAKER_SLOT);
+        assembly ("memory-safe") {
+            _callBreaker := sload(slot)
         }
     }
 
@@ -153,6 +164,16 @@ abstract contract LaminatedStorage {
         uint256 slot = uint256(LAMINATOR_SLOT);
         assembly ("memory-safe") {
             sstore(slot, _laminator)
+        }
+    }
+
+    /// @notice Set the laminator address
+    /// @dev This function is called once during initialization.
+    /// @param _callBreaker The address of the call breaker contract.
+    function _setCallBreaker(address _callBreaker) internal {
+        uint256 slot = uint256(CALL_BREAKER_SLOT);
+        assembly ("memory-safe") {
+            sstore(slot, _callBreaker)
         }
     }
 

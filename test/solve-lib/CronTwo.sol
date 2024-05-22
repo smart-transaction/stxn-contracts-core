@@ -24,8 +24,8 @@ contract CronTwoLib {
 
     function deployerLand(address pusher) public {
         // Initializing contracts
-        laminator = new Laminator();
         callbreaker = new CallBreaker();
+        laminator = new Laminator(address(callbreaker));
         counter = new CronTwoCounter(address(callbreaker));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
     }

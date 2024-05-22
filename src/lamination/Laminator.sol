@@ -2,8 +2,14 @@
 pragma solidity >=0.6.2 <0.9.0;
 
 import "./LaminatedProxy.sol";
+import "../interfaces/ICallBreaker.sol";
 
 contract Laminator is ILaminator {
+    ICallBreaker public callBreaker;
+
+    /// @notice The address passed was a zero address
+    error AddressZero();
+
     /// @dev Emitted when a new proxy contract is created.
     /// @param owner The owner of the newly created proxy contract.
     /// @param proxyAddress The address of the newly created proxy contract.
@@ -25,6 +31,16 @@ contract Laminator is ILaminator {
     /// @param callObjs The CallObject containing the function call details.
     event ProxyExecuted(address indexed proxyAddress, CallObject[] callObjs);
 
+    /// @notice Constructs a new contract instance - usually called by the Laminator contract
+    /// @dev Initializes the contract, setting the call breaker address.
+    /// @param _callBreaker The address of the laminator contract.
+    constructor(address _callBreaker) {
+        if (_callBreaker == address(0)) {
+            revert AddressZero();
+        }
+        callBreaker = ICallBreaker(_callBreaker);
+    }
+
     /// @notice Computes the deterministic address for a proxy contract for the given owner.
     /// @dev Uses the CREATE2 opcode to calculate the address for the proxy contract.
     ///      The proxy address is generated deterministically based on the owner's address,
@@ -33,7 +49,7 @@ contract Laminator is ILaminator {
     /// @return The computed proxy address.
     function computeProxyAddress(address owner) public view returns (address) {
         bytes32 salt = keccak256(abi.encodePacked(owner));
-        bytes memory constructorArgs = abi.encode(address(this), owner); // Encode the constructor arguments
+        bytes memory constructorArgs = abi.encode(address(this), address(callBreaker), owner); // Encode the constructor arguments
         bytes memory bytecode = abi.encodePacked(type(LaminatedProxy).creationCode, constructorArgs); // Append the constructor arguments to the bytecode
 
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(bytecode)));
@@ -89,7 +105,7 @@ contract Laminator is ILaminator {
             // Create a new proxy contract using create2
             // Encode the constructor arguments and append the constructor arguments to the bytecode
             bytes32 salt = keccak256(abi.encodePacked(sender));
-            bytes memory constructorArgs = abi.encode(address(this), sender);
+            bytes memory constructorArgs = abi.encode(address(this), address(callBreaker), sender);
             bytes memory bytecode = abi.encodePacked(type(LaminatedProxy).creationCode, constructorArgs);
 
             assembly {

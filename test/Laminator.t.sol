@@ -3,19 +3,23 @@ pragma solidity >=0.6.2 <0.9.0;
 
 import "forge-std/Test.sol";
 
-import "../src/lamination/Laminator.sol";
-import "../src/lamination/LaminatedProxy.sol";
-import "./utils/Dummy.sol";
-import {CallObjectLib} from "../src/TimeTypes.sol";
+import {Laminator} from "src/lamination/Laminator.sol";
+import {CallBreaker} from "src/timetravel/CallBreaker.sol";
+import {LaminatedProxy} from "src/lamination/LaminatedProxy.sol";
+import {CallObjectLib, CallObject} from "src/TimeTypes.sol";
 import {Math} from "openzeppelin/utils/math/Math.sol";
+import {Dummy} from "./utils/Dummy.sol";
 
 contract LaminatorHarness is Laminator {
+    constructor(address _callBreaker) Laminator(_callBreaker) {}
+
     function harness_getOrCreateProxy(address sender) public returns (address) {
         return _getOrCreateProxy(sender);
     }
 }
 
 contract LaminatorTest is Test {
+    CallBreaker public callBreaker;
     LaminatorHarness public laminator;
 
     address randomFriendAddress = address(0xbeefd3ad);
@@ -31,7 +35,8 @@ contract LaminatorTest is Test {
 
     // @TODO: NotImplemented: Add more unit tests
     function setUp() public {
-        laminator = new LaminatorHarness();
+        callBreaker = new CallBreaker();
+        laminator = new LaminatorHarness(address(callBreaker));
     }
 
     // Existing Proxy and creation Test: Test if the getOrCreateProxy function returns the existing proxy address when one already exists for the sender.
@@ -91,13 +96,13 @@ contract LaminatorTest is Test {
         vm.expectEmit(true, true, true, true);
         emit CallPulled(callObj1, 0);
         emit DummyEvent(val1);
-        vm.prank(randomFriendAddress);
+        vm.prank(address(callBreaker));
         proxy.pull(0);
 
         vm.expectEmit(true, true, true, true);
         emit CallPulled(callObj2, 1);
         emit DummyEvent(val2);
-        vm.prank(randomFriendAddress);
+        vm.prank(address(callBreaker));
         proxy.pull(1);
     }
 
@@ -119,8 +124,7 @@ contract LaminatorTest is Test {
         uint256 sequenceNumber = laminator.pushToProxy(cData, 0);
         assertEq(sequenceNumber, 0);
 
-        // try pulls as a random address, make sure the events were emitted
-        vm.prank(randomFriendAddress);
+        vm.prank(address(callBreaker));
         proxy.pull(0);
     }
 
@@ -142,8 +146,8 @@ contract LaminatorTest is Test {
         uint256 sequenceNumber = laminator.pushToProxy(cData, 1);
         assertEq(sequenceNumber, 0);
 
-        // try pulls as a random address, make sure the events were emitted
-        vm.prank(randomFriendAddress);
+        // try pulls, make sure it reverts
+        vm.prank(address(callBreaker));
         vm.expectRevert(LaminatedProxy.TooEarly.selector);
         proxy.pull(0);
     }
@@ -168,8 +172,8 @@ contract LaminatorTest is Test {
 
         vm.roll(block.number + 1);
 
-        // try pulls as a random address, make sure the events were emitted
-        vm.prank(randomFriendAddress);
+        // try pulls, make sure it reverts
+        vm.prank(address(callBreaker));
         vm.expectRevert(LaminatedProxy.TooEarly.selector);
         proxy.pull(0);
     }
@@ -217,6 +221,30 @@ contract LaminatorTest is Test {
         proxy.push(cData, 1);
     }
 
+    // ensure pulls from proxy as a random address reverts
+    function testPullFromProxyAsRandomAddress() public {
+        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
+        Dummy dummy = new Dummy();
+        // push once
+        uint256 val = 42;
+        CallObject[] memory callObj = new CallObject[](1);
+        callObj[0] = CallObject({
+            amount: 0,
+            addr: address(dummy),
+            gas: saneGasLeft(),
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+        });
+        bytes memory cData = abi.encode(callObj);
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 0);
+        assertEq(sequenceNumber, 0);
+
+        // pull once
+        vm.prank(address(randomFriendAddress));
+        vm.expectRevert(LaminatedProxy.NotCallBreaker.selector);
+        proxy.pull(0);
+    }
+
     // test that double-pulling the same sequence number does not work
     function testDoublePull() public {
         address expectedProxyAddress = laminator.computeProxyAddress(address(this));
@@ -236,10 +264,11 @@ contract LaminatorTest is Test {
         assertEq(sequenceNumber, 0);
 
         // pull once
-        vm.prank(randomFriendAddress);
+        vm.prank(address(callBreaker));
         proxy.pull(0);
 
         // and try to pull again
+        vm.prank(address(callBreaker));
         vm.expectRevert(LaminatedProxy.AlreadyExecuted.selector);
         proxy.pull(0);
     }
@@ -264,7 +293,7 @@ contract LaminatorTest is Test {
 
         vm.roll(block.number + 1);
 
-        vm.prank(randomFriendAddress);
+        vm.prank(address(callBreaker));
         vm.expectRevert(LaminatedProxy.CallFailed.selector);
         proxy.pull(0);
     }

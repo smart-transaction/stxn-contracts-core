@@ -16,8 +16,8 @@ contract FlashLiquidityExampleLib {
 
     function deployerLand(address pusher) public {
         // Initializing contracts
-        laminator = new Laminator();
         callbreaker = new CallBreaker();
+        laminator = new Laminator(address(callbreaker));
         limitOrder = new LimitOrder(address(callbreaker));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
     }

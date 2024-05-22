@@ -18,8 +18,8 @@ contract PnPExampleLib {
 
     function deployerLand(address pusher) public {
         // Initializing contracts
-        laminator = new Laminator();
         callbreaker = new CallBreaker();
+        laminator = new Laminator(address(callbreaker));
         pnp = new PnP(address(callbreaker), hashChainInitConst);
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
     }

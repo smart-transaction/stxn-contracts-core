@@ -20,8 +20,8 @@ contract WorkedExampleLib {
 
     function deployerLand(address pusher, address filler) public {
         // Initializing contracts
-        laminator = new Laminator();
         callbreaker = new CallBreaker();
+        laminator = new Laminator(address(callbreaker));
 
         erc20a = new MyErc20("A", "A");
         erc20b = new MyErc20("B", "B");
