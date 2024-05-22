@@ -48,6 +48,20 @@ fi
 echo "Executing: $cmd"
 DEPLOYMENT=$(eval "$cmd" | grep -oE '0x[[:xdigit:]]{40}' | uniq)
 
+is_valid_ethereum_address() {
+  if [[ $1 =~ ^0x[a-fA-F0-9]{40}$ ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Check if DEPLOYMENT is a valid Ethereum address
+if ! is_valid_ethereum_address "$DEPLOYMENT"; then
+  echo "Deployment Failed!"
+  exit 1
+fi
+
 if [ $BROADCAST=="y" ]
 then
     echo "Verifying deployment at address $DEPLOYMENT"
@@ -55,21 +69,19 @@ then
     echo "Enter constructor signature (Enter to skip)"
     read CONSTRUCTOR_SIG # e.g. constructor(uint256,address)
 
-    if [ $CONSTRUCTOR_SIG=='' ]
-    then
-        forge verify-contract --chain-id 80002 $ADDRESS $CONTRACT --etherscan-api-key PDUCSBD8WKTFI9D9G912A4JXCB7UX7Z98P --watch
-        forge verify-contract --chain-id 11155111 $ADDRESS $CONTRACT --etherscan-api-key 3U7ZHP4MYBSV8Y6TQFGX6DHQY54FBY71EE --watch
-        forge verify-contract --chain-id 84532 $ADDRESS $CONTRACT --etherscan-api-key 889NH7DM28WJWDWFWRCXITEU9QT6TWG9QQ --watch
-        forge verify-contract --chain-id 421614 $ADDRESS $CONTRACT --etherscan-api-key BFCBXE8IYFDCWU4YQ9J7W72RJXBB7ZKQJJ --watch
-        forge verify-contract --chain-id 11155420 $ADDRESS $CONTRACT --etherscan-api-key TC3T9FWYY68DCW41EHDZMX52Z6I4T293EB --watch
-    else
-        echo "Enter constructor args"
-        read CONSTRUCTOR_ARGS # e.g. 111111 0x0000000000000000000000000000000000000001
+    source .env
 
-        forge verify-contract --chain-id 80002 $ADDRESS $CONTRACT --constructor-args $(cast abi-encode $CONSTRUCTOR_SIG $CONSTRUCTOR_ARGS) --etherscan-api-key PDUCSBD8WKTFI9D9G912A4JXCB7UX7Z98P --watch
-        forge verify-contract --chain-id 11155111 $ADDRESS $CONTRACT --constructor-args $(cast abi-encode $CONSTRUCTOR_SIG $CONSTRUCTOR_ARGS) --etherscan-api-key 3U7ZHP4MYBSV8Y6TQFGX6DHQY54FBY71EE --watch
-        forge verify-contract --chain-id 84532 $ADDRESS $CONTRACT --constructor-args $(cast abi-encode $CONSTRUCTOR_SIG $CONSTRUCTOR_ARGS) --etherscan-api-key 889NH7DM28WJWDWFWRCXITEU9QT6TWG9QQ --watch
-        forge verify-contract --chain-id 421614 $ADDRESS $CONTRACT --constructor-args $(cast abi-encode $CONSTRUCTOR_SIG $CONSTRUCTOR_ARGS) --etherscan-api-key BFCBXE8IYFDCWU4YQ9J7W72RJXBB7ZKQJJ --watch
-        forge verify-contract --chain-id 11155420 $ADDRESS $CONTRACT --constructor-args $(cast abi-encode $CONSTRUCTOR_SIG $CONSTRUCTOR_ARGS) --etherscan-api-key TC3T9FWYY68DCW41EHDZMX52Z6I4T293EB --watch
-    fi
+    for i in "${!CHAIN_IDS[@]}"; do
+        CHAIN_ID=${CHAIN_IDS[$i]}
+        API_KEY=${API_KEYS[$i]}
+
+        if [ -z "$CONSTRUCTOR_SIG" ]; then
+            echo "Verifying contract on chain ID $CHAIN_ID with API key $API_KEY without constructor arguments"
+            forge verify-contract --chain-id "$CHAIN_ID" "$DEPLOYMENT" "$CONTRACT" --etherscan-api-key "$API_KEY" --watch
+        else
+            ENCODED_ARGS=$(cast abi-encode "$CONSTRUCTOR_SIG" $CONSTRUCTOR_ARGS)
+            echo "Verifying contract on chain ID $CHAIN_ID with API key $API_KEY with constructor arguments"
+            forge verify-contract --chain-id "$CHAIN_ID" "$DEPLOYMENT" "$CONTRACT" --constructor-args "$ENCODED_ARGS" --etherscan-api-key "$API_KEY" --watch
+        fi
+    done
 fi
