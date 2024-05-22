@@ -221,6 +221,30 @@ contract LaminatorTest is Test {
         proxy.push(cData, 1);
     }
 
+    // ensure pulls from proxy as a random address reverts
+    function testPullFromProxyAsRandomAddress() public {
+        address expectedProxyAddress = laminator.computeProxyAddress(address(this));
+        LaminatedProxy proxy = LaminatedProxy(payable(expectedProxyAddress));
+        Dummy dummy = new Dummy();
+        // push once
+        uint256 val = 42;
+        CallObject[] memory callObj = new CallObject[](1);
+        callObj[0] = CallObject({
+            amount: 0,
+            addr: address(dummy),
+            gas: saneGasLeft(),
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+        });
+        bytes memory cData = abi.encode(callObj);
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 0);
+        assertEq(sequenceNumber, 0);
+
+        // pull once
+        vm.prank(address(randomFriendAddress));
+        vm.expectRevert(LaminatedProxy.NotCallBreaker.selector);
+        proxy.pull(0);
+    }
+
     // test that double-pulling the same sequence number does not work
     function testDoublePull() public {
         address expectedProxyAddress = laminator.computeProxyAddress(address(this));
