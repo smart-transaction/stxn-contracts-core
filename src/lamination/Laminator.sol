@@ -35,7 +35,7 @@ contract Laminator is ILaminator {
     /// @dev Initializes the contract, setting the call breaker address.
     /// @param _callBreaker The address of the laminator contract.
     constructor(address _callBreaker) {
-        if(_callBreaker == address(0)) {
+        if (_callBreaker == address(0)) {
             revert AddressZero();
         }
         callBreaker = ICallBreaker(_callBreaker);

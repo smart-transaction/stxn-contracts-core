@@ -96,13 +96,13 @@ contract LaminatorTest is Test {
         vm.expectEmit(true, true, true, true);
         emit CallPulled(callObj1, 0);
         emit DummyEvent(val1);
-        vm.prank(randomFriendAddress);
+        vm.prank(address(callBreaker));
         proxy.pull(0);
 
         vm.expectEmit(true, true, true, true);
         emit CallPulled(callObj2, 1);
         emit DummyEvent(val2);
-        vm.prank(randomFriendAddress);
+        vm.prank(address(callBreaker));
         proxy.pull(1);
     }
 
@@ -124,8 +124,7 @@ contract LaminatorTest is Test {
         uint256 sequenceNumber = laminator.pushToProxy(cData, 0);
         assertEq(sequenceNumber, 0);
 
-        // try pulls as a random address, make sure the events were emitted
-        vm.prank(randomFriendAddress);
+        vm.prank(address(callBreaker));
         proxy.pull(0);
     }
 
@@ -147,8 +146,8 @@ contract LaminatorTest is Test {
         uint256 sequenceNumber = laminator.pushToProxy(cData, 1);
         assertEq(sequenceNumber, 0);
 
-        // try pulls as a random address, make sure the events were emitted
-        vm.prank(randomFriendAddress);
+        // try pulls, make sure it reverts
+        vm.prank(address(callBreaker));
         vm.expectRevert(LaminatedProxy.TooEarly.selector);
         proxy.pull(0);
     }
@@ -173,8 +172,8 @@ contract LaminatorTest is Test {
 
         vm.roll(block.number + 1);
 
-        // try pulls as a random address, make sure the events were emitted
-        vm.prank(randomFriendAddress);
+        // try pulls, make sure it reverts
+        vm.prank(address(callBreaker));
         vm.expectRevert(LaminatedProxy.TooEarly.selector);
         proxy.pull(0);
     }
@@ -241,10 +240,11 @@ contract LaminatorTest is Test {
         assertEq(sequenceNumber, 0);
 
         // pull once
-        vm.prank(randomFriendAddress);
+        vm.prank(address(callBreaker));
         proxy.pull(0);
 
         // and try to pull again
+        vm.prank(address(callBreaker));
         vm.expectRevert(LaminatedProxy.AlreadyExecuted.selector);
         proxy.pull(0);
     }
@@ -269,7 +269,7 @@ contract LaminatorTest is Test {
 
         vm.roll(block.number + 1);
 
-        vm.prank(randomFriendAddress);
+        vm.prank(address(callBreaker));
         vm.expectRevert(LaminatedProxy.CallFailed.selector);
         proxy.pull(0);
     }
