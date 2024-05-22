@@ -11,10 +11,13 @@ import {Laminator} from "../src/lamination/Laminator.sol";
 import {console2} from "forge-std/console2.sol";
 
 contract DeployLaminator is Script, BaseDeployer {
+    address private _callBreaker;
+
     /// @dev Compute the CREATE2 addresses for contracts (proxy, counter).
     /// @param salt The salt for the Laminator contract.
     modifier computeCreate2(bytes32 salt) {
-        _create2addr = computeCreate2Address(salt, hashInitCode(type(Laminator).creationCode));
+        _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
+        _create2addr = computeCreate2Address(salt, hashInitCode(type(Laminator).creationCode, abi.encode(_callBreaker)));
 
         _;
     }
@@ -39,7 +42,7 @@ contract DeployLaminator is Script, BaseDeployer {
 
     /// @dev Function to perform actual deployment.
     function chainDeployLaminator() private broadcast(_deployerPrivateKey) {
-        Laminator counter = new Laminator{salt: _salt}();
+        Laminator counter = new Laminator{salt: _salt}(_callBreaker);
 
         require(_create2addr == address(counter), "Address mismatch Laminator");
 

@@ -10,6 +10,10 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @dev Selector 0xfc51f672
     error NotLaminatorOrProxy();
 
+    /// @notice Some functions must be called by the call breaker only.
+    /// @dev Selector 0x4c0f7a6c
+    error NotCallBreaker();
+
     /// @notice Some functions must be called by the laminator only.
     /// @dev Selector 0x91c58dcd
     error NotLaminator();
@@ -94,6 +98,15 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         _;
     }
 
+    /// @dev Modifier to make a function callable only by the call breaker.
+    ///      Reverts the transaction if the sender is not the call breaker.
+    modifier onlyCallBreaker() {
+        if (msg.sender != address(callBreaker()) && msg.sender != address(this)) {
+            revert NotCallBreaker();
+        }
+        _;
+    }
+
     modifier onlyWhileExecuting() {
         if (!isCallExecuting()) {
             revert NotExecuting();
@@ -104,10 +117,12 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @notice Constructs a new contract instance - usually called by the Laminator contract
     /// @dev Initializes the contract, setting the owner and laminator addresses.
     /// @param _laminator The address of the laminator contract.
+    /// @param _callBreaker The address of the call breaker contract.
     /// @param _owner The address of the contract's owner.
-    constructor(address _laminator, address _owner) {
+    constructor(address _laminator, address _callBreaker, address _owner) {
         _setOwner(_owner);
         _setLaminator(_laminator);
+        _setCallBreaker(_callBreaker);
     }
 
     /// @notice Allows the contract to receive Ether.

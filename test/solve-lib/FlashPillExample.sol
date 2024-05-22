@@ -17,8 +17,8 @@ contract FlashPillExampleLib {
 
     function deployerLand(address pusher) public {
         // Initializing contracts
-        laminator = new Laminator();
         callbreaker = new CallBreaker();
+        laminator = new Laminator(address(callbreaker));
         fp = new FlashPill(address(callbreaker));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
     }

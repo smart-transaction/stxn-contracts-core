@@ -61,8 +61,8 @@ contract SmarterContractTest is Test {
 
     function setUp() public {
         pusher = address(100);
-        laminator = new Laminator();
         callbreaker = new CallBreaker();
+        laminator = new Laminator(address(callbreaker));
         smarterContract = new SmarterContractHarness(address(callbreaker));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
     }

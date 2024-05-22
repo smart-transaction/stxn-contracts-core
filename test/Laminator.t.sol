@@ -3,19 +3,23 @@ pragma solidity >=0.6.2 <0.9.0;
 
 import "forge-std/Test.sol";
 
-import "../src/lamination/Laminator.sol";
-import "../src/lamination/LaminatedProxy.sol";
-import "./utils/Dummy.sol";
-import {CallObjectLib} from "../src/TimeTypes.sol";
+import {Laminator} from "src/lamination/Laminator.sol";
+import {CallBreaker} from "src/timetravel/CallBreaker.sol";
+import {LaminatedProxy} from "src/lamination/LaminatedProxy.sol";
+import {CallObjectLib, CallObject} from "src/TimeTypes.sol";
 import {Math} from "openzeppelin/utils/math/Math.sol";
+import {Dummy} from "./utils/Dummy.sol";
 
 contract LaminatorHarness is Laminator {
+    constructor(address _callBreaker) Laminator(_callBreaker) {}
+
     function harness_getOrCreateProxy(address sender) public returns (address) {
         return _getOrCreateProxy(sender);
     }
 }
 
 contract LaminatorTest is Test {
+    CallBreaker public callBreaker;
     LaminatorHarness public laminator;
 
     address randomFriendAddress = address(0xbeefd3ad);
@@ -31,7 +35,8 @@ contract LaminatorTest is Test {
 
     // @TODO: NotImplemented: Add more unit tests
     function setUp() public {
-        laminator = new LaminatorHarness();
+        callBreaker = new CallBreaker();
+        laminator = new LaminatorHarness(address(callBreaker));
     }
 
     // Existing Proxy and creation Test: Test if the getOrCreateProxy function returns the existing proxy address when one already exists for the sender.
