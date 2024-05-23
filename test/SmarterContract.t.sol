@@ -14,7 +14,8 @@ contract SmarterContractTest is Test {
     CallBreaker public callbreaker;
     CallBreakerHarness callbreakerHarness = new CallBreakerHarness();
     SmarterContractHarness public smarterContract;
-    SmarterContractHarness public smarterContractWithCallBreakerHarness = new SmarterContractHarness(address(callbreakerHarness));
+    SmarterContractHarness public smarterContractWithCallBreakerHarness =
+        new SmarterContractHarness(address(callbreakerHarness));
     Laminator public laminator;
     Dummy public dummy;
     address payable public pusherLaminated;
@@ -41,7 +42,7 @@ contract SmarterContractTest is Test {
         vm.expectRevert(SmarterContract.AddressZero.selector);
         new SmarterContract(_callbreaker);
     }
-    
+
     function testOnlyPortalOpenModifier() public {
         callbreakerHarness.setPortalOpen();
 
@@ -461,8 +462,10 @@ contract SmarterContractTest is Test {
         uint256 callLength = 3;
         uint256 executeIndex = 2;
 
-        (CallObject[] memory calls, ReturnObject[] memory returnValues) = setupAndExecuteDummyCall(callLength, executeIndex);
-        (CallObject memory callObj, ReturnObject memory returnObj) = smarterContractWithCallBreakerHarness.getCurrentExecutingPair();
+        (CallObject[] memory calls, ReturnObject[] memory returnValues) =
+            setupAndExecuteDummyCall(callLength, executeIndex);
+        (CallObject memory callObj, ReturnObject memory returnObj) =
+            smarterContractWithCallBreakerHarness.getCurrentExecutingPair();
 
         assertEq(keccak256(callObj.callvalue), keccak256((calls[executeIndex - 1].callvalue)));
         assertEq(keccak256(returnObj.returnvalue), keccak256((returnValues[executeIndex - 1].returnvalue)));
@@ -496,11 +499,14 @@ contract SmarterContractTest is Test {
         smarterContractWithCallBreakerHarness.soloExecuteBlocker();
     }
 
-    function setupAndExecuteDummyCall(uint256 callLength, uint256 executeIndex) internal returns (CallObject[] memory calls, ReturnObject[] memory returnValues) {
+    function setupAndExecuteDummyCall(uint256 callLength, uint256 executeIndex)
+        internal
+        returns (CallObject[] memory calls, ReturnObject[] memory returnValues)
+    {
         calls = new CallObject[](callLength);
         returnValues = new ReturnObject[](callLength);
 
-        for(uint256 i = 0; i < callLength; i++) {
+        for (uint256 i = 0; i < callLength; i++) {
             calls[i] = CallObject({
                 amount: 0,
                 addr: address(dummy),
@@ -515,7 +521,7 @@ contract SmarterContractTest is Test {
         callbreakerHarness.resetTraceStoresWithHarness(calls, returnValues);
         callbreakerHarness.populateCallIndicesHarness();
 
-        for(uint256 j = 0; j < executeIndex; j++) {
+        for (uint256 j = 0; j < executeIndex; j++) {
             callbreakerHarness._executeAndVerifyCallHarness(j);
         }
     }
