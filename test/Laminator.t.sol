@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import {Laminator} from "src/lamination/Laminator.sol";
 import {CallBreaker} from "src/timetravel/CallBreaker.sol";
 import {LaminatedProxy} from "src/lamination/LaminatedProxy.sol";
-import {CallObjectLib, CallObject} from "src/TimeTypes.sol";
+import {CallObjectLib, CallObject, CallObjectHolder, ReturnObject} from "src/TimeTypes.sol";
 import {Math} from "openzeppelin/utils/math/Math.sol";
 import {Dummy} from "./utils/Dummy.sol";
 
@@ -261,11 +261,11 @@ contract LaminatorTest is Test {
 
         proxy.cancelAllPending();
 
-        vm.prank(randomFriendAddress);
+        vm.prank(address(callBreaker));
         vm.expectRevert(LaminatedProxy.AlreadyExecuted.selector);
         proxy.pull(0);
 
-        vm.prank(randomFriendAddress);
+        vm.prank(address(callBreaker));
         vm.expectRevert(LaminatedProxy.AlreadyExecuted.selector);
         proxy.pull(1);
     }
@@ -337,6 +337,7 @@ contract LaminatorTest is Test {
         assertEq(sequenceNumber, 0);
 
         // try to pull out of order
+        vm.prank(address(callBreaker));
         vm.expectRevert(LaminatedProxy.Uninitialized.selector);
         proxy.pull(1);
     }
@@ -480,6 +481,7 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
         laminator.pushToProxy(cData, 0);
 
+        vm.prank(address(callBreaker));
         bytes memory returnValue = proxy.pull(0);
         ReturnObject[] memory returnObj = abi.decode(returnValue, (ReturnObject[]));
         CallObject memory returnCallObject = abi.decode(returnObj[0].returnvalue, (CallObject));
@@ -498,6 +500,7 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
         laminator.pushToProxy(cData, 0);
 
+        vm.prank(address(callBreaker));
         bytes memory returnValue = proxy.pull(0);
         ReturnObject[] memory returnObj = abi.decode(returnValue, (ReturnObject[]));
         CallObjectHolder memory returnCallObjectHolder = abi.decode(returnObj[0].returnvalue, (CallObjectHolder));
@@ -525,6 +528,7 @@ contract LaminatorTest is Test {
         assertEq(holder.callObjs.length, callObj1.length);
 
         // pull one
+        vm.prank(address(callBreaker));
         proxy.pull(0);
 
         // clean after pull clears executed call objects
