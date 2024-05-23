@@ -24,7 +24,13 @@ contract DeployLaminator is Script, BaseDeployer {
 
     /// @dev Helper to iterate over chains and select fork.
     /// @param deployForks The chains to deploy to.
-    function createDeployMultichain(Chains[] memory deployForks) internal override computeCreate2(_salt) {
+    /// @return address of the deployed contract
+    function createDeployMultichain(Chains[] memory deployForks)
+        internal
+        override
+        computeCreate2(_salt)
+        returns (address)
+    {
         console2.log("Laminator create2 address:", _create2addr, "\n");
 
         for (uint256 i; i < deployForks.length;) {
@@ -38,6 +44,7 @@ contract DeployLaminator is Script, BaseDeployer {
                 ++i;
             }
         }
+        return _create2addr;
     }
 
     /// @dev Function to perform actual deployment.
