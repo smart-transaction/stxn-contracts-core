@@ -93,26 +93,26 @@ abstract contract BaseDeployer is Script {
         forks[Chains.LocalBSCTest] = "localBSCTest";
 
         // Testnet
-        forks[Chains.Amoy] = vm.rpcUrl("AMOY_RPC");
-        forks[Chains.BscTest] = vm.rpcUrl("BSC_TEST_RPC");
-        forks[Chains.Fuji] = vm.rpcUrl("FUJI_RPC");
-        forks[Chains.ArbitrumSepolia] = vm.rpcUrl("ARBITRUM_SEPOLIA_RPC");
-        forks[Chains.OptimismSepolia] = vm.rpcUrl("OPTIMISM_SEPOLIA_RPC");
-        forks[Chains.Shiden] = vm.rpcUrl("SHIDEN_RPC");
-        forks[Chains.Moonriver] = vm.rpcUrl("MOONRIVER_RPC");
-        forks[Chains.Sepolia] = vm.rpcUrl("SEPOLIA_RPC");
-        forks[Chains.BaseSepolia] = vm.rpcUrl("BASE_SEPOLIA_RPC");
+        forks[Chains.Amoy] = vm.envString("AMOY_RPC");
+        forks[Chains.BscTest] = vm.envString("BSC_TEST_RPC");
+        forks[Chains.Fuji] = vm.envString("FUJI_RPC");
+        forks[Chains.ArbitrumSepolia] = vm.envString("ARBITRUM_SEPOLIA_RPC");
+        forks[Chains.OptimismSepolia] = vm.envString("OPTIMISM_SEPOLIA_RPC");
+        forks[Chains.Shiden] = vm.envString("SHIDEN_RPC");
+        forks[Chains.Moonriver] = vm.envString("MOONRIVER_RPC");
+        forks[Chains.Sepolia] = vm.envString("SEPOLIA_RPC");
+        forks[Chains.BaseSepolia] = vm.envString("BASE_SEPOLIA_RPC");
 
         // Mainnet
-        forks[Chains.Ethereum] = vm.rpcUrl("ETHEREUM_RPC");
-        forks[Chains.Polygon] = vm.rpcUrl("POLYGON_RPC");
-        forks[Chains.Bsc] = vm.rpcUrl("BSC_RPC");
-        forks[Chains.Avalanche] = vm.rpcUrl("AVALANCE_RPC");
-        forks[Chains.Arbitrum] = vm.rpcUrl("ARBITRUM_RPC");
-        forks[Chains.Optimism] = vm.rpcUrl("OPTIMISM_RPC");
-        forks[Chains.Moonbeam] = vm.rpcUrl("MOONBEAM_RPC");
-        forks[Chains.Astar] = vm.rpcUrl("ASTAR_RPC");
-        forks[Chains.Base] = vm.rpcUrl("BASE_RPC");
+        forks[Chains.Ethereum] = vm.envString("ETHEREUM_RPC");
+        forks[Chains.Polygon] = vm.envString("POLYGON_RPC");
+        forks[Chains.Bsc] = vm.envString("BSC_RPC");
+        forks[Chains.Avalanche] = vm.envString("AVALANCE_RPC");
+        forks[Chains.Arbitrum] = vm.envString("ARBITRUM_RPC");
+        forks[Chains.Optimism] = vm.envString("OPTIMISM_RPC");
+        forks[Chains.Moonbeam] = vm.envString("MOONBEAM_RPC");
+        forks[Chains.Astar] = vm.envString("ASTAR_RPC");
+        forks[Chains.Base] = vm.envString("BASE_RPC");
     }
 
     function createFork(Chains chain) public {
