@@ -24,14 +24,14 @@ contract SmarterContractTest is Test {
     }
 
     function testInitialize() public {
-        address _callbreaker = address(1); 
+        address _callbreaker = address(1);
         SmarterContract sc = new SmarterContract(_callbreaker);
 
         assertTrue(_callbreaker == address(sc.callbreaker()));
     }
 
     function testInitializeFail() public {
-        address _callbreaker = address(0); 
+        address _callbreaker = address(0);
         vm.expectRevert(SmarterContract.AddressZero.selector);
         new SmarterContract(_callbreaker);
     }

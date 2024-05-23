@@ -198,7 +198,7 @@ contract CallBreaker is CallBreakerStorage {
     /// @notice Fetches the currently executing call index
     /// @dev This function reverts if the portal is closed
     /// @return The currently executing call index
-    function getCurrentlyExecuting() onlyPortalOpen public view returns (uint256) {
+    function getCurrentlyExecuting() public view onlyPortalOpen returns (uint256) {
         return _executingCallIndex();
     }
 
