@@ -2,55 +2,11 @@
 pragma solidity >=0.6.2 <0.9.0;
 
 import "forge-std/Test.sol";
-//import {VmSafe} from "forge-std/Vm.sol";
 
-import "../src/timetravel/SmarterContract.sol";
-import "../src/timetravel/CallBreaker.sol";
-import "../src/lamination/Laminator.sol";
-
-contract SmarterContractHarness is SmarterContract {
-    constructor(address callbreakerAddress) SmarterContract(callbreakerAddress) {}
-
-    function dummyFutureCall() public pure returns (bool) {
-        return true;
-    }
-
-    function assertFutureCallTestHarness() public view {
-        CallObject[] memory callObjs = new CallObject[](1);
-        callObjs[0] = CallObject({
-            amount: 0,
-            addr: address(this),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("dummyFutureCall()")
-        });
-
-        assertFutureCallTo(callObjs[0]);
-    }
-
-    function assertFutureCallWithIndexTestHarness() public view {
-        CallObject[] memory callObjs = new CallObject[](1);
-        callObjs[0] = CallObject({
-            amount: 0,
-            addr: address(this),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("dummyFutureCall()")
-        });
-
-        assertFutureCallTo(callObjs[0], 1);
-    }
-
-    function assertNextCallTestHarness() public view {
-        CallObject[] memory callObjs = new CallObject[](1);
-        callObjs[0] = CallObject({
-            amount: 0,
-            addr: address(this),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("dummyFutureCall()")
-        });
-
-        assertNextCallTo(callObjs[0]);
-    }
-}
+import {SmarterContract} from "src/timetravel/SmarterContract.sol";
+import {CallBreaker, CallObject, ReturnObject} from "src/timetravel/CallBreaker.sol";
+import {Laminator} from "src/lamination/Laminator.sol";
+import {SmarterContractHarness} from "test/contracts/SmarterContractHarness.sol";
 
 contract SmarterContractTest is Test {
     CallBreaker public callbreaker;
@@ -65,6 +21,19 @@ contract SmarterContractTest is Test {
         laminator = new Laminator(address(callbreaker));
         smarterContract = new SmarterContractHarness(address(callbreaker));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
+    }
+
+    function testInitialize() public {
+        address _callbreaker = address(1); 
+        SmarterContract sc = new SmarterContract(_callbreaker);
+
+        assertTrue(_callbreaker == address(sc.callbreaker()));
+    }
+
+    function testInitializeFail() public {
+        address _callbreaker = address(0); 
+        vm.expectRevert(SmarterContract.AddressZero.selector);
+        new SmarterContract(_callbreaker);
     }
 
     function testFrontrunBlocker() external {

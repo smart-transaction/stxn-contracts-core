@@ -20,7 +20,7 @@ contract NoopTurner is SmarterContract {
 
     function const_loop() external view returns (uint16) {
         // this one just returns whatever it gets at solvetime via. associatedDataStore
-        uint256 callIndex = CallBreaker(payable(_callbreakerAddress)).executingCallIndex();
+        uint256 callIndex = CallBreaker(payable(_callbreakerAddress)).getCurrentlyExecuting();
 
         return abi.decode(CallBreaker(payable(_callbreakerAddress)).getReturnValue(callIndex), (uint16));
     }
