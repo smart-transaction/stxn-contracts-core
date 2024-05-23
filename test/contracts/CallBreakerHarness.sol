@@ -4,6 +4,10 @@ pragma solidity >=0.6.2 <0.9.0;
 import {CallBreaker, CallObject, ReturnObject} from "src/timetravel/CallBreaker.sol";
 
 contract CallBreakerHarness is CallBreaker {
+    function setPortalOpen() public {
+        _setPortalOpen();
+    }
+
     function populateCallIndicesHarness() public {
         _populateCallIndices();
     }

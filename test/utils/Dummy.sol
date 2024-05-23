@@ -11,4 +11,8 @@ contract Dummy {
     function reverter() public pure {
         revert("Dummy: revert");
     }
+
+    function returnVal(uint256 _val) public pure returns (uint256) {
+        return _val;
+    }
 }

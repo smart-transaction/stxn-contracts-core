@@ -10,6 +10,18 @@ contract SmarterContractHarness is SmarterContract {
         return true;
     }
 
+    function dummyCallWhenPortalOpen() public view onlyPortalOpen returns (bool) {
+        return true;
+    }
+
+    function dummyCallNoFrontRun() public view noFrontRun returns (bool) {
+        return true;
+    }
+
+    function dummyCallNoBackRun() public view noBackRun returns (bool) {
+        return true;
+    }
+
     function assertFutureCallTestHarness() public view {
         CallObject[] memory callObjs = new CallObject[](1);
         callObjs[0] = CallObject({
