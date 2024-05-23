@@ -69,7 +69,7 @@ abstract contract CallBreakerStorage {
 
     /// @notice Returns the index number of the currently executing call.
     /// @return _execCallIndex The sequence number of the currently executing call.
-    function executingCallIndex() public view returns (uint256 _execCallIndex) {
+    function _executingCallIndex() internal view returns (uint256 _execCallIndex) {
         uint256 slot = uint256(EXECUTING_CALL_INDEX_SLOT);
         assembly ("memory-safe") {
             _execCallIndex := sload(slot)

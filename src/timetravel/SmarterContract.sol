@@ -10,6 +10,9 @@ import "../timetravel/CallBreaker.sol";
 contract SmarterContract {
     CallBreaker public callbreaker;
 
+    /// @notice The address passed was a zero address
+    error AddressZero();
+
     /// @dev Selector 0xab63c583
     error FutureCallExpected();
 
@@ -32,14 +35,8 @@ contract SmarterContract {
     /// @dev Selector 0xc19f17a9
     error NotApproved();
 
-    /// @dev Constructs a new SmarterContract instance
-    /// @param _callbreaker The address of the CallBreaker contract
-    constructor(address _callbreaker) {
-        callbreaker = CallBreaker(payable(_callbreaker));
-    }
-
-    /// @notice Modifier to ensure that the Turner is open
-    modifier ensureTurnerOpen() {
+    /// @notice Modifier to ensure that the Portal is open
+    modifier onlyPortalOpen() {
         if (!callbreaker.isPortalOpen()) {
             revert PortalClosed();
         }
@@ -57,6 +54,16 @@ contract SmarterContract {
     modifier noBackRun() {
         backrunBlocker();
         _;
+    }
+
+    /// @dev Constructs a new SmarterContract instance
+    /// @param _callbreaker The address of the CallBreaker contract
+    constructor(address _callbreaker) {
+        if (_callbreaker == address(0)) {
+            revert AddressZero();
+        }
+
+        callbreaker = CallBreaker(payable(_callbreaker));
     }
 
     /// @notice Returns the call index, callobj, and returnobj of the currently executing call
