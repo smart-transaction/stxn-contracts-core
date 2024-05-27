@@ -1,8 +1,4 @@
-// intended to be used as `contract x is CallBreakerUser`
-// as in, it stores a callbreaker, and can make some assertions about callbreaker state!
-
-// SPDX-License-Identifier: UNLICENSED
-
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.6.2 <0.9.0;
 
 import "../timetravel/CallBreaker.sol";
