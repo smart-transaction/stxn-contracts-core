@@ -66,15 +66,6 @@ contract CallBreaker is CallBreakerStorage {
         payable(tipAddr).transfer(msg.value);
     }
 
-    /// @dev Modifier to make a function callable only when the portal is open.
-    ///      Reverts if the portal is closed. Portal is opened by `verify`.
-    modifier ensureTurnerOpen() {
-        if (!isPortalOpen()) {
-            revert PortalClosed();
-        }
-        _;
-    }
-
     /// @notice Verifies that the given calls, when executed, gives the correct return values
     /// @dev SECURITY NOTICE: This function is only callable when the portal is closed. It requires the caller to be an EOA.
     /// @param callsBytes The bytes representing the calls to be verified
@@ -207,11 +198,8 @@ contract CallBreaker is CallBreakerStorage {
     /// @notice Fetches the currently executing call index
     /// @dev This function reverts if the portal is closed
     /// @return The currently executing call index
-    function getCurrentlyExecuting() public view returns (uint256) {
-        if (!isPortalOpen()) {
-            revert PortalClosed();
-        }
-        return executingCallIndex();
+    function getCurrentlyExecuting() public view onlyPortalOpen returns (uint256) {
+        return _executingCallIndex();
     }
 
     function _populateCallIndices() internal {

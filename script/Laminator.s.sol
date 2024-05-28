@@ -3,7 +3,6 @@
 pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
-
 import {BaseDeployer} from "./BaseDeployer.s.sol";
 import {Laminator} from "../src/lamination/Laminator.sol";
 

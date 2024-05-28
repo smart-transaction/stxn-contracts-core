@@ -2,60 +2,22 @@
 pragma solidity >=0.6.2 <0.9.0;
 
 import "forge-std/Test.sol";
-//import {VmSafe} from "forge-std/Vm.sol";
 
-import "../src/timetravel/SmarterContract.sol";
-import "../src/timetravel/CallBreaker.sol";
-import "../src/lamination/Laminator.sol";
-
-contract SmarterContractHarness is SmarterContract {
-    constructor(address callbreakerAddress) SmarterContract(callbreakerAddress) {}
-
-    function dummyFutureCall() public pure returns (bool) {
-        return true;
-    }
-
-    function assertFutureCallTestHarness() public view {
-        CallObject[] memory callObjs = new CallObject[](1);
-        callObjs[0] = CallObject({
-            amount: 0,
-            addr: address(this),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("dummyFutureCall()")
-        });
-
-        assertFutureCallTo(callObjs[0]);
-    }
-
-    function assertFutureCallWithIndexTestHarness() public view {
-        CallObject[] memory callObjs = new CallObject[](1);
-        callObjs[0] = CallObject({
-            amount: 0,
-            addr: address(this),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("dummyFutureCall()")
-        });
-
-        assertFutureCallTo(callObjs[0], 1);
-    }
-
-    function assertNextCallTestHarness() public view {
-        CallObject[] memory callObjs = new CallObject[](1);
-        callObjs[0] = CallObject({
-            amount: 0,
-            addr: address(this),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("dummyFutureCall()")
-        });
-
-        assertNextCallTo(callObjs[0]);
-    }
-}
+import {SmarterContract} from "src/timetravel/SmarterContract.sol";
+import {CallBreaker, CallObject, ReturnObject} from "src/timetravel/CallBreaker.sol";
+import {Laminator} from "src/lamination/Laminator.sol";
+import {SmarterContractHarness} from "test/contracts/SmarterContractHarness.sol";
+import {CallBreakerHarness} from "test/contracts/CallBreakerHarness.sol";
+import {Dummy} from "./utils/Dummy.sol";
 
 contract SmarterContractTest is Test {
     CallBreaker public callbreaker;
+    CallBreakerHarness callbreakerHarness = new CallBreakerHarness();
     SmarterContractHarness public smarterContract;
+    SmarterContractHarness public smarterContractWithCallBreakerHarness =
+        new SmarterContractHarness(address(callbreakerHarness));
     Laminator public laminator;
+    Dummy public dummy;
     address payable public pusherLaminated;
     address pusher;
 
@@ -65,6 +27,72 @@ contract SmarterContractTest is Test {
         laminator = new Laminator(address(callbreaker));
         smarterContract = new SmarterContractHarness(address(callbreaker));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
+        dummy = new Dummy();
+    }
+
+    function testInitialize() public {
+        address _callbreaker = address(1);
+        SmarterContract sc = new SmarterContract(_callbreaker);
+
+        assertTrue(_callbreaker == address(sc.callbreaker()));
+    }
+
+    function testInitializeFail() public {
+        address _callbreaker = address(0);
+        vm.expectRevert(SmarterContract.AddressZero.selector);
+        new SmarterContract(_callbreaker);
+    }
+
+    function testOnlyPortalOpenModifier() public {
+        callbreakerHarness.setPortalOpen();
+
+        // should not revert
+        smarterContractWithCallBreakerHarness.dummyCallWhenPortalOpen();
+    }
+
+    function testOnlyPortalOpenRevert() public {
+        vm.expectRevert(SmarterContract.PortalClosed.selector);
+        smarterContractWithCallBreakerHarness.dummyCallWhenPortalOpen();
+    }
+
+    function testNoFrontRunModifier() public {
+        uint256 callLength = 1;
+        uint256 executeIndex = 1;
+
+        setupAndExecuteDummyCall(callLength, executeIndex);
+
+        // should not revert
+        smarterContractWithCallBreakerHarness.dummyCallNoFrontRun();
+    }
+
+    function testNoFrontRunModifierRevert() public {
+        uint256 callLength = 3;
+        uint256 executeIndex = 2;
+
+        setupAndExecuteDummyCall(callLength, executeIndex);
+
+        vm.expectRevert(SmarterContract.IllegalFrontrun.selector);
+        smarterContractWithCallBreakerHarness.dummyCallNoFrontRun();
+    }
+
+    function testNoBackRunModifier() public {
+        uint256 callLength = 2;
+        uint256 executeIndex = 2;
+
+        setupAndExecuteDummyCall(callLength, executeIndex);
+
+        // should not revert
+        smarterContractWithCallBreakerHarness.dummyCallNoBackRun();
+    }
+
+    function testNoBackRunModifierRevert() public {
+        uint256 callLength = 2;
+        uint256 executeIndex = 1;
+
+        setupAndExecuteDummyCall(callLength, executeIndex);
+
+        vm.expectRevert(SmarterContract.IllegalBackrun.selector);
+        smarterContractWithCallBreakerHarness.dummyCallNoBackRun();
     }
 
     function testFrontrunBlocker() external {
@@ -428,5 +456,73 @@ contract SmarterContractTest is Test {
 
         vm.prank(address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+    }
+
+    function testGetCurrentExecutingPair() public {
+        uint256 callLength = 3;
+        uint256 executeIndex = 2;
+
+        (CallObject[] memory calls, ReturnObject[] memory returnValues) =
+            setupAndExecuteDummyCall(callLength, executeIndex);
+        (CallObject memory callObj, ReturnObject memory returnObj) =
+            smarterContractWithCallBreakerHarness.getCurrentExecutingPair();
+
+        assertEq(keccak256(callObj.callvalue), keccak256((calls[executeIndex - 1].callvalue)));
+        assertEq(keccak256(returnObj.returnvalue), keccak256((returnValues[executeIndex - 1].returnvalue)));
+    }
+
+    function testSoloExecuteBlocker() public {
+        uint256 callLength = 1;
+        uint256 executeIndex = 1;
+
+        setupAndExecuteDummyCall(callLength, executeIndex);
+
+        // should not revert
+        smarterContractWithCallBreakerHarness.soloExecuteBlocker();
+    }
+
+    function testSoloExecuteBlockerFrontRunRevert() public {
+        uint256 callLength = 3;
+        uint256 executeIndex = 2;
+
+        setupAndExecuteDummyCall(callLength, executeIndex);
+        vm.expectRevert(SmarterContract.IllegalFrontrun.selector);
+        smarterContractWithCallBreakerHarness.soloExecuteBlocker();
+    }
+
+    function testSoloExecuteBlockerBackRunRevert() public {
+        uint256 callLength = 3;
+        uint256 executeIndex = 1;
+
+        setupAndExecuteDummyCall(callLength, executeIndex);
+        vm.expectRevert(SmarterContract.IllegalBackrun.selector);
+        smarterContractWithCallBreakerHarness.soloExecuteBlocker();
+    }
+
+    function setupAndExecuteDummyCall(uint256 callLength, uint256 executeIndex)
+        internal
+        returns (CallObject[] memory calls, ReturnObject[] memory returnValues)
+    {
+        calls = new CallObject[](callLength);
+        returnValues = new ReturnObject[](callLength);
+
+        for (uint256 i = 0; i < callLength; i++) {
+            calls[i] = CallObject({
+                amount: 0,
+                addr: address(dummy),
+                gas: 1000000,
+                callvalue: abi.encodeWithSignature("returnVal(uint256)", i)
+            });
+
+            returnValues[i] = ReturnObject({returnvalue: abi.encodePacked(uint256(i))});
+        }
+
+        callbreakerHarness.setPortalOpen();
+        callbreakerHarness.resetTraceStoresWithHarness(calls, returnValues);
+        callbreakerHarness.populateCallIndicesHarness();
+
+        for (uint256 j = 0; j < executeIndex; j++) {
+            callbreakerHarness._executeAndVerifyCallHarness(j);
+        }
     }
 }
