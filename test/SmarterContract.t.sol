@@ -344,6 +344,12 @@ contract SmarterContractTest is Test {
 
         vm.prank(address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+
+        callbreakerHarness.setPortalOpen();
+
+        // Expect a revert with FutureCallExpected error when asserting the future call
+        vm.expectRevert(SmarterContract.FutureCallExpected.selector);
+        smarterContractWithCallBreakerHarness.assertFutureCallTestHarness();
     }
 
     function testAssertFutureCallToWithIndex() external {
@@ -400,6 +406,25 @@ contract SmarterContractTest is Test {
 
         vm.prank(address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+
+        uint256 callLength = 3;
+        uint256 executeIndex = 2;
+        setupAndExecuteDummyCall(callLength, executeIndex);
+
+        callbreakerHarness.setPortalOpen();
+        // Expect a revert with FutureCallExpected error when asserting the future call
+        vm.expectRevert(SmarterContract.FutureCallExpected.selector);
+        smarterContractWithCallBreakerHarness.assertFutureCallWithIndexTestHarness();
+
+        callLength = 3;
+        executeIndex = 1;
+        setupAndExecuteDummyCall(callLength, executeIndex);
+
+        callbreakerHarness.setPortalOpen();
+
+        // Expect a revert with CallMismatch error when asserting the future call
+        vm.expectRevert(SmarterContract.CallMismatch.selector);
+        smarterContractWithCallBreakerHarness.assertFutureCallWithIndexTestHarness();
     }
 
     function testAssertNextCallTo() external {
@@ -456,6 +481,15 @@ contract SmarterContractTest is Test {
 
         vm.prank(address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+
+        uint256 callLength = 3;
+        uint256 executeIndex = 2;
+        setupAndExecuteDummyCall(callLength, executeIndex);
+
+        callbreakerHarness.setPortalOpen();
+        // Expect a revert with the CallMismatch error when asserting the next call
+        vm.expectRevert(SmarterContract.CallMismatch.selector);
+        smarterContractWithCallBreakerHarness.assertNextCallTestHarness();
     }
 
     function testGetCurrentExecutingPair() public {
