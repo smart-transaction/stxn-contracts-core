@@ -340,13 +340,32 @@ contract CallBreakerTest is Test {
     }
 
     function testGetCompleteCallIndexList() external {
-        CallObject[] memory calls = new CallObject[](1);
+        CallObject[] memory calls = new CallObject[](3);
         calls[0] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
-        ReturnObject[] memory returnValues = new ReturnObject[](1);
+        calls[1] = CallObject({amount: 0, addr: address(0xbeefdead), gas: 1000000, callvalue: ""});
+        calls[2] = CallObject({amount: 0, addr: address(0xdeadbeef), gas: 1000000, callvalue: ""});
+
+        ReturnObject[] memory returnValues = new ReturnObject[](3);
         returnValues[0] = ReturnObject({returnvalue: ""});
+        returnValues[1] = ReturnObject({returnvalue: ""});
+        returnValues[2] = ReturnObject({returnvalue: ""});
+
         callbreaker.resetTraceStoresWithHarness(calls, returnValues);
         callbreaker.populateCallIndicesHarness();
-        callbreaker.getCompleteCallIndexList(calls[0]);
+
+        CallObject memory doubleCall = calls[0];
+        uint256[] memory doubleCallExpected = new uint256[](2);
+        doubleCallExpected[0] = 0;
+        doubleCallExpected[1] = 2;
+        assertEq(doubleCallExpected, callbreaker.getCompleteCallIndexList(doubleCall));
+
+        CallObject memory singleCall = calls[1];
+        uint256[] memory singleCallExpected = new uint256[](1);
+        singleCallExpected[0] = 1;
+        assertEq(singleCallExpected, callbreaker.getCompleteCallIndexList(singleCall));
+
+        CallObject memory falseCall = CallObject({amount: 0, addr: address(0xbabe), gas: 1000000, callvalue: ""});
+        assertEq(new uint256[](0), callbreaker.getCompleteCallIndexList(falseCall));
     }
 
     function testFetchFromAssociatedDataStore() external {
