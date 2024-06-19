@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 
 import "v3-periphery/interfaces/ISwapRouter.sol";
 import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
-import "openzeppelin/token/ERC20/ERC20.sol";
+import "openzeppelin/token/ERC20/IERC20.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../../src/timetravel/SmarterContract.sol";
 import "../../src/TimeTypes.sol";
@@ -14,6 +14,7 @@ import "../../src/TimeTypes.sol";
 address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 address constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 address constant SwapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+address constant NonfungiblePositionManager = 0xC36442b4a4522E871399CD717aBDD847Ab11FE88;
 
 // pool fee, 0.3%.
 uint24 constant poolFee = 3000;
@@ -24,17 +25,62 @@ interface IWETH is IERC20 {
     function withdraw(uint256 amount) external;
 }
 
+interface IPositionManager is IERC20 {
+    struct MintParams {
+        address token0;
+        address token1;
+        uint24 fee;
+        int24 tickLower;
+        int24 tickUpper;
+        uint256 amount0Desired;
+        uint256 amount1Desired;
+        uint256 amount0Min;
+        uint256 amount1Min;
+        address recipient;
+        uint256 deadline;
+    }
+
+    struct DecreaseLiquidityParams {
+        uint256 tokenId;
+        uint128 liquidity;
+        uint256 amount0Min;
+        uint256 amount1Min;
+        uint256 deadline;
+    }
+
+    function mint(MintParams calldata params)
+        external
+        payable
+        returns (
+            uint256 tokenId,
+            uint128 liquidity,
+            uint256 amount0,
+            uint256 amount1
+        );
+
+    function decreaseLiquidity(DecreaseLiquidityParams calldata params)
+        external
+        payable
+        returns (uint256 amount0, uint256 amount1);
+}
+
 // This example uses fork test:
 // FORK_URL=https://eth-mainnet.g.alchemy.com/v2/613t3mfjTevdrCwDl28CVvuk6wSIxRPi
 // forge test -vv --gas-report --fork-url $FORK_URL --match-path test/LimitOrder.t.sol
 contract LimitOrder is SmarterContract {
+    ISwapRouter constant router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+
     address owner;
     address callbreakerAddress;
 
     IWETH private weth = IWETH(WETH9);
     IERC20 private dai = IERC20(DAI);
-    ISwapRouter constant router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
-    uint256 currentMarketPrice;
+
+    // flash liquidity metadata
+    uint256 private tokenId;
+    uint128 private liquidityProvided;
+    uint256 private amount0Deposited;
+    uint256 private amount1Deposited;
 
     event DebugAddress(string message, address value);
     event DebugInfo(string message, string value);
@@ -91,16 +137,61 @@ contract LimitOrder is SmarterContract {
         assertFutureCallTo(callObj, 1);
     }
 
-    function checkSlippage(uint160 targetSlippage) public view {
+    function provideLiquidityToDAIETHPool(uint256 _amount0In, uint256 _amount1In) external {
+        uint256 amount0Desired = _amount0In * 1e18;
+        uint256 amount1Desired = _amount1In * 1e18;
+        uint256 amount0Min = _amount0In * 1e18 * 90 / 100;
+        uint256 amount1Min = _amount1In * 1e18 * 90 / 100;
+        (int24 tickLower, int24 tickUpper) = _getTickRangeForLiquidity();
+
+        IPositionManager.MintParams memory params = IPositionManager.MintParams({
+            token0: address(dai),
+            token1: address(weth),
+            fee: poolFee,
+            tickLower: tickLower,
+            tickUpper: tickUpper,
+            amount0Desired: amount0Desired,
+            amount1Desired: amount1Desired,
+            amount0Min: amount0Min,
+            amount1Min: amount1Min,
+            recipient: msg.sender,
+            deadline: block.timestamp
+        });
+
+        (
+            tokenId,
+            liquidityProvided,
+            amount0Deposited,
+            amount1Deposited
+        ) = IPositionManager(NonfungiblePositionManager).mint(params);
+    }
+
+    function withdrawLiquidityFromDAIETHPool() external {
+        uint256 amount0Min = amount0Deposited - (amount0Deposited / 100);
+        uint256 amount1Min = amount1Deposited - (amount1Deposited / 100);
+
+        IPositionManager.DecreaseLiquidityParams memory params = IPositionManager.DecreaseLiquidityParams({
+            tokenId: tokenId,
+            liquidity: liquidityProvided,
+            amount0Min: amount0Min,
+            amount1Min: amount1Min,
+            deadline: block.timestamp
+        });
+
+        IPositionManager(NonfungiblePositionManager).decreaseLiquidity(params);
+    }
+
+    function checkSlippage(uint160 maxDeviationPercentage) public view {
         IUniswapV3Pool pool = IUniswapV3Pool(address(0xC2e9F25Be6257c210d7Adf0D4Cd6E3E881ba25f8));
 
         (uint160 sqrtPriceX96,,,,,,) = pool.slot0();
+        uint160 maxDeviation = (sqrtPriceX96 * maxDeviationPercentage / 100);
 
         int24 tickLower = sqrtPriceX96 > MIN_SQRT_RATIO
-            ? getTickAtSqrtRatio(sqrtPriceX96 - (sqrtPriceX96 / targetSlippage))
+            ? getTickAtSqrtRatio(sqrtPriceX96 - maxDeviation)
             : MIN_TICK;
         int24 tickUpper = sqrtPriceX96 < MAX_SQRT_RATIO
-            ? getTickAtSqrtRatio(sqrtPriceX96 + (sqrtPriceX96 / targetSlippage))
+            ? getTickAtSqrtRatio(sqrtPriceX96 + maxDeviation)
             : MAX_TICK;
 
         uint160 sqrtPriceLowerX96 = getSqrtRatioAtTick(tickLower);
@@ -295,5 +386,14 @@ contract LimitOrder is SmarterContract {
         int24 tickHi = int24((log_sqrt10001 + 291339464771989622907027621153398088495) >> 128);
 
         tick = tickLow == tickHi ? tickLow : getSqrtRatioAtTick(tickHi) <= sqrtPriceX96 ? tickHi : tickLow;
+    }
+
+    function _getTickRangeForLiquidity() internal view returns (int24 tickLower, int24 tickUpper) {
+        IUniswapV3Pool pool = IUniswapV3Pool(address(0xC2e9F25Be6257c210d7Adf0D4Cd6E3E881ba25f8)); // check address
+
+        (uint160 sqrtPriceX96,,,,,,) = pool.slot0();
+
+        tickLower = getTickAtSqrtRatio(sqrtPriceX96); // tick lower
+        tickUpper = getTickAtSqrtRatio(sqrtPriceX96 + (sqrtPriceX96 * 10 / 10000)); // 0.1% higher price
     }
 }

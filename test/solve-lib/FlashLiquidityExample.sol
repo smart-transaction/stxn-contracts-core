@@ -44,15 +44,14 @@ contract FlashLiquidityExampleLib {
     }
 
     function solverLand(uint256 laminatorSequenceNumber, address filler) public {
-        CallObject[] memory callObjs = new CallObject[](2);
-        ReturnObject[] memory returnObjs = new ReturnObject[](2);
+        CallObject[] memory callObjs = new CallObject[](4);
+        ReturnObject[] memory returnObjs = new ReturnObject[](4);
 
-        //TODO: Solver should provide liquidity here before the call to checkSlippage
         callObjs[0] = CallObject({
             amount: 0,
             addr: address(limitOrder),
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("provideLiquidityToDAIETHPool(uint256)", laminatorSequenceNumber)
+            callvalue: abi.encodeWithSignature("provideLiquidityToDAIETHPool(uint256,uint256)", 1000, 1000)
         });
 
         callObjs[1] = CallObject({
@@ -62,18 +61,25 @@ contract FlashLiquidityExampleLib {
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
 
+        callObjs[2] = CallObject({
+            amount: 0,
+            addr: pusherLaminated,
+            gas: 10000000,
+            callvalue: abi.encodeWithSignature("checkSlippage(uint256)", 1)
+        });
+
+        callObjs[3] = CallObject({
+            amount: 0,
+            addr: address(limitOrder),
+            gas: 10000000,
+            callvalue: abi.encodeWithSignature("withdrawLiquidityFromDAIETHPool()")
+        });
+
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](2);
         returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
         returnObjsFromPull[1] = ReturnObject({returnvalue: ""});
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
-
-        callObjs[1] = CallObject({
-            amount: 0,
-            addr: pusherLaminated,
-            gas: 10000000,
-            callvalue: abi.encodeWithSignature("checkSlippage(uint256)", laminatorSequenceNumber)
-        });
 
         returnObjs[1] = ReturnObject({returnvalue: ""});
 
