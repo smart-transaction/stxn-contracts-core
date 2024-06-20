@@ -51,12 +51,7 @@ interface IPositionManager is IERC20 {
     function mint(MintParams calldata params)
         external
         payable
-        returns (
-            uint256 tokenId,
-            uint128 liquidity,
-            uint256 amount0,
-            uint256 amount1
-        );
+        returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1);
 
     function decreaseLiquidity(DecreaseLiquidityParams calldata params)
         external
@@ -158,12 +153,8 @@ contract LimitOrder is SmarterContract {
             deadline: block.timestamp
         });
 
-        (
-            tokenId,
-            liquidityProvided,
-            amount0Deposited,
-            amount1Deposited
-        ) = IPositionManager(NonfungiblePositionManager).mint(params);
+        (tokenId, liquidityProvided, amount0Deposited, amount1Deposited) =
+            IPositionManager(NonfungiblePositionManager).mint(params);
     }
 
     function withdrawLiquidityFromDAIETHPool() external {
@@ -187,12 +178,8 @@ contract LimitOrder is SmarterContract {
         (uint160 sqrtPriceX96,,,,,,) = pool.slot0();
         uint160 maxDeviation = (sqrtPriceX96 * maxDeviationPercentage / 100);
 
-        int24 tickLower = sqrtPriceX96 > MIN_SQRT_RATIO
-            ? getTickAtSqrtRatio(sqrtPriceX96 - maxDeviation)
-            : MIN_TICK;
-        int24 tickUpper = sqrtPriceX96 < MAX_SQRT_RATIO
-            ? getTickAtSqrtRatio(sqrtPriceX96 + maxDeviation)
-            : MAX_TICK;
+        int24 tickLower = sqrtPriceX96 > MIN_SQRT_RATIO ? getTickAtSqrtRatio(sqrtPriceX96 - maxDeviation) : MIN_TICK;
+        int24 tickUpper = sqrtPriceX96 < MAX_SQRT_RATIO ? getTickAtSqrtRatio(sqrtPriceX96 + maxDeviation) : MAX_TICK;
 
         uint160 sqrtPriceLowerX96 = getSqrtRatioAtTick(tickLower);
         uint160 sqrtPriceUpperX96 = getSqrtRatioAtTick(tickUpper);

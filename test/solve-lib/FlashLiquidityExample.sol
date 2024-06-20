@@ -83,24 +83,24 @@ contract FlashLiquidityExampleLib {
 
         returnObjs[1] = ReturnObject({returnvalue: ""});
 
-        bytes32[] memory keys = new bytes32[](3);
+        bytes32[] memory keys = new bytes32[](2);
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
         keys[1] = keccak256(abi.encodePacked("pullIndex"));
-        keys[2] = keccak256(abi.encodePacked("hintdex"));
         bytes[] memory values = new bytes[](3);
         values[0] = abi.encodePacked(filler);
         values[1] = abi.encode(laminatorSequenceNumber);
-        values[2] = abi.encode(2);
         bytes memory encodedData = abi.encode(keys, values);
 
-        // In this specific test, we don't have to use hintdices because the call list is short.
-        // Hintdices will be used in longer call sequences.
-        bytes32[] memory hintdicesKeys = new bytes32[](2);
+        bytes32[] memory hintdicesKeys = new bytes32[](4);
         hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
         hintdicesKeys[1] = keccak256(abi.encode(callObjs[1]));
-        uint256[] memory hintindicesVals = new uint256[](2);
+        hintdicesKeys[2] = keccak256(abi.encode(callObjs[2]));
+        hintdicesKeys[3] = keccak256(abi.encode(callObjs[3]));
+        uint256[] memory hintindicesVals = new uint256[](4);
         hintindicesVals[0] = 0;
         hintindicesVals[1] = 1;
+        hintindicesVals[2] = 2;
+        hintindicesVals[3] = 3;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
