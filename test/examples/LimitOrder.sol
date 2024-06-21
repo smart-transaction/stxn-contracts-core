@@ -6,70 +6,28 @@ import "forge-std/console.sol";
 
 import "v3-periphery/interfaces/ISwapRouter.sol";
 import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
-import "openzeppelin/token/ERC20/IERC20.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../../src/timetravel/SmarterContract.sol";
 import "../../src/TimeTypes.sol";
 
-address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-address constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-address constant SwapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-address constant NonfungiblePositionManager = 0xC36442b4a4522E871399CD717aBDD847Ab11FE88;
+import {IWETH, IERC20} from "../utils/interfaces/IWeth.sol";
+import {IPositionManager} from "../utils/interfaces/IPositionManager.sol";
 
 // pool fee, 0.3%.
 uint24 constant poolFee = 3000;
-
-interface IWETH is IERC20 {
-    function deposit() external payable;
-
-    function withdraw(uint256 amount) external;
-}
-
-interface IPositionManager is IERC20 {
-    struct MintParams {
-        address token0;
-        address token1;
-        uint24 fee;
-        int24 tickLower;
-        int24 tickUpper;
-        uint256 amount0Desired;
-        uint256 amount1Desired;
-        uint256 amount0Min;
-        uint256 amount1Min;
-        address recipient;
-        uint256 deadline;
-    }
-
-    struct DecreaseLiquidityParams {
-        uint256 tokenId;
-        uint128 liquidity;
-        uint256 amount0Min;
-        uint256 amount1Min;
-        uint256 deadline;
-    }
-
-    function mint(MintParams calldata params)
-        external
-        payable
-        returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1);
-
-    function decreaseLiquidity(DecreaseLiquidityParams calldata params)
-        external
-        payable
-        returns (uint256 amount0, uint256 amount1);
-}
 
 // This example uses fork test:
 // FORK_URL=https://eth-mainnet.g.alchemy.com/v2/613t3mfjTevdrCwDl28CVvuk6wSIxRPi
 // forge test -vv --gas-report --fork-url $FORK_URL --match-path test/LimitOrder.t.sol
 contract LimitOrder is SmarterContract {
-    ISwapRouter constant router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    ISwapRouter private immutable router;
 
     address owner;
     address callbreakerAddress;
+    address positionManager;
 
-    IWETH private weth = IWETH(WETH9);
-    IERC20 private dai = IERC20(DAI);
+    IWETH private weth;
+    IERC20 private dai;
 
     // flash liquidity metadata
     uint256 private tokenId;
@@ -81,8 +39,18 @@ contract LimitOrder is SmarterContract {
     event DebugInfo(string message, string value);
     event DebugUint(string message, uint256 value);
 
-    constructor(address _callbreakerAddress) SmarterContract(_callbreakerAddress) {
+    constructor(
+        address _router,
+        address _callbreakerAddress,
+        address _positionManager,
+        address _weth,
+        address _dai
+    ) SmarterContract(_callbreakerAddress) {
+        router = ISwapRouter(_router);
         callbreakerAddress = _callbreakerAddress;
+        positionManager = _positionManager;
+        weth = IWETH(_weth);
+        dai = IERC20(_dai);
     }
 
     /// @dev Porting over the UniswapV3 TickMath library to here was necessary due to TickMath being outdated in Sol. version.
@@ -154,7 +122,7 @@ contract LimitOrder is SmarterContract {
         });
 
         (tokenId, liquidityProvided, amount0Deposited, amount1Deposited) =
-            IPositionManager(NonfungiblePositionManager).mint(params);
+            IPositionManager(positionManager).mint(params);
     }
 
     function withdrawLiquidityFromDAIETHPool() external {
@@ -169,7 +137,7 @@ contract LimitOrder is SmarterContract {
             deadline: block.timestamp
         });
 
-        IPositionManager(NonfungiblePositionManager).decreaseLiquidity(params);
+        IPositionManager(positionManager).decreaseLiquidity(params);
     }
 
     function checkSlippage(uint160 maxDeviationPercentage) public view {
