@@ -7,7 +7,7 @@ import {ISwapRouter} from "../utils/interfaces/ISwapRouter.sol";
 /**
  * @notice Oversimplified mock version of a Position Manager
  * @dev not to be used for anything other than local tests
-*/ 
+ */
 contract MockPositionManager is IPositionManager {
     uint256 public positionId;
 
