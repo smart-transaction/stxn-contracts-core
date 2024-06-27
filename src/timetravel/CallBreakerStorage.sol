@@ -20,9 +20,6 @@ abstract contract CallBreakerStorage {
     /// @notice Emitted when a new key-value pair is inserted into the associatedDataStore
     event InsertIntoAssociatedDataStore(bytes32 key, bytes value);
 
-    /// @notice Emitted when a value is fetched from the associatedDataStore using a key
-    event FetchFromAssociatedDataStore(bytes32 key);
-
     /// @notice The slot at which the portal status is stored
     bytes32 public constant PORTAL_SLOT = bytes32(uint256(keccak256("CallBreakerStorage.PORTAL_SLOT")) - 1);
 

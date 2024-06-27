@@ -6,9 +6,16 @@ import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../../test/examples/LimitOrder.sol";
 import "../../src/timetravel/SmarterContract.sol";
+import "../utils/MockERC20Token.sol";
+import "../utils/MockSwapRouter.sol";
+import "../utils/MockPositionManager.sol";
 
 contract LimitOrderExampleLib {
     address payable public pusherLaminated;
+    MockERC20Token public aToken;
+    MockERC20Token public bToken;
+    MockSwapRouter public swapRouter;
+    MockPositionManager public positionManager;
     LimitOrder public limitOrder;
     Laminator public laminator;
     CallBreaker public callbreaker;
@@ -18,7 +25,13 @@ contract LimitOrderExampleLib {
         // Initializing contracts
         callbreaker = new CallBreaker();
         laminator = new Laminator(address(callbreaker));
-        limitOrder = new LimitOrder(address(callbreaker));
+        aToken = new MockERC20Token("AToken", "AT");
+        bToken = new MockERC20Token("BToken", "BT");
+        swapRouter = new MockSwapRouter(address(aToken), address(bToken));
+        positionManager = new MockPositionManager(address(swapRouter));
+        limitOrder = new LimitOrder(
+            address(swapRouter), address(callbreaker), address(positionManager), address(aToken), address(bToken)
+        );
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
     }
 

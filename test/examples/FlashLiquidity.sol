@@ -4,9 +4,9 @@ pragma solidity >=0.6.2 <0.9.0;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "v3-periphery/interfaces/ISwapRouter.sol";
-import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import "../utils/interfaces/ISwapRouter.sol";
 import "openzeppelin/token/ERC20/ERC20.sol";
+import "../utils/interfaces/IWeth.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../../src/timetravel/SmarterContract.sol";
 import "../../src/TimeTypes.sol";
@@ -17,12 +17,6 @@ address constant SwapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
 
 // pool fee, 0.3%.
 uint24 constant poolFee = 3000;
-
-interface IWETH is IERC20 {
-    function deposit() external payable;
-
-    function withdraw(uint256 amount) external;
-}
 
 // This example uses fork test:
 // FORK_URL=https://eth-mainnet.g.alchemy.com/v2/613t3mfjTevdrCwDl28CVvuk6wSIxRPi

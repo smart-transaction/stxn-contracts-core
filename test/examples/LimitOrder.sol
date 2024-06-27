@@ -4,44 +4,48 @@ pragma solidity >=0.6.2 <0.9.0;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "v3-periphery/interfaces/ISwapRouter.sol";
-import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
-import "openzeppelin/token/ERC20/ERC20.sol";
+import "../utils/interfaces/ISwapRouter.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../../src/timetravel/SmarterContract.sol";
 import "../../src/TimeTypes.sol";
 
-address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-address constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-address constant SwapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+import {IWETH, IERC20} from "../utils/interfaces/IWeth.sol";
+import {IPositionManager} from "../utils/interfaces/IPositionManager.sol";
 
 // pool fee, 0.3%.
 uint24 constant poolFee = 3000;
-
-interface IWETH is IERC20 {
-    function deposit() external payable;
-
-    function withdraw(uint256 amount) external;
-}
 
 // This example uses fork test:
 // FORK_URL=https://eth-mainnet.g.alchemy.com/v2/613t3mfjTevdrCwDl28CVvuk6wSIxRPi
 // forge test -vv --gas-report --fork-url $FORK_URL --match-path test/LimitOrder.t.sol
 contract LimitOrder is SmarterContract {
+    ISwapRouter private immutable router;
+
     address owner;
     address callbreakerAddress;
+    address positionManager;
 
-    IWETH private weth = IWETH(WETH9);
-    IERC20 private dai = IERC20(DAI);
-    ISwapRouter constant router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
-    uint256 currentMarketPrice;
+    IWETH private weth;
+    IERC20 private dai;
+
+    // flash liquidity metadata
+    uint256 private tokenId;
+    uint128 private liquidityProvided;
+    uint256 private amount0Deposited;
+    uint256 private amount1Deposited;
 
     event DebugAddress(string message, address value);
     event DebugInfo(string message, string value);
     event DebugUint(string message, uint256 value);
 
-    constructor(address _callbreakerAddress) SmarterContract(_callbreakerAddress) {
+    constructor(address _router, address _callbreakerAddress, address _positionManager, address _dai, address _weth)
+        SmarterContract(_callbreakerAddress)
+    {
+        router = ISwapRouter(_router);
         callbreakerAddress = _callbreakerAddress;
+        positionManager = _positionManager;
+        dai = IERC20(_dai);
+        weth = IWETH(_weth);
     }
 
     /// @dev Porting over the UniswapV3 TickMath library to here was necessary due to TickMath being outdated in Sol. version.
@@ -81,32 +85,58 @@ contract LimitOrder is SmarterContract {
         console.log("WETH", amountOut);
 
         // check whether or not
-        CallObject memory callObj = CallObject({
+        CallObject[] memory callObjs = new CallObject[](1);
+        callObjs[0] = CallObject({
             amount: 0,
             addr: address(this),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("checkSlippage(uint256)", slippagePercent)
         });
 
-        assertFutureCallTo(callObj, 1);
+        assertFutureCallTo(callObjs[0], 2);
     }
 
-    function checkSlippage(uint160 targetSlippage) public view {
-        IUniswapV3Pool pool = IUniswapV3Pool(address(0xC2e9F25Be6257c210d7Adf0D4Cd6E3E881ba25f8));
+    function provideLiquidityToDAIETHPool(uint256 _amount0In, uint256 _amount1In) external {
+        uint256 amount0Desired = _amount0In * 1e18;
+        uint256 amount1Desired = _amount1In * 1e18;
+        uint256 amount0Min = _amount0In * 1e18 * 90 / 100;
+        uint256 amount1Min = _amount1In * 1e18 * 90 / 100;
 
-        (uint160 sqrtPriceX96,,,,,,) = pool.slot0();
+        IPositionManager.MintParams memory params = IPositionManager.MintParams({
+            token0: address(dai),
+            token1: address(weth),
+            fee: poolFee,
+            tickLower: 0,
+            tickUpper: 10000,
+            amount0Desired: amount0Desired,
+            amount1Desired: amount1Desired,
+            amount0Min: amount0Min,
+            amount1Min: amount1Min,
+            recipient: msg.sender,
+            deadline: block.timestamp
+        });
 
-        int24 tickLower = sqrtPriceX96 > MIN_SQRT_RATIO
-            ? getTickAtSqrtRatio(sqrtPriceX96 - (sqrtPriceX96 / targetSlippage))
-            : MIN_TICK;
-        int24 tickUpper = sqrtPriceX96 < MAX_SQRT_RATIO
-            ? getTickAtSqrtRatio(sqrtPriceX96 + (sqrtPriceX96 / targetSlippage))
-            : MAX_TICK;
+        (tokenId, liquidityProvided, amount0Deposited, amount1Deposited) =
+            IPositionManager(positionManager).mint(params);
+    }
 
-        uint160 sqrtPriceLowerX96 = getSqrtRatioAtTick(tickLower);
-        uint160 sqrtPriceUpperX96 = getSqrtRatioAtTick(tickUpper);
+    function withdrawLiquidityFromDAIETHPool() external {
+        uint256 amount0Min = amount0Deposited - (amount0Deposited / 100);
+        uint256 amount1Min = amount1Deposited - (amount1Deposited / 100);
 
-        if (sqrtPriceX96 > sqrtPriceLowerX96 || sqrtPriceX96 < sqrtPriceUpperX96) revert InvalidPriceLimit();
+        IPositionManager.DecreaseLiquidityParams memory params = IPositionManager.DecreaseLiquidityParams({
+            tokenId: tokenId,
+            liquidity: liquidityProvided,
+            amount0Min: amount0Min,
+            amount1Min: amount1Min,
+            deadline: block.timestamp
+        });
+
+        IPositionManager(positionManager).decreaseLiquidity(params);
+    }
+
+    function checkSlippage(uint256 maxDeviationPercentage) external view {
+        router.checkSlippage(maxDeviationPercentage);
     }
 
     /// @notice Calculates sqrt(1.0001^tick) * 2^96
