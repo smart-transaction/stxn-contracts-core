@@ -48,7 +48,7 @@ contract MockSwapRouter is ISwapRouter {
         // Calculate the current price (ratio) of DAI to WETH
         uint256 currentPrice = (_balanceOfDai * DECIMAL) / _balanceOfWeth;
 
-        // Assume initial expected price=
+        // Assume initial expected price of 10 due to initial DAI and WETH ratio
         uint256 expectedPrice = 10 * DECIMAL;
 
         // Calculate the absolute deviation in percentage

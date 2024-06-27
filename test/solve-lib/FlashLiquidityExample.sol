@@ -33,6 +33,8 @@ contract FlashLiquidityExampleLib {
             address(swapRouter), address(callbreaker), address(positionManager), address(aToken), address(bToken)
         );
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
+        aToken.mint(100000000000000000000, pusherLaminated);
+        aToken.mint(100000000000000000000, address(callbreaker));
     }
 
     function userLand() public returns (uint256) {
@@ -45,12 +47,7 @@ contract FlashLiquidityExampleLib {
         // TODO: On swap, needs to also enforce invariant: funds must get returned to the user.
         CallObject[] memory pusherCallObjs = new CallObject[](4);
         pusherCallObjs[0] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
-        pusherCallObjs[1] = CallObject({
-            amount: 0,
-            addr: address(aToken),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("mint(uint256,address)", 100000000000000000000, pusherLaminated)
-        });
+        pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
         pusherCallObjs[2] = CallObject({
             amount: 0,
             addr: address(aToken),
