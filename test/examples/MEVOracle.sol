@@ -11,6 +11,11 @@ contract PartialFunctionApplication {
     // TODO: The provided value can be from either this oracle or another oracle
     uint256 private _input;
 
+    // TODO: This is a basic example of performing a computation with a partial function application
+    // At solvetime, the solver can provide an additional value via. associatedData, and the contract
+    // can use that to perform the computation
+    // Alternatively, the contract can fetch values from other oracles AT SOLVETIME.
+    // This pattern may be able to be generalized to any function that can be partially applied.
     constructor(address callbreakerLocation, uint256 input) {
         _callbreakerAddress = callbreakerLocation;
         _input = input;
