@@ -37,7 +37,7 @@ contract FlashLiquidityExampleLib {
         aToken.mint(100000000000000000000, address(callbreaker));
     }
 
-    function userLand() public returns (uint256) {
+    function userLand(uint256 tokenToApprove, uint256 amountIn, uint256 slippagePercent) public returns (uint256) {
         // send proxy some eth
         pusherLaminated.transfer(1 ether);
 
@@ -52,19 +52,24 @@ contract FlashLiquidityExampleLib {
             amount: 0,
             addr: address(aToken),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("approve(address,uint256)", limitOrder, 100000000000000000000)
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", limitOrder, tokenToApprove)
         });
         pusherCallObjs[3] = CallObject({
             amount: 0,
             addr: address(limitOrder),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", 10, 1)
+            callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", amountIn, slippagePercent)
         });
 
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
 
-    function solverLand(uint256 laminatorSequenceNumber, address filler) public {
+    function solverLand(
+        uint256 liquidity,
+        uint256 laminatorSequenceNumber,
+        uint256 maxDeviationPercentage,
+        address filler
+    ) public {
         CallObject[] memory callObjs = new CallObject[](4);
         ReturnObject[] memory returnObjs = new ReturnObject[](4);
 
@@ -72,7 +77,7 @@ contract FlashLiquidityExampleLib {
             amount: 0,
             addr: address(limitOrder),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("provideLiquidityToDAIETHPool(uint256,uint256)", 1000, 1000)
+            callvalue: abi.encodeWithSignature("provideLiquidityToDAIETHPool(uint256,uint256)", liquidity, liquidity)
         });
 
         callObjs[1] = CallObject({
@@ -86,7 +91,7 @@ contract FlashLiquidityExampleLib {
             amount: 0,
             addr: address(limitOrder),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("checkSlippage(uint256)", 1)
+            callvalue: abi.encodeWithSignature("checkSlippage(uint256)", maxDeviationPercentage)
         });
 
         callObjs[3] = CallObject({
