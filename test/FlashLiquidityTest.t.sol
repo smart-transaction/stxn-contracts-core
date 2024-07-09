@@ -5,9 +5,9 @@ pragma solidity >=0.6.2 <0.9.0;
 import "forge-std/Test.sol";
 import "../src/timetravel/CallBreaker.sol";
 import "../test/examples/LimitOrder.sol";
-import "../test/solve-lib/LimitOrderExample.sol";
+import "../test/solve-lib/FlashLiquidityExample.sol";
 
-contract FlashLiquidityTest is Test, LimitOrderExampleLib {
+contract FlashLiquidityTest is Test, FlashLiquidityExampleLib {
     address deployer;
     address pusher;
     address filler;
@@ -31,22 +31,18 @@ contract FlashLiquidityTest is Test, LimitOrderExampleLib {
         vm.label(filler, "filler");
     }
 
-    function testLimitOrder() external {
-        // Disable running this test on local -- should run as fork test environment.
-        if (block.number == 1) {
-            return;
-        }
+    function testFlashLiquidity() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
-        laminatorSequenceNumber = userLand();
+        laminatorSequenceNumber = userLand(100000000000000000000, 10, 1);
         vm.stopPrank();
 
         // go forward in time
         vm.roll(block.number + 1);
 
         vm.startPrank(filler);
-        solverLand(laminatorSequenceNumber, filler);
+        solverLand(1000, laminatorSequenceNumber, 1, filler);
         vm.stopPrank();
 
         assertFalse(callbreaker.isPortalOpen());
@@ -55,5 +51,21 @@ contract FlashLiquidityTest is Test, LimitOrderExampleLib {
 
         assertTrue(init);
         assertTrue(exec);
+    }
+
+    function testFlashLiquiditySlippage() public {
+        uint256 laminatorSequenceNumber;
+
+        vm.startPrank(pusher);
+        laminatorSequenceNumber = userLand(100000000000000000000, 10, 1);
+        vm.stopPrank();
+
+        // go forward in time
+        vm.roll(block.number + 1);
+
+        vm.startPrank(filler);
+        vm.expectRevert();
+        solverLand(0, laminatorSequenceNumber, 1, filler); // No liquidity provided
+        vm.stopPrank();
     }
 }
