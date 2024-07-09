@@ -33,7 +33,8 @@ abstract contract BaseDeployer is Script {
         Astar,
         Sepolia,
         Base,
-        BaseSepolia
+        BaseSepolia,
+        LocalChain
     }
 
     enum Cycle {
@@ -88,9 +89,7 @@ abstract contract BaseDeployer is Script {
 
     constructor() {
         // Local
-        forks[Chains.LocalGoerli] = "localGoerli";
-        forks[Chains.LocalFuji] = "localFuji";
-        forks[Chains.LocalBSCTest] = "localBSCTest";
+        forks[Chains.LocalChain] = vm.envString("LOCAL_CHAIN_RPC");
 
         // Testnet
         forks[Chains.Amoy] = vm.envString("AMOY_RPC");
@@ -163,12 +162,10 @@ abstract contract BaseDeployer is Script {
 
     /// @dev Deploy contracts to local.
     function deployLocal() external setEnvDeploy(Cycle.Dev) returns (address deploymentAddress) {
-        Chains[] memory deployForks = new Chains[](3);
+        Chains[] memory deployForks = new Chains[](1);
         _salt = bytes32(uint256(1));
 
-        deployForks[0] = Chains.LocalGoerli;
-        deployForks[1] = Chains.LocalFuji;
-        deployForks[2] = Chains.LocalBSCTest;
+        deployForks[0] = Chains.LocalChain;
 
         deploymentAddress = createDeployMultichain(deployForks);
     }
