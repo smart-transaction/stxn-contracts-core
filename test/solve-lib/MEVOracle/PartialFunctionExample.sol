@@ -1,27 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.6.2 <0.9.0;
+pragma solidity 0.8.23;
 
 import "forge-std/Vm.sol";
 
-import "../../src/lamination/Laminator.sol";
-import "../../src/timetravel/CallBreaker.sol";
-import "../../test/examples/MEVOracle.sol";
-import "../../src/timetravel/SmarterContract.sol";
+import "src/lamination/Laminator.sol";
+import "src/timetravel/CallBreaker.sol";
+import "src/timetravel/SmarterContract.sol";
+import "test/examples/MEVOracle/PartialFunctionContract.sol";
 
-contract PnPExampleLib {
+contract PartialFunctionExampleLib {
     address payable public pusherLaminated;
-    PartialFunctionApplication public partialFunctionApplication;
+    PartialFunctionContract public partialFunctionContract;
     Laminator public laminator;
     CallBreaker public callbreaker;
     uint256 _tipWei = 33;
     uint256 hashChainInitConst = 1;
 
-    function deployerLand(address pusher) public {
+    function deployerLand(address pusher, uint256 divisor, uint256 initValue) public {
         // Initializing contracts
         callbreaker = new CallBreaker();
         laminator = new Laminator(address(callbreaker));
-        partialFunctionApplication = new PartialFunctionApplication(address(callbreaker), 8);
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
+        partialFunctionContract = new PartialFunctionContract(address(callbreaker), divisor);
+        partialFunctionContract.setInitValue(initValue);
     }
 
     function userLand() public returns (uint256) {
@@ -32,9 +33,9 @@ contract PnPExampleLib {
         CallObject[] memory pusherCallObjs = new CallObject[](2);
         pusherCallObjs[0] = CallObject({
             amount: 0,
-            addr: address(partialFunctionApplication),
+            addr: address(partialFunctionContract),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("add()")
+            callvalue: abi.encodeWithSignature("solve()")
         });
 
         pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
@@ -43,7 +44,9 @@ contract PnPExampleLib {
     }
 
     function solverLand(uint256 laminatorSequenceNumber, address filler) public {
-        uint256 randomIndex = 7;
+        uint256 value = partialFunctionContract.initValue();
+        uint256 divisor = partialFunctionContract.divisor();
+        uint256 solution = divisor - (value % divisor);
         CallObject[] memory callObjs = new CallObject[](1);
         ReturnObject[] memory returnObjs = new ReturnObject[](1);
 
@@ -63,11 +66,11 @@ contract PnPExampleLib {
         bytes32[] memory keys = new bytes32[](3);
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
         keys[1] = keccak256(abi.encodePacked("pullIndex"));
-        keys[2] = keccak256(abi.encodePacked("add_arg"));
+        keys[2] = keccak256(abi.encodePacked("solvedValue"));
         bytes[] memory values = new bytes[](3);
         values[0] = abi.encodePacked(filler);
         values[1] = abi.encode(laminatorSequenceNumber);
-        values[2] = abi.encode(randomIndex);
+        values[2] = abi.encode(solution);
         bytes memory encodedData = abi.encode(keys, values);
 
         bytes32[] memory hintdicesKeys = new bytes32[](1);
