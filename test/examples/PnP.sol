@@ -13,7 +13,7 @@ contract PnP {
         _callbreakerAddress = callbreakerLocation;
         // populate addrlist with a hash chain to look "random"
         addrlist.push(hash(input));
-        for (uint256 i = 1; i < 100000; i++) {
+        for (uint256 i = 1; i < 1000; i++) {
             addrlist.push(hash(addrlist[i - 1]));
         }
     }

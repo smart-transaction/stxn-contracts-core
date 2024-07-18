@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import "forge-std/Vm.sol";
+import "forge-std/console.sol";
 
 import "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
@@ -47,8 +48,8 @@ contract PartialFunctionExampleLib {
         uint256 value = partialFunctionContract.initValue();
         uint256 divisor = partialFunctionContract.divisor();
         uint256 solution = divisor - (value % divisor);
-        CallObject[] memory callObjs = new CallObject[](1);
-        ReturnObject[] memory returnObjs = new ReturnObject[](1);
+        CallObject[] memory callObjs = new CallObject[](2);
+        ReturnObject[] memory returnObjs = new ReturnObject[](2);
 
         callObjs[0] = CallObject({
             amount: 0,
@@ -57,11 +58,19 @@ contract PartialFunctionExampleLib {
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
 
+        callObjs[1] = CallObject({
+            amount: 0,
+            addr: address(partialFunctionContract),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature("verifySolution()")
+        });
+
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](2);
-        returnObjsFromPull[0] = ReturnObject({returnvalue: abi.encode(4)});
-        returnObjsFromPull[1] = ReturnObject({returnvalue: ""});
+        returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
+        returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
+        returnObjs[1] = ReturnObject({returnvalue: ""});
 
         bytes32[] memory keys = new bytes32[](3);
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
@@ -73,10 +82,12 @@ contract PartialFunctionExampleLib {
         values[2] = abi.encode(solution);
         bytes memory encodedData = abi.encode(keys, values);
 
-        bytes32[] memory hintdicesKeys = new bytes32[](1);
+        bytes32[] memory hintdicesKeys = new bytes32[](2);
         hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
-        uint256[] memory hintindicesVals = new uint256[](1);
+        hintdicesKeys[0] = keccak256(abi.encode(callObjs[1]));
+        uint256[] memory hintindicesVals = new uint256[](2);
         hintindicesVals[0] = 0;
+        hintindicesVals[0] = 1;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
