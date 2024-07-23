@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity >=0.6.2 <0.9.0;
+pragma solidity 0.8.23;
 
 import "forge-std/Test.sol";
-import "../src/timetravel/CallBreaker.sol";
-import "../test/examples/LimitOrder.sol";
-import "../test/solve-lib/LimitOrderExample.sol";
+import "src/timetravel/CallBreaker.sol";
+import "test/examples/MEVOracle/PartialFunctionContract.sol";
+import "test/solve-lib/MEVOracle/PartialFunctionExample.sol";
 
-contract LimitOrderTest is Test, LimitOrderExampleLib {
+contract PartialFunctionTest is Test, PartialFunctionExampleLib {
     address deployer;
     address pusher;
     address filler;
@@ -22,7 +22,7 @@ contract LimitOrderTest is Test, LimitOrderExampleLib {
 
         // start deployer land
         vm.startPrank(deployer);
-        deployerLand(pusher);
+        deployerLand(pusher, 8, 11); // passing 8 as divisor and 11 as init value
         vm.stopPrank();
 
         // Label operations in the run function.
@@ -31,7 +31,7 @@ contract LimitOrderTest is Test, LimitOrderExampleLib {
         vm.label(filler, "filler");
     }
 
-    function testLimitOrder() external {
+    function testPartialFunction() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);

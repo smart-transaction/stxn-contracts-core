@@ -1,4 +1,5 @@
 # Compiler files
+artifacts/
 cache/
 out/
 
