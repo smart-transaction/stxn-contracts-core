@@ -34,6 +34,7 @@ abstract contract BaseDeployer is Script {
         Sepolia,
         Base,
         BaseSepolia,
+        Lestnet,
         LocalChain
     }
 
@@ -101,6 +102,7 @@ abstract contract BaseDeployer is Script {
         forks[Chains.Moonriver] = vm.envString("MOONRIVER_RPC");
         forks[Chains.Sepolia] = vm.envString("SEPOLIA_RPC");
         forks[Chains.BaseSepolia] = vm.envString("BASE_SEPOLIA_RPC");
+        forks[Chains.Lestnet] = vm.envString("LESTNET_RPC");
 
         // Mainnet
         forks[Chains.Ethereum] = vm.envString("ETHEREUM_RPC");
@@ -160,12 +162,12 @@ abstract contract BaseDeployer is Script {
         deploymentAddress = createDeployMultichain(deployForks);
     }
 
-    /// @dev Deploy contracts to local.
-    function deployLocal() external setEnvDeploy(Cycle.Dev) returns (address deploymentAddress) {
+    /// @dev Deploy contracts to lestnet.
+    function deployLestnet() external setEnvDeploy(Cycle.Dev) returns (address deploymentAddress) {
         Chains[] memory deployForks = new Chains[](1);
         _salt = bytes32(uint256(1));
 
-        deployForks[0] = Chains.LocalChain;
+        deployForks[0] = Chains.Lestnet;
 
         deploymentAddress = createDeployMultichain(deployForks);
     }
