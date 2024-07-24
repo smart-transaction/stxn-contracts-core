@@ -19,6 +19,7 @@ contract LimitOrderExampleLib {
     LimitOrder public limitOrder;
     Laminator public laminator;
     CallBreaker public callbreaker;
+    uint256 maxSlippage = 10;
     uint256 _tipWei = 33;
 
     function deployerLand(address pusher) public {
@@ -33,6 +34,8 @@ contract LimitOrderExampleLib {
             address(swapRouter), address(callbreaker), address(positionManager), address(aToken), address(bToken)
         );
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
+        aToken.mint(100e18, pusherLaminated);
+        bToken.mint(100e18, address(callbreaker));
     }
 
     function userLand() public returns (uint256) {
@@ -42,15 +45,20 @@ contract LimitOrderExampleLib {
         // Userland operations
         // Temporarily, this example uses a call to swap but only sets slippage protection in
         // sqrtPriceLimitX96 (not within the call to Uniswaps)
-        CallObject[] memory pusherCallObjs = new CallObject[](2);
+        CallObject[] memory pusherCallObjs = new CallObject[](3);
         pusherCallObjs[0] = CallObject({
+            amount: 0,
+            addr: address(aToken),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", limitOrder, 100e18)
+        });
+        pusherCallObjs[1] = CallObject({
             amount: 0,
             addr: address(limitOrder),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint160)", 100, 1)
+            callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", 100, maxSlippage)
         });
-
-        pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
+        pusherCallObjs[2] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
 
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
     }
@@ -66,17 +74,18 @@ contract LimitOrderExampleLib {
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
 
-        ReturnObject[] memory returnObjsFromPull = new ReturnObject[](2);
-        returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
+        ReturnObject[] memory returnObjsFromPull = new ReturnObject[](3);
+        returnObjsFromPull[0] = ReturnObject({returnvalue: abi.encode(true)});
         returnObjsFromPull[1] = ReturnObject({returnvalue: ""});
+        returnObjsFromPull[2] = ReturnObject({returnvalue: ""});
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
         callObjs[1] = CallObject({
             amount: 0,
-            addr: pusherLaminated,
+            addr: address(swapRouter),
             gas: 10000000,
-            callvalue: abi.encodeWithSignature("checkSlippage(uint256)", laminatorSequenceNumber)
+            callvalue: abi.encodeWithSignature("checkSlippage(uint256)", maxSlippage)
         });
 
         returnObjs[1] = ReturnObject({returnvalue: ""});

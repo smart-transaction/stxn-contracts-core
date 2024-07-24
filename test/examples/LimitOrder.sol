@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.6.2 <0.9.0;
-
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
+pragma solidity 0.8.23;
 
 import "../utils/interfaces/ISwapRouter.sol";
 import "../../src/timetravel/CallBreaker.sol";
@@ -82,18 +79,17 @@ contract LimitOrder is SmarterContract {
 
         // The call to `exactInputSingle` executes the swap.
         uint256 amountOut = router.exactInputSingle(params);
-        console.log("WETH", amountOut);
 
         // check whether or not
         CallObject[] memory callObjs = new CallObject[](1);
         callObjs[0] = CallObject({
             amount: 0,
-            addr: address(this),
-            gas: 1000000,
+            addr: address(router),
+            gas: 10000000,
             callvalue: abi.encodeWithSignature("checkSlippage(uint256)", slippagePercent)
         });
 
-        assertFutureCallTo(callObjs[0], 2);
+        assertFutureCallTo(callObjs[0]);
     }
 
     function provideLiquidityToDAIETHPool(uint256 _amount0In, uint256 _amount1In) external {

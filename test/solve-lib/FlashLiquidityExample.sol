@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.6.2 <0.9.0;
 
-import "forge-std/Vm.sol";
 import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
 import "../../test/examples/LimitOrder.sol";
@@ -89,8 +88,8 @@ contract FlashLiquidityExampleLib {
 
         callObjs[2] = CallObject({
             amount: 0,
-            addr: address(limitOrder),
-            gas: 1000000,
+            addr: address(swapRouter),
+            gas: 10000000,
             callvalue: abi.encodeWithSignature("checkSlippage(uint256)", maxDeviationPercentage)
         });
 
