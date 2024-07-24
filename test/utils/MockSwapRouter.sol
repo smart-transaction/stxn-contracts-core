@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.13;
+pragma solidity 0.8.23;
 
 import {IWETH, IERC20} from "../utils/interfaces/IWeth.sol";
 import {ISwapRouter} from "../utils/interfaces/ISwapRouter.sol";
@@ -9,7 +9,7 @@ import {ISwapRouter} from "../utils/interfaces/ISwapRouter.sol";
  * @dev not to be used for anything other than local tests
  */
 contract MockSwapRouter is ISwapRouter {
-    uint256 public constant DECIMAL = 18;
+    uint256 public constant DECIMAL = 1e18;
 
     uint256 private _balanceOfWeth;
     uint256 private _balanceOfDai;

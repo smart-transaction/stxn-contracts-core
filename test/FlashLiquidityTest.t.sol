@@ -57,7 +57,7 @@ contract FlashLiquidityTest is Test, FlashLiquidityExampleLib {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
-        laminatorSequenceNumber = userLand(100000000000000000000, 10, 1);
+        laminatorSequenceNumber = userLand(100000000000000000000, 80, 1);
         vm.stopPrank();
 
         // go forward in time
