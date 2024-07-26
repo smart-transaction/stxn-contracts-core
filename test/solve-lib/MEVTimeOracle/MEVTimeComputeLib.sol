@@ -4,11 +4,11 @@ pragma solidity 0.8.23;
 import "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
 import "src/timetravel/SmarterContract.sol";
-import "test/examples/MEVOracle/PartialFunctionContract.sol";
+import "test/examples/MEVOracle/MEVTimeCompute.sol";
 
-contract PartialFunctionExampleLib {
+contract MEVTimeComputeLib {
     address payable public pusherLaminated;
-    PartialFunctionContract public partialFunctionContract;
+    MEVTimeCompute public mevTimeCompute;
     Laminator public laminator;
     CallBreaker public callbreaker;
     uint256 _tipWei = 33;
@@ -19,8 +19,8 @@ contract PartialFunctionExampleLib {
         callbreaker = new CallBreaker();
         laminator = new Laminator(address(callbreaker));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
-        partialFunctionContract = new PartialFunctionContract(address(callbreaker), divisor);
-        partialFunctionContract.setInitValue(initValue);
+        mevTimeCompute = new MEVTimeCompute(address(callbreaker), divisor);
+        mevTimeCompute.setInitValue(initValue);
     }
 
     function userLand() public returns (uint256) {
@@ -31,7 +31,7 @@ contract PartialFunctionExampleLib {
         CallObject[] memory pusherCallObjs = new CallObject[](2);
         pusherCallObjs[0] = CallObject({
             amount: 0,
-            addr: address(partialFunctionContract),
+            addr: address(mevTimeCompute),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("solve()")
         });
@@ -42,8 +42,8 @@ contract PartialFunctionExampleLib {
     }
 
     function solverLand(uint256 laminatorSequenceNumber, address filler) public {
-        uint256 value = partialFunctionContract.initValue();
-        uint256 divisor = partialFunctionContract.divisor();
+        uint256 value = mevTimeCompute.initValue();
+        uint256 divisor = mevTimeCompute.divisor();
         uint256 solution = divisor - (value % divisor);
         CallObject[] memory callObjs = new CallObject[](2);
         ReturnObject[] memory returnObjs = new ReturnObject[](2);
@@ -57,7 +57,7 @@ contract PartialFunctionExampleLib {
 
         callObjs[1] = CallObject({
             amount: 0,
-            addr: address(partialFunctionContract),
+            addr: address(mevTimeCompute),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("verifySolution()")
         });

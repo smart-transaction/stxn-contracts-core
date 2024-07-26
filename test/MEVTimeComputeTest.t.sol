@@ -4,10 +4,10 @@ pragma solidity 0.8.23;
 
 import "forge-std/Test.sol";
 import "src/timetravel/CallBreaker.sol";
-import "test/examples/MEVOracle/PartialFunctionContract.sol";
-import "test/solve-lib/MEVOracle/PartialFunctionExample.sol";
+import "test/examples/MEVOracle/MEVTimeCompute.sol";
+import "test/solve-lib/MEVTimeOracle/MEVTimeComputeLib.sol";
 
-contract PartialFunctionTest is Test, PartialFunctionExampleLib {
+contract MEVTimeComputeTest is Test, MEVTimeComputeLib {
     address deployer;
     address pusher;
     address filler;
@@ -31,7 +31,7 @@ contract PartialFunctionTest is Test, PartialFunctionExampleLib {
         vm.label(filler, "filler");
     }
 
-    function testPartialFunction() external {
+    function testMEVTimeCompute() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);

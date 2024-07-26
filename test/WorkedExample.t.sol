@@ -4,14 +4,13 @@ pragma solidity >=0.6.2 <0.9.0;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
-import "./solve-lib/WorkedExample.sol";
+import "src/lamination/Laminator.sol";
+import "src/timetravel/CallBreaker.sol";
+import "test/examples/DeFi/SelfCheckout.sol";
+import "test/examples/MyErc20.sol";
+import "test/solve-lib/DeFi/SelfCheckoutLib.sol";
 
-import "../src/lamination/Laminator.sol";
-import "../src/timetravel/CallBreaker.sol";
-import "../test/examples/SelfCheckout.sol";
-import "../test/examples/MyErc20.sol";
-
-contract WorkedExampleTest is Test, WorkedExampleLib {
+contract WSelfCheckoutTest is Test, SelfCheckoutLib {
     address deployer;
     address pusher;
     address filler;

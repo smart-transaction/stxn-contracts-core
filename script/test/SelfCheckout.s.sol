@@ -3,8 +3,8 @@
 pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
-import {BaseDeployer} from "../BaseDeployer.s.sol";
-import {SelfCheckout} from "test/examples/SelfCheckout.sol";
+import {BaseDeployer} from "script/BaseDeployer.s.sol";
+import {SelfCheckout} from "test/examples/DeFi/SelfCheckout.sol";
 import {MyErc20} from "test/examples/MyErc20.sol";
 
 /* solhint-disable no-console*/

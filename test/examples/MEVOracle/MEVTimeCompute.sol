@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import "src/timetravel/CallBreaker.sol";
 import "src/timetravel/SmarterContract.sol";
 
-contract PartialFunctionContract is SmarterContract {
+contract MEVTimeCompute is SmarterContract {
     address public callbreakerAddress;
 
     uint256 public initValue;
