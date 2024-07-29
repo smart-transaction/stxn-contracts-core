@@ -9,7 +9,7 @@ import "../utils/MockERC20Token.sol";
 import "../utils/MockSwapRouter.sol";
 import "../utils/MockPositionManager.sol";
 
-contract FlashLiquidityExampleLib {
+contract FlashLiquidityLib {
     address payable public pusherLaminated;
     MockERC20Token public aToken;
     MockERC20Token public bToken;

@@ -1,26 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.6.2 <0.9.0;
 
-import "forge-std/Vm.sol";
+import "src/lamination/Laminator.sol";
+import "src/timetravel/CallBreaker.sol";
+import "src/timetravel/SmarterContract.sol";
+import "test/examples/FlashPill.sol";
 
-import "../../src/lamination/Laminator.sol";
-import "../../src/timetravel/CallBreaker.sol";
-import "../../test/examples/PnP.sol";
-import "../../src/timetravel/SmarterContract.sol";
-
-contract PnPExampleLib {
+contract FlashPillLib {
     address payable public pusherLaminated;
-    PnP public pnp;
+    FlashPill public fp;
     Laminator public laminator;
     CallBreaker public callbreaker;
     uint256 _tipWei = 33;
-    uint256 hashChainInitConst = 1;
 
     function deployerLand(address pusher) public {
         // Initializing contracts
         callbreaker = new CallBreaker();
         laminator = new Laminator(address(callbreaker));
-        pnp = new PnP(address(callbreaker), hashChainInitConst);
+        fp = new FlashPill(address(callbreaker));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
     }
 
@@ -28,21 +25,9 @@ contract PnPExampleLib {
         // send proxy some eth
         pusherLaminated.transfer(1 ether);
 
-        // 5th member of the hash-chain
-        address fifthInList = PnP(address(pnp)).hash(
-            PnP(address(pnp)).hash(
-                PnP(address(pnp)).hash(PnP(address(pnp)).hash(PnP(address(pnp)).hash(hashChainInitConst)))
-            )
-        );
-
         // Userland operations
         CallObject[] memory pusherCallObjs = new CallObject[](2);
-        pusherCallObjs[0] = CallObject({
-            amount: 0,
-            addr: address(pnp),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("callBreakerNp(address)", fifthInList)
-        });
+        pusherCallObjs[0] = CallObject({amount: 0, addr: address(fp), gas: 1000000, callvalue: ""});
 
         pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
 
@@ -66,14 +51,14 @@ contract PnPExampleLib {
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
-        bytes32[] memory keys = new bytes32[](3);
+        bytes32[] memory keys = new bytes32[](2);
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
         keys[1] = keccak256(abi.encodePacked("pullIndex"));
-        keys[2] = keccak256(abi.encodePacked("hintdex"));
-        bytes[] memory values = new bytes[](3);
+        // keys[2] = keccak256(abi.encodePacked("hintdex"));
+        bytes[] memory values = new bytes[](2);
         values[0] = abi.encodePacked(filler);
         values[1] = abi.encode(laminatorSequenceNumber);
-        values[2] = abi.encode(4);
+        // values[2] = abi.encode(4);
         bytes memory encodedData = abi.encode(keys, values);
 
         bytes32[] memory hintdicesKeys = new bytes32[](1);

@@ -5,7 +5,7 @@ import "forge-std/Vm.sol";
 
 import "../../src/lamination/Laminator.sol";
 import "../../src/timetravel/CallBreaker.sol";
-import "../../test/examples/CronTwoCounter.sol";
+import "../../test/examples/CronCounter.sol";
 import "../../src/timetravel/SmarterContract.sol";
 
 // for the next year, every day:
@@ -14,10 +14,10 @@ import "../../src/timetravel/SmarterContract.sol";
 
 // the way we do this is we push a new call at the end of execution
 
-contract CronTwoLib {
+contract CronCounterLib {
     address payable public pusherLaminated;
     Laminator public laminator;
-    CronTwoCounter public counter;
+    CronCounter public counter;
     CallBreaker public callbreaker;
     uint32 _blocksInADay = 7150;
     uint256 _tipWei = 33;
@@ -26,7 +26,7 @@ contract CronTwoLib {
         // Initializing contracts
         callbreaker = new CallBreaker();
         laminator = new Laminator(address(callbreaker));
-        counter = new CronTwoCounter(address(callbreaker));
+        counter = new CronCounter(address(callbreaker));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
     }
 

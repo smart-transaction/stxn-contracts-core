@@ -1,21 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0
+
 pragma solidity >=0.6.2 <0.9.0;
 
 import "forge-std/Test.sol";
-import "forge-std/Vm.sol";
+import "../src/timetravel/CallBreaker.sol";
+import "../test/examples/LimitOrder.sol";
+import "../test/solve-lib/FlashLiquidityLib.sol";
 
-import "src/lamination/Laminator.sol";
-import "src/timetravel/CallBreaker.sol";
-import "test/examples/DeFi/SelfCheckout.sol";
-import "test/examples/MyErc20.sol";
-import "test/solve-lib/DeFi/SelfCheckoutLib.sol";
-
-contract WSelfCheckoutTest is Test, SelfCheckoutLib {
+contract FlashLiquidityTest is Test, FlashLiquidityLib {
     address deployer;
     address pusher;
     address filler;
 
-    function setUp() external {
+    function setUp() public {
         deployer = address(100);
         pusher = address(200);
         filler = address(300);
@@ -25,7 +22,7 @@ contract WSelfCheckoutTest is Test, SelfCheckoutLib {
 
         // start deployer land
         vm.startPrank(deployer);
-        deployerLand(pusher, filler);
+        deployerLand(pusher);
         vm.stopPrank();
 
         // Label operations in the run function.
@@ -34,29 +31,41 @@ contract WSelfCheckoutTest is Test, SelfCheckoutLib {
         vm.label(filler, "filler");
     }
 
-    function test_workedExample() external {
+    function testFlashLiquidity() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
-        laminatorSequenceNumber = userLand();
+        laminatorSequenceNumber = userLand(100000000000000000000, 10, 1);
         vm.stopPrank();
 
         // go forward in time
         vm.roll(block.number + 1);
 
         vm.startPrank(filler);
-        solverLand(laminatorSequenceNumber, filler, 20);
+        solverLand(1000, laminatorSequenceNumber, 1, filler);
         vm.stopPrank();
 
-        assertEq(erc20a.balanceOf(pusherLaminated), 0);
-        assertEq(erc20b.balanceOf(pusherLaminated), 20);
-        assertEq(erc20a.balanceOf(filler), 10);
-        assertEq(erc20b.balanceOf(filler), 0);
         assertFalse(callbreaker.isPortalOpen());
 
         (bool init, bool exec,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
 
         assertTrue(init);
         assertTrue(exec);
+    }
+
+    function testFlashLiquiditySlippage() public {
+        uint256 laminatorSequenceNumber;
+
+        vm.startPrank(pusher);
+        laminatorSequenceNumber = userLand(100000000000000000000, 80, 1);
+        vm.stopPrank();
+
+        // go forward in time
+        vm.roll(block.number + 1);
+
+        vm.startPrank(filler);
+        vm.expectRevert();
+        solverLand(0, laminatorSequenceNumber, 1, filler); // No liquidity provided
+        vm.stopPrank();
     }
 }

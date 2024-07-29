@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.6.2 <0.9.0;
 
-import "forge-std/Vm.sol";
-import "../../src/lamination/Laminator.sol";
-import "../../src/timetravel/CallBreaker.sol";
-import "../../test/examples/LimitOrder.sol";
-import "../../src/timetravel/SmarterContract.sol";
+import "src/lamination/Laminator.sol";
+import "src/timetravel/CallBreaker.sol";
+import "test/examples/LimitOrder.sol";
+import "src/timetravel/SmarterContract.sol";
 import "../utils/MockERC20Token.sol";
 import "../utils/MockSwapRouter.sol";
 import "../utils/MockPositionManager.sol";
 
-contract LimitOrderExampleLib {
+contract LimitOrderLib {
     address payable public pusherLaminated;
     MockERC20Token public aToken;
     MockERC20Token public bToken;

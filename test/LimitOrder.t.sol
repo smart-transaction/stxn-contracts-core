@@ -5,9 +5,9 @@ pragma solidity >=0.6.2 <0.9.0;
 import "forge-std/Test.sol";
 import "../src/timetravel/CallBreaker.sol";
 import "../test/examples/LimitOrder.sol";
-import "../test/solve-lib/LimitOrderExample.sol";
+import "../test/solve-lib/LimitOrderLib.sol";
 
-contract LimitOrderTest is Test, LimitOrderExampleLib {
+contract LimitOrderTest is Test, LimitOrderLib {
     address deployer;
     address pusher;
     address filler;
