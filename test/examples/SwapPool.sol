@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.26;
 
-import "../utils/interfaces/ISwapRouter.sol";
-import "../../src/timetravel/CallBreaker.sol";
-import "../../src/timetravel/SmarterContract.sol";
-import "../../src/TimeTypes.sol";
+import "src/timetravel/CallBreaker.sol";
+import "src/timetravel/SmarterContract.sol";
+import "src/TimeTypes.sol";
+import "test/utils/interfaces/ISwapRouter.sol";
 
 import {IWETH, IERC20} from "../utils/interfaces/IWeth.sol";
 import {IPositionManager} from "../utils/interfaces/IPositionManager.sol";
@@ -12,10 +12,7 @@ import {IPositionManager} from "../utils/interfaces/IPositionManager.sol";
 // pool fee, 0.3%.
 uint24 constant poolFee = 3000;
 
-// This example uses fork test:
-// FORK_URL=https://eth-mainnet.g.alchemy.com/v2/613t3mfjTevdrCwDl28CVvuk6wSIxRPi
-// forge test -vv --gas-report --fork-url $FORK_URL --match-path test/LimitOrder.t.sol
-contract LimitOrder is SmarterContract {
+contract SwapPool is SmarterContract {
     ISwapRouter private immutable router;
 
     address owner;

@@ -3,11 +3,10 @@
 pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
-import "../src/timetravel/CallBreaker.sol";
-import "../test/examples/LimitOrder.sol";
-import "../test/solve-lib/LimitOrderLib.sol";
+import "src/timetravel/CallBreaker.sol";
+import "test/solve-lib/SlippageProtectionLib.sol";
 
-contract LimitOrderTest is Test, LimitOrderLib {
+contract SlippageProtectionTest is Test, SlippageProtectionLib {
     address deployer;
     address pusher;
     address filler;
@@ -31,18 +30,19 @@ contract LimitOrderTest is Test, LimitOrderLib {
         vm.label(filler, "filler");
     }
 
-    function testLimitOrder() external {
+    function testSlippageProtection() external {
         uint256 laminatorSequenceNumber;
+        uint256 maxSlippage = 10;
 
         vm.startPrank(pusher);
-        laminatorSequenceNumber = userLand();
+        laminatorSequenceNumber = userLand(maxSlippage);
         vm.stopPrank();
 
         // go forward in time
         vm.roll(block.number + 1);
 
         vm.startPrank(filler);
-        solverLand(laminatorSequenceNumber, filler);
+        solverLand(laminatorSequenceNumber, filler, maxSlippage);
         vm.stopPrank();
 
         assertFalse(callbreaker.isPortalOpen());
@@ -51,5 +51,22 @@ contract LimitOrderTest is Test, LimitOrderLib {
 
         assertTrue(init);
         assertTrue(exec);
+    }
+
+    function testSlippageProtectionRevert() external {
+        uint256 laminatorSequenceNumber;
+        uint256 maxSlippage = 1;
+
+        vm.startPrank(pusher);
+        laminatorSequenceNumber = userLand(maxSlippage);
+        vm.stopPrank();
+
+        // go forward in time
+        vm.roll(block.number + 1);
+
+        vm.startPrank(filler);
+        vm.expectRevert();
+        solverLand(laminatorSequenceNumber, filler, maxSlippage);
+        vm.stopPrank();
     }
 }

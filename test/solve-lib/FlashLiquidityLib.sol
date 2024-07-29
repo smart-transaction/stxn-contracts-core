@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.26;
 
-import "../../src/lamination/Laminator.sol";
-import "../../src/timetravel/CallBreaker.sol";
-import "../../test/examples/LimitOrder.sol";
-import "../../src/timetravel/SmarterContract.sol";
-import "../utils/MockERC20Token.sol";
-import "../utils/MockSwapRouter.sol";
-import "../utils/MockPositionManager.sol";
+import "src/lamination/Laminator.sol";
+import "src/timetravel/CallBreaker.sol";
+import "src/timetravel/SmarterContract.sol";
+import "test/examples/SwapPool.sol";
+import "test/utils/MockERC20Token.sol";
+import "test/utils/MockSwapRouter.sol";
+import "test/utils/MockPositionManager.sol";
 
 contract FlashLiquidityLib {
     address payable public pusherLaminated;
@@ -15,7 +15,7 @@ contract FlashLiquidityLib {
     MockERC20Token public bToken;
     MockSwapRouter public swapRouter;
     MockPositionManager public positionManager;
-    LimitOrder public limitOrder;
+    SwapPool public pool;
     Laminator public laminator;
     CallBreaker public callbreaker;
     uint256 _tipWei = 33;
@@ -28,7 +28,7 @@ contract FlashLiquidityLib {
         bToken = new MockERC20Token("BToken", "BT");
         swapRouter = new MockSwapRouter(address(aToken), address(bToken));
         positionManager = new MockPositionManager(address(swapRouter));
-        limitOrder = new LimitOrder(
+        pool = new SwapPool(
             address(swapRouter), address(callbreaker), address(positionManager), address(aToken), address(bToken)
         );
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
@@ -51,11 +51,11 @@ contract FlashLiquidityLib {
             amount: 0,
             addr: address(aToken),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("approve(address,uint256)", limitOrder, tokenToApprove)
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", pool, tokenToApprove)
         });
         pusherCallObjs[3] = CallObject({
             amount: 0,
-            addr: address(limitOrder),
+            addr: address(pool),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", amountIn, slippagePercent)
         });
@@ -74,7 +74,7 @@ contract FlashLiquidityLib {
 
         callObjs[0] = CallObject({
             amount: 0,
-            addr: address(limitOrder),
+            addr: address(pool),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("provideLiquidityToDAIETHPool(uint256,uint256)", liquidity, liquidity)
         });
@@ -95,7 +95,7 @@ contract FlashLiquidityLib {
 
         callObjs[3] = CallObject({
             amount: 0,
-            addr: address(limitOrder),
+            addr: address(pool),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("withdrawLiquidityFromDAIETHPool()")
         });
