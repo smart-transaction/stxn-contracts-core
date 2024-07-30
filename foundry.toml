@@ -3,7 +3,7 @@ src = 'src'
 out = 'out'
 libs = ['lib']
 evm_version = "cancun"
-solc = "0.8.23"
+solc = "0.8.26"
 
 ffi = true
 ast = true

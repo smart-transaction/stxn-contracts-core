@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.6.2 <0.9.0;
+pragma solidity 0.8.26;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
-import "../../src/TimeTypes.sol";
-import "../../src/timetravel/CallBreaker.sol";
-import "../../src/timetravel/SmarterContract.sol";
+import "src/TimeTypes.sol";
+import "src/timetravel/CallBreaker.sol";
+import "src/timetravel/SmarterContract.sol";
 
 contract SelfCheckout is SmarterContract {
     address owner;

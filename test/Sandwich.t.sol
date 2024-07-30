@@ -4,12 +4,12 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
-import "./solve-lib/CronTwo.sol";
+import "./solve-lib/CronCounterLib.sol";
 
 import "../src/lamination/Laminator.sol";
 import "../src/timetravel/CallBreaker.sol";
 
-contract CronTwoTest is Test, CronTwoLib {
+contract CronTest is Test, CronCounterLib {
     address deployer;
     address pusher;
     address filler;
@@ -33,7 +33,7 @@ contract CronTwoTest is Test, CronTwoLib {
         vm.label(filler, "filler");
     }
 
-    function testrun1CronTwo() external {
+    function testrun1Cron() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);

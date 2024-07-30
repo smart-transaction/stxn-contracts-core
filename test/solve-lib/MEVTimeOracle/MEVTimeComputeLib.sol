@@ -1,47 +1,39 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.6.2 <0.9.0;
+pragma solidity 0.8.26;
 
-import "forge-std/Vm.sol";
+import "src/lamination/Laminator.sol";
+import "src/timetravel/CallBreaker.sol";
+import "src/timetravel/SmarterContract.sol";
+import "test/examples/MEVOracle/MEVTimeCompute.sol";
 
-import "../../src/lamination/Laminator.sol";
-import "../../src/timetravel/CallBreaker.sol";
-import "../../test/examples/PnP.sol";
-import "../../src/timetravel/SmarterContract.sol";
-
-contract PnPExampleLib {
+contract MEVTimeComputeLib {
     address payable public pusherLaminated;
-    PnP public pnp;
+    MEVTimeCompute public mevTimeCompute;
     Laminator public laminator;
     CallBreaker public callbreaker;
     uint256 _tipWei = 33;
     uint256 hashChainInitConst = 1;
 
-    function deployerLand(address pusher) public {
+    function deployerLand(address pusher, uint256 divisor, uint256 initValue) public {
         // Initializing contracts
         callbreaker = new CallBreaker();
         laminator = new Laminator(address(callbreaker));
-        pnp = new PnP(address(callbreaker), hashChainInitConst);
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
+        mevTimeCompute = new MEVTimeCompute(address(callbreaker), divisor);
+        mevTimeCompute.setInitValue(initValue);
     }
 
     function userLand() public returns (uint256) {
         // send proxy some eth
         pusherLaminated.transfer(1 ether);
 
-        // 5th member of the hash-chain
-        address fifthInList = PnP(address(pnp)).hash(
-            PnP(address(pnp)).hash(
-                PnP(address(pnp)).hash(PnP(address(pnp)).hash(PnP(address(pnp)).hash(hashChainInitConst)))
-            )
-        );
-
         // Userland operations
         CallObject[] memory pusherCallObjs = new CallObject[](2);
         pusherCallObjs[0] = CallObject({
             amount: 0,
-            addr: address(pnp),
+            addr: address(mevTimeCompute),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("callBreakerNp(address)", fifthInList)
+            callvalue: abi.encodeWithSignature("solve()")
         });
 
         pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
@@ -50,8 +42,11 @@ contract PnPExampleLib {
     }
 
     function solverLand(uint256 laminatorSequenceNumber, address filler) public {
-        CallObject[] memory callObjs = new CallObject[](1);
-        ReturnObject[] memory returnObjs = new ReturnObject[](1);
+        uint256 value = mevTimeCompute.initValue();
+        uint256 divisor = mevTimeCompute.divisor();
+        uint256 solution = divisor - (value % divisor);
+        CallObject[] memory callObjs = new CallObject[](2);
+        ReturnObject[] memory returnObjs = new ReturnObject[](2);
 
         callObjs[0] = CallObject({
             amount: 0,
@@ -60,26 +55,36 @@ contract PnPExampleLib {
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
 
+        callObjs[1] = CallObject({
+            amount: 0,
+            addr: address(mevTimeCompute),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature("verifySolution()")
+        });
+
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](2);
-        returnObjsFromPull[0] = ReturnObject({returnvalue: abi.encode(4)});
-        returnObjsFromPull[1] = ReturnObject({returnvalue: ""});
+        returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
+        returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
+        returnObjs[1] = ReturnObject({returnvalue: ""});
 
         bytes32[] memory keys = new bytes32[](3);
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
         keys[1] = keccak256(abi.encodePacked("pullIndex"));
-        keys[2] = keccak256(abi.encodePacked("hintdex"));
+        keys[2] = keccak256(abi.encodePacked("solvedValue"));
         bytes[] memory values = new bytes[](3);
         values[0] = abi.encodePacked(filler);
         values[1] = abi.encode(laminatorSequenceNumber);
-        values[2] = abi.encode(4);
+        values[2] = abi.encode(solution);
         bytes memory encodedData = abi.encode(keys, values);
 
-        bytes32[] memory hintdicesKeys = new bytes32[](1);
+        bytes32[] memory hintdicesKeys = new bytes32[](2);
         hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
-        uint256[] memory hintindicesVals = new uint256[](1);
+        hintdicesKeys[0] = keccak256(abi.encode(callObjs[1]));
+        uint256[] memory hintindicesVals = new uint256[](2);
         hintindicesVals[0] = 0;
+        hintindicesVals[0] = 1;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.6.2 <0.9.0;
+pragma solidity 0.8.26;
 
 import "forge-std/Vm.sol";
 
-import "../../src/lamination/Laminator.sol";
-import "../../src/timetravel/CallBreaker.sol";
-import "../../test/examples/SelfCheckout.sol";
-import "../../test/examples/MyErc20.sol";
+import "src/lamination/Laminator.sol";
+import "src/timetravel/CallBreaker.sol";
+import "test/examples/DeFi/SelfCheckout.sol";
+import "test/examples/MyErc20.sol";
 
-contract WorkedExampleLib {
+contract SelfCheckoutLib {
     CallBreaker public callbreaker;
     SelfCheckout public selfcheckout;
     address payable public pusherLaminated;

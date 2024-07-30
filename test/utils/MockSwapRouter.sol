@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 import {IWETH, IERC20} from "../utils/interfaces/IWeth.sol";
 import {ISwapRouter} from "../utils/interfaces/ISwapRouter.sol";

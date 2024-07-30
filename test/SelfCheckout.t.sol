@@ -1,18 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0
-
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
-import "src/timetravel/CallBreaker.sol";
-import "test/examples/MEVOracle/PartialFunctionContract.sol";
-import "test/solve-lib/MEVOracle/PartialFunctionExample.sol";
+import "forge-std/Vm.sol";
 
-contract PartialFunctionTest is Test, PartialFunctionExampleLib {
+import "src/lamination/Laminator.sol";
+import "src/timetravel/CallBreaker.sol";
+import "test/examples/DeFi/SelfCheckout.sol";
+import "test/examples/MyErc20.sol";
+import "test/solve-lib/DeFi/SelfCheckoutLib.sol";
+
+contract SelfCheckoutTest is Test, SelfCheckoutLib {
     address deployer;
     address pusher;
     address filler;
 
-    function setUp() public {
+    function setUp() external {
         deployer = address(100);
         pusher = address(200);
         filler = address(300);
@@ -22,7 +25,7 @@ contract PartialFunctionTest is Test, PartialFunctionExampleLib {
 
         // start deployer land
         vm.startPrank(deployer);
-        deployerLand(pusher, 8, 11); // passing 8 as divisor and 11 as init value
+        deployerLand(pusher, filler);
         vm.stopPrank();
 
         // Label operations in the run function.
@@ -31,7 +34,7 @@ contract PartialFunctionTest is Test, PartialFunctionExampleLib {
         vm.label(filler, "filler");
     }
 
-    function testPartialFunction() external {
+    function test_selfCheckout() external {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher);
@@ -42,9 +45,13 @@ contract PartialFunctionTest is Test, PartialFunctionExampleLib {
         vm.roll(block.number + 1);
 
         vm.startPrank(filler);
-        solverLand(laminatorSequenceNumber, filler);
+        solverLand(laminatorSequenceNumber, filler, 20);
         vm.stopPrank();
 
+        assertEq(erc20a.balanceOf(pusherLaminated), 0);
+        assertEq(erc20b.balanceOf(pusherLaminated), 20);
+        assertEq(erc20a.balanceOf(filler), 10);
+        assertEq(erc20b.balanceOf(filler), 0);
         assertFalse(callbreaker.isPortalOpen());
 
         (bool init, bool exec,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);

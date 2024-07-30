@@ -1,20 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.6.2 <0.9.0;
+
+pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
-import "forge-std/Vm.sol";
+import "src/timetravel/CallBreaker.sol";
+import "test/solve-lib/SlippageProtectionLib.sol";
 
-import "./solve-lib/CronTwo.sol";
-
-import "../src/lamination/Laminator.sol";
-import "../src/timetravel/CallBreaker.sol";
-
-contract CronTwoTest is Test, CronTwoLib {
+contract SlippageProtectionTest is Test, SlippageProtectionLib {
     address deployer;
     address pusher;
     address filler;
 
-    function setUp() external {
+    function setUp() public {
         deployer = address(100);
         pusher = address(200);
         filler = address(300);
@@ -22,7 +19,7 @@ contract CronTwoTest is Test, CronTwoLib {
         // give the pusher some eth
         vm.deal(pusher, 100 ether);
 
-        // start deployer calls
+        // start deployer land
         vm.startPrank(deployer);
         deployerLand(pusher);
         vm.stopPrank();
@@ -33,39 +30,43 @@ contract CronTwoTest is Test, CronTwoLib {
         vm.label(filler, "filler");
     }
 
-    function testrun1CronTwo() external {
+    function testSlippageProtection() external {
         uint256 laminatorSequenceNumber;
+        uint256 maxSlippage = 10;
 
         vm.startPrank(pusher);
-        laminatorSequenceNumber = userLand();
+        laminatorSequenceNumber = userLand(maxSlippage);
         vm.stopPrank();
-
-        uint256 initialFillerBalance = address(filler).balance;
 
         // go forward in time
         vm.roll(block.number + 1);
 
         vm.startPrank(filler);
-
-        solverLand(laminatorSequenceNumber, filler, true);
-
+        solverLand(laminatorSequenceNumber, filler, maxSlippage);
         vm.stopPrank();
-
-        vm.roll(block.number + 8000);
-
-        vm.startPrank(filler);
-        solverLand(laminatorSequenceNumber, filler, false);
-        vm.stopPrank();
-
-        assertEq(counter.getCount(pusherLaminated), 2);
-        assertEq(address(filler).balance, initialFillerBalance + 2 * 33);
 
         assertFalse(callbreaker.isPortalOpen());
 
-        // Should be cleared so init should be false (testFail format is for compliance with Kontrol framework)
         (bool init, bool exec,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
 
         assertTrue(init);
         assertTrue(exec);
+    }
+
+    function testSlippageProtectionRevert() external {
+        uint256 laminatorSequenceNumber;
+        uint256 maxSlippage = 1;
+
+        vm.startPrank(pusher);
+        laminatorSequenceNumber = userLand(maxSlippage);
+        vm.stopPrank();
+
+        // go forward in time
+        vm.roll(block.number + 1);
+
+        vm.startPrank(filler);
+        vm.expectRevert();
+        solverLand(laminatorSequenceNumber, filler, maxSlippage);
+        vm.stopPrank();
     }
 }
