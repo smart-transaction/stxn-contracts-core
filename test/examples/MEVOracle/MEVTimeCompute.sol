@@ -49,7 +49,7 @@ contract MEVTimeCompute is SmarterContract {
         assertFutureCallTo(callObj, 1);
     }
 
-    function verifySolution() external {
+    function verifySolution() external view {
         require(initValue % divisor == 0, "Invalid Solution Provided");
     }
 }

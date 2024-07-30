@@ -75,7 +75,7 @@ contract SwapPool is SmarterContract {
         });
 
         // The call to `exactInputSingle` executes the swap.
-        uint256 amountOut = router.exactInputSingle(params);
+        router.exactInputSingle(params);
 
         // check whether or not
         CallObject[] memory callObjs = new CallObject[](1);
