@@ -6,8 +6,8 @@ import "src/timetravel/SmarterContract.sol";
 import "src/TimeTypes.sol";
 import "test/utils/interfaces/ISwapRouter.sol";
 
-import {IWETH, IERC20} from "../utils/interfaces/IWeth.sol";
-import {IPositionManager} from "../utils/interfaces/IPositionManager.sol";
+import {IWETH, IERC20} from "test/utils/interfaces/IWeth.sol";
+import {IPositionManager} from "test/utils/interfaces/IPositionManager.sol";
 
 // pool fee, 0.3%.
 uint24 constant poolFee = 3000;

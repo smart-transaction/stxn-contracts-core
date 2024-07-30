@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.26;
 
-import "../../src/timetravel/SmarterContract.sol";
+import "src/timetravel/SmarterContract.sol";
 
 contract CronCounter is SmarterContract {
     mapping(address => uint256) private _counters;

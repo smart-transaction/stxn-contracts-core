@@ -3,9 +3,9 @@
 pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
-import "../src/timetravel/CallBreaker.sol";
-import "../test/examples/PnP.sol";
-import "../test/solve-lib/PnPLib.sol";
+import "src/timetravel/CallBreaker.sol";
+import "test/examples/PnP.sol";
+import "test/solve-lib/PnPLib.sol";
 
 contract PnPTest is Test, PnPLib {
     address deployer;

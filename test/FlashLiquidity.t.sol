@@ -3,8 +3,7 @@
 pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
-import "../src/timetravel/CallBreaker.sol";
-import "../test/solve-lib/FlashLiquidityLib.sol";
+import "test/solve-lib/FlashLiquidityLib.sol";
 
 contract FlashLiquidityTest is Test, FlashLiquidityLib {
     address deployer;

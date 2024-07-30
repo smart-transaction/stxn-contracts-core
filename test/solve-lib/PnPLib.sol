@@ -3,10 +3,10 @@ pragma solidity 0.8.26;
 
 import "forge-std/Vm.sol";
 
-import "../../src/lamination/Laminator.sol";
-import "../../src/timetravel/CallBreaker.sol";
-import "../../test/examples/PnP.sol";
-import "../../src/timetravel/SmarterContract.sol";
+import "src/lamination/Laminator.sol";
+import "src/timetravel/CallBreaker.sol";
+import "src/timetravel/SmarterContract.sol";
+import "test/examples/PnP.sol";
 
 contract PnPLib {
     address payable public pusherLaminated;
