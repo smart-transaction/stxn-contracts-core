@@ -6,8 +6,8 @@ import "forge-std/Vm.sol";
 
 import "./solve-lib/CronCounterLib.sol";
 
-import "../src/lamination/Laminator.sol";
-import "../src/timetravel/CallBreaker.sol";
+import "src/lamination/Laminator.sol";
+import "src/timetravel/CallBreaker.sol";
 
 contract CronTest is Test, CronCounterLib {
     address deployer;

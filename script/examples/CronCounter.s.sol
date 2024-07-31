@@ -5,7 +5,6 @@ pragma solidity 0.8.26;
 import {Script} from "forge-std/Script.sol";
 import {BaseDeployer} from "../BaseDeployer.s.sol";
 import {CronCounter} from "test/examples/CronCounter.sol";
-import {MyErc20} from "test/examples/MyErc20.sol";
 
 /* solhint-disable no-console*/
 import {console2} from "forge-std/console2.sol";
@@ -51,10 +50,10 @@ contract DeployCronCounter is Script, BaseDeployer {
 
     /// @dev Function to perform actual deployment.
     function chainDeploySmartedContract() private broadcast(_deployerPrivateKey) {
-        address cronTwoCounter = address(new CronCounter{salt: _salt}(_callBreaker));
+        address cronCounter = address(new CronCounter{salt: _salt}(_callBreaker));
 
-        require(_create2addr == cronTwoCounter, "Address mismatch CronCounter");
+        require(_create2addr == cronCounter, "Address mismatch CronCounter");
 
-        console2.log("CronCounter deployed at address:", cronTwoCounter, "\n");
+        console2.log("CronCounter deployed at address:", cronCounter, "\n");
     }
 }

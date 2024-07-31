@@ -2,8 +2,8 @@
 pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
-import "../src/timetravel/CallBreaker.sol";
-import "../test/examples/NoopTurner.sol";
+import "src/timetravel/CallBreaker.sol";
+import "test/examples/NoopTurner.sol";
 
 contract NoopTurnerTest is Test {
     CallBreaker public callbreaker;

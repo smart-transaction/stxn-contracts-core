@@ -2,8 +2,8 @@
 pragma solidity 0.8.26;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
-import "../../src/timetravel/CallBreaker.sol";
-import "../../src/timetravel/SmarterContract.sol";
+import "src/timetravel/CallBreaker.sol";
+import "src/timetravel/SmarterContract.sol";
 
 contract FlashPill is IERC20, SmarterContract {
     mapping(address => uint256) private _balances;

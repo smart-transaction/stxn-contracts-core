@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {IPositionManager} from "./interfaces/IPositionManager.sol";
-import {ISwapRouter} from "../utils/interfaces/ISwapRouter.sol";
+import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
 
 /**
  * @notice Oversimplified mock version of a Position Manager

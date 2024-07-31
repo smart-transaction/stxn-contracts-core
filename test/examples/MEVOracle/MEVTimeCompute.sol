@@ -10,6 +10,9 @@ contract MEVTimeCompute is SmarterContract {
     uint256 public initValue;
     uint256 public divisor;
 
+    event InitValueUpdated();
+    event DivisorUpdated();
+
     /**
      * @notice This is a basic example of performing a computation with a partial function application
      *     At solvetime, the solver can provide an additional value via. associatedData, and the contract
@@ -24,6 +27,12 @@ contract MEVTimeCompute is SmarterContract {
 
     function setInitValue(uint256 _initValue) external {
         initValue = _initValue;
+        emit InitValueUpdated();
+    }
+
+    function setDivisor(uint256 _divisor) external {
+        divisor = _divisor;
+        emit DivisorUpdated();
     }
 
     /**
@@ -49,7 +58,7 @@ contract MEVTimeCompute is SmarterContract {
         assertFutureCallTo(callObj, 1);
     }
 
-    function verifySolution() external {
+    function verifySolution() external view {
         require(initValue % divisor == 0, "Invalid Solution Provided");
     }
 }

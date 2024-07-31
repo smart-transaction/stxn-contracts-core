@@ -3,8 +3,8 @@
 pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
-import "../src/timetravel/CallBreaker.sol";
-import "../test/examples/FlashPill.sol";
+import "src/timetravel/CallBreaker.sol";
+import "test/examples/FlashPill.sol";
 
 contract FlashPillTest is Test {
     CallBreaker private callbreaker;

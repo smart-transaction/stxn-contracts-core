@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.26;
 
-import "../../src/timetravel/CallBreaker.sol";
-import "../../src/timetravel/SmarterContract.sol";
-import "../../src/TimeTypes.sol";
+import "src/timetravel/CallBreaker.sol";
+import "src/timetravel/SmarterContract.sol";
+import "src/TimeTypes.sol";
 
 contract NoopTurner is SmarterContract {
     address private _callbreakerAddress;

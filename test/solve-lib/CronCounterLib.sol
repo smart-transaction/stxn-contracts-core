@@ -3,10 +3,10 @@ pragma solidity 0.8.26;
 
 import "forge-std/Vm.sol";
 
-import "../../src/lamination/Laminator.sol";
-import "../../src/timetravel/CallBreaker.sol";
-import "../../test/examples/CronCounter.sol";
-import "../../src/timetravel/SmarterContract.sol";
+import "src/lamination/Laminator.sol";
+import "src/timetravel/CallBreaker.sol";
+import "test/examples/CronCounter.sol";
+import "src/timetravel/SmarterContract.sol";
 
 // for the next year, every day:
 // tip the pusher with a little eth

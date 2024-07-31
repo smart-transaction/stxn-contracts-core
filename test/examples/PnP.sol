@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.26;
 
-import "../../src/timetravel/CallBreaker.sol";
+import "src/timetravel/CallBreaker.sol";
 
 contract PnP {
     address private _callbreakerAddress;
