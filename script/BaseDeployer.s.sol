@@ -145,19 +145,16 @@ abstract contract BaseDeployer is Script {
 
     /// @dev Deploy contracts to testnet.
     function deployTestnet(uint256 counterSalt) public setEnvDeploy(Cycle.Test) returns (address deploymentAddress) {
-        Chains[] memory deployForks = new Chains[](10);
+        Chains[] memory deployForks = new Chains[](5);
 
         _salt = bytes32(counterSalt);
 
-        deployForks[1] = Chains.Amoy;
-        deployForks[2] = Chains.BscTest;
-        deployForks[3] = Chains.Fuji;
-        deployForks[4] = Chains.ArbitrumSepolia;
-        deployForks[5] = Chains.OptimismSepolia;
-        deployForks[6] = Chains.Shiden;
-        deployForks[7] = Chains.Moonriver;
-        deployForks[8] = Chains.Sepolia;
-        deployForks[9] = Chains.BaseSepolia;
+        deployForks[0] = Chains.Amoy;
+        deployForks[1] = Chains.ArbitrumSepolia;
+        deployForks[2] = Chains.OptimismSepolia;
+        deployForks[3] = Chains.Sepolia;
+        deployForks[4] = Chains.BaseSepolia;
+        deployForks[5] = Chains.Lestnet;
 
         deploymentAddress = createDeployMultichain(deployForks);
     }
