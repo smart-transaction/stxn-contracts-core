@@ -15,26 +15,20 @@ SCRIPT_NAME="Deploy${CONTRACT}"
 SALT=$2
 
 # Get the network
-echo "Select Network (local/testnet/mainnet)"
+echo "Select Network (mainnet/testnet)"
 read NETWORK
 
-# TODO: Deploy selected chains
 if [ "$NETWORK" = "mainnet" ]; then
    SIGNATURE="deployMainnet()"
-elif [ "$NETWORK" = "testnet" ]; then
-   SIGNATURE="deployTestnet(uint256)"
-elif [ "$NETWORK" = "local" ]; then
-   SIGNATURE="deployLocal()"
 else
-   echo "INVALID INPUT"
-   exit 1
+   SIGNATURE="deployLestnet(uint256)"
 fi
 
-if [ "$NETWORK" = "testnet" ]
+if [ "$NETWORK" = "mainnet" ]
 then
-    cmd="forge script $SCRIPT_NAME $SALT --sig '$SIGNATURE'"
-else
     cmd="forge script $SCRIPT_NAME --sig '$SIGNATURE'"
+else
+    cmd="forge script $SCRIPT_NAME $SALT --sig '$SIGNATURE'"
 fi
 
 echo "Broadcast deployment? (y/n)"
