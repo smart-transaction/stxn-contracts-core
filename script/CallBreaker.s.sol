@@ -13,7 +13,7 @@ contract DeployCallBreaker is Script, BaseDeployer {
     /// @dev Compute the CREATE2 address for CallBreaker contract.
     /// @param salt The salt for the CallBreaker contract.
     modifier computeCreate2(bytes32 salt) {
-        _create2addr = computeCreate2Address(salt, hashInitCode(type(CallBreaker).creationCode));
+        _create2addr = vm.computeCreate2Address(salt, hashInitCode(type(CallBreaker).creationCode));
 
         _;
     }
