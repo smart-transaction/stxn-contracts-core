@@ -64,20 +64,6 @@ abstract contract BaseDeployer is Script {
         _;
     }
 
-    /// @dev environment variable setup for upgrade
-    /// @param cycle deployment cycle (dev, test, prod)
-    modifier setEnvUpgrade(Cycle cycle) {
-        if (cycle == Cycle.Dev) {
-            _deployerPrivateKey = vm.envUint("LOCAL_DEPLOYER_KEY");
-        } else if (cycle == Cycle.Test) {
-            _deployerPrivateKey = vm.envUint("TEST_DEPLOYER_KEY");
-        } else {
-            _deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
-        }
-
-        _;
-    }
-
     /// @dev broadcast transaction modifier
     /// @param pk private key to broadcast transaction
     modifier broadcast(uint256 pk) {
@@ -145,27 +131,24 @@ abstract contract BaseDeployer is Script {
 
     /// @dev Deploy contracts to testnet.
     function deployTestnet(uint256 counterSalt) public setEnvDeploy(Cycle.Test) returns (address deploymentAddress) {
-        Chains[] memory deployForks = new Chains[](10);
+        Chains[] memory deployForks = new Chains[](5);
 
         _salt = bytes32(counterSalt);
 
-        deployForks[1] = Chains.Amoy;
-        deployForks[2] = Chains.BscTest;
-        deployForks[3] = Chains.Fuji;
-        deployForks[4] = Chains.ArbitrumSepolia;
-        deployForks[5] = Chains.OptimismSepolia;
-        deployForks[6] = Chains.Shiden;
-        deployForks[7] = Chains.Moonriver;
-        deployForks[8] = Chains.Sepolia;
-        deployForks[9] = Chains.BaseSepolia;
+        deployForks[0] = Chains.Amoy;
+        deployForks[1] = Chains.ArbitrumSepolia;
+        deployForks[2] = Chains.OptimismSepolia;
+        deployForks[3] = Chains.Sepolia;
+        deployForks[4] = Chains.BaseSepolia;
+        deployForks[5] = Chains.Lestnet;
 
         deploymentAddress = createDeployMultichain(deployForks);
     }
 
     /// @dev Deploy contracts to lestnet.
-    function deployLestnet() external setEnvDeploy(Cycle.Dev) returns (address deploymentAddress) {
+    function deployLestnet(uint256 counterSalt) external setEnvDeploy(Cycle.Dev) returns (address deploymentAddress) {
         Chains[] memory deployForks = new Chains[](1);
-        _salt = bytes32(uint256(1));
+        _salt = bytes32(uint256(counterSalt));
 
         deployForks[0] = Chains.Lestnet;
 
@@ -189,4 +172,3 @@ abstract contract BaseDeployer is Script {
     /// @dev Helper to iterate over chains and select fork.
     /// @param deployForks The chains to deploy to.
     function createDeployMultichain(Chains[] memory deployForks) internal virtual returns (address);
-}
