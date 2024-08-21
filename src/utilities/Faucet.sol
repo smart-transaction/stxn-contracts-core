@@ -27,11 +27,20 @@ contract Faucet is Ownable2StepUpgradeable {
         // check if funds were transferred recently
         require(block.timestamp > lockTime[_requestor], "Faucet: Please try later");
         // check if there is enough balance
-        require(address(this).balance > dripAmount, "Faucet: Out of funds");
+        require(address(this).balance > dripAmount, "Faucet: Not enough funds");
 
         _requestor.transfer(dripAmount);         
         lockTime[_requestor] = block.timestamp + lockDuration;
         emit FundsTransferred(_requestor, dripAmount);
+    }
+
+    /// @notice admin call to grant large funds to a receiver
+    function grantFunds(address payable _receiver, uint256 _amount) external payable onlyOwner {
+        // check if there is enough balance
+        require(address(this).balance > _amount, "Faucet: Not enough funds");
+
+        _receiver.transfer(_amount);         
+        emit FundsGranted(_receiver, _amount);
     }
 
     /// @notice call to change the amount transferred when requests are made
