@@ -11,16 +11,11 @@ contract DeployFaucet is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Deploy the upgradeable contract
-        address _proxyAddress = Upgrades.deployTransparentProxy(
-            "Faucet.sol",
-            msg.sender,
-            abi.encodeCall(Faucet.initialize, ())
-        );
+        address _proxyAddress =
+            Upgrades.deployTransparentProxy("Faucet.sol", msg.sender, abi.encodeCall(Faucet.initialize, ()));
 
         // Get the implementation address
-        address implementationAddress = Upgrades.getImplementationAddress(
-            _proxyAddress
-        );
+        address implementationAddress = Upgrades.getImplementationAddress(_proxyAddress);
 
         vm.stopBroadcast();
 

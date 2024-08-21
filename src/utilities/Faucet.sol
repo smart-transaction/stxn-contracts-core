@@ -32,7 +32,7 @@ contract Faucet is AccessControlUpgradeable {
         // check if there is enough balance
         require(address(this).balance > dripAmount, "Faucet: Not enough funds");
 
-        _requestor.transfer(dripAmount);         
+        _requestor.transfer(dripAmount);
         lockTime[_requestor] = block.timestamp + lockDuration;
         emit FundsTransferred(_requestor, dripAmount);
     }
@@ -42,7 +42,7 @@ contract Faucet is AccessControlUpgradeable {
         // check if there is enough balance
         require(address(this).balance > _amount, "Faucet: Not enough funds");
 
-        _receiver.transfer(_amount);         
+        _receiver.transfer(_amount);
         emit FundsGranted(_receiver, _amount);
     }
 
@@ -51,7 +51,7 @@ contract Faucet is AccessControlUpgradeable {
         _setDripAmount(newDripAmount);
     }
 
-    /// @notice 
+    /// @notice
     function changeLockDuration(uint256 newLockDuration) external onlyRole(ADMIN_ROLE) {
         require(newLockDuration > 0, "Faucet: Invalid duration value");
         lockDuration = newLockDuration;

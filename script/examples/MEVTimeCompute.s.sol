@@ -17,10 +17,9 @@ contract DeployMEVTimeCompute is Script, BaseDeployer {
     modifier computeCreate2(bytes32 salt) {
         _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
 
-         // passing 8 as a random divisor value for this example, can be updated with setters
-        _create2addr = computeCreate2Address(
-            salt, hashInitCode(type(MEVTimeCompute).creationCode, abi.encode(_callBreaker, 8))
-        );
+        // passing 8 as a random divisor value for this example, can be updated with setters
+        _create2addr =
+            computeCreate2Address(salt, hashInitCode(type(MEVTimeCompute).creationCode, abi.encode(_callBreaker, 8)));
 
         _;
     }
