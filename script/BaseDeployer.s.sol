@@ -172,3 +172,4 @@ abstract contract BaseDeployer is Script {
     /// @dev Helper to iterate over chains and select fork.
     /// @param deployForks The chains to deploy to.
     function createDeployMultichain(Chains[] memory deployForks) internal virtual returns (address);
+}
