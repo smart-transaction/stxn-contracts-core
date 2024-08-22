@@ -33,7 +33,10 @@ abstract contract LaminatedStorage {
 
     function cleanupLaminatorStorage(uint256[] memory seqNumbers) public {
         for (uint256 i = 0; i < seqNumbers.length; i++) {
-            if (!_deferredCalls[seqNumbers[i]].executed) {
+            if (
+                !_deferredCalls[seqNumbers[i]].executed
+                    || (isCallExecuting() && seqNumbers[i] == executingSequenceNumber())
+            ) {
                 continue;
             }
             delete _deferredCalls[seqNumbers[i]];
