@@ -12,3 +12,6 @@ extra_output = ["storageLayout"]
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 auto_detect_solc = true
+
+[rpc_endpoints]
+lestnet = "https://service.lestnet.org"
