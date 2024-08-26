@@ -41,6 +41,9 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @notice The sequence number of a deferred call must be set before it can be executed.
     error NotExecuting();
 
+    /// @notice The call which is being pulled was already cancelled
+    error CancelledCall();
+
     /// @notice Call has already been pulled and executed.
     /// @dev Selector 0x0dc10197
     error AlreadyExecuted();
@@ -58,6 +61,10 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @dev Emitted when a function call is executed immediately, without being deferred.
     /// @param callObj The CallObjects containing details of the executed function calls.
     event CallExecuted(CallObject callObj);
+
+    /// @dev Emitted when all pending calls as cancelled by updating the nonce
+    /// @param cancelledNonce of the sequence numbers that were cancelled
+    event CancelledAllPendingCalls(uint256 cancelledNonce);
 
     /// @dev The block at which a call becomes executable.
     /// @param callableBlock The block number that is now callable.
@@ -178,12 +185,8 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @notice Cancels all pending calls
     /// @dev Sets the executed flag to true for all pending calls
     function cancelAllPending() external onlyOwner {
-        uint256 _count = nextSequenceNumber();
-        for (uint256 i = executingSequenceNumber(); i < _count; i++) {
-            if (_deferredCalls[i].executed == false) {
-                _deferredCalls[i].executed = true;
-            }
-        }
+        emit CancelledAllPendingCalls(executingNonce);
+        executingNonce++;
     }
 
     function cancelPending(uint256 callSequenceNumber) external onlyOwner {
@@ -226,7 +229,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         holder.initialized = true;
         holder.executed = false;
         holder.firstCallableBlock = block.number + delay;
-        _deferredCalls[callSequenceNumber].store(holder);
+        _deferredCalls[callSequenceNumber].store(holder, executingNonce);
 
         emit CallableBlock(block.number + delay, block.number);
         emit CallPushed(holder.callObjs, callSequenceNumber);
@@ -290,6 +293,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     function _checkPrePush(CallObjectHolderStorage storage coh) internal view {
         _checkInitialized(coh);
         _checkExecuted(coh);
+        _checkCancelled(coh);
         _checkCallTime(coh);
     }
 
@@ -306,6 +310,12 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     function _checkExecuted(CallObjectHolderStorage storage coh) internal view {
         if (coh.executed) {
             revert AlreadyExecuted();
+        }
+    }
+
+    function _checkCancelled(CallObjectHolderStorage storage coh) internal view {
+        if (coh.executionNonce != executingNonce) {
+            revert CancelledCall();
         }
     }
 

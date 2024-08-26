@@ -53,6 +53,7 @@ struct CallObjectHolderStorage {
     bool initialized;
     bool executed;
     uint40 firstCallableBlock;
+    uint256 executionNonce;
     genericDynArrayHead callObjsHead;
     genericDynArrayElementsSlot callObjsElements;
 }
@@ -69,7 +70,9 @@ library CallObjectLib {
     uint256 internal constant AMOUNT_NON_ZERO_FLAG = uint256(1) << 31;
     uint256 internal constant GAS_MASK = 0x7fffffff;
 
-    function store(CallObjectHolderStorage storage holderStorage, CallObjectHolder memory holder) internal {
+    function store(CallObjectHolderStorage storage holderStorage, CallObjectHolder memory holder, uint256 nonce)
+        internal
+    {
         holderStorage.initialized = holder.initialized;
         holderStorage.executed = holder.executed;
         holderStorage.firstCallableBlock = holder.firstCallableBlock.toUint40();
@@ -84,6 +87,7 @@ library CallObjectLib {
         }
 
         holderStorage.callObjsHead = callObjsHead;
+        holderStorage.executionNonce = nonce;
     }
 
     function store(CallObjectStorage storage callObjStorage, CallObject memory callObj) internal {
