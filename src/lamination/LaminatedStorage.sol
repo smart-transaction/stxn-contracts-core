@@ -24,6 +24,8 @@ abstract contract LaminatedStorage {
     /// @notice The slot for checking whether or not a call is executing
     bytes32 public constant CALL_STATUS_SLOT = bytes32(uint256(keccak256("LaminatorStorage.CALL_STATUS_SLOT")) - 1);
 
+    uint256 public executingNonce; // value used to cancel all pending transactions
+
     /// @notice The map from sequence number to calls held in the mempool.
     mapping(uint256 => CallObjectHolderStorage) internal _deferredCalls;
 
