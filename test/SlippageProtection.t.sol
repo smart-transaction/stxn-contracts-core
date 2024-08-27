@@ -34,14 +34,14 @@ contract SlippageProtectionTest is Test, SlippageProtectionLib {
         uint256 laminatorSequenceNumber;
         uint256 maxSlippage = 10;
 
-        vm.startPrank(pusher);
+        vm.startPrank(pusher, pusher);
         laminatorSequenceNumber = userLand(maxSlippage);
         vm.stopPrank();
 
         // go forward in time
         vm.roll(block.number + 1);
 
-        vm.startPrank(filler);
+        vm.startPrank(filler, filler);
         solverLand(laminatorSequenceNumber, filler, maxSlippage);
         vm.stopPrank();
 
@@ -57,14 +57,14 @@ contract SlippageProtectionTest is Test, SlippageProtectionLib {
         uint256 laminatorSequenceNumber;
         uint256 maxSlippage = 1;
 
-        vm.startPrank(pusher);
+        vm.startPrank(pusher, pusher);
         laminatorSequenceNumber = userLand(maxSlippage);
         vm.stopPrank();
 
         // go forward in time
         vm.roll(block.number + 1);
 
-        vm.startPrank(filler);
+        vm.startPrank(filler, filler);
         vm.expectRevert();
         solverLand(laminatorSequenceNumber, filler, maxSlippage);
         vm.stopPrank();

@@ -104,13 +104,13 @@ contract LaminatorTest is Test {
         vm.expectEmit(true, true, true, true);
         emit CallPulled(callObj1, 0);
         emit DummyEvent(val1);
-        vm.prank(address(callBreaker));
+        vm.prank(address(callBreaker), address(callBreaker));
         proxy.pull(0);
 
         vm.expectEmit(true, true, true, true);
         emit CallPulled(callObj2, 1);
         emit DummyEvent(val2);
-        vm.prank(address(callBreaker));
+        vm.prank(address(callBreaker), address(callBreaker));
         proxy.pull(1);
     }
 
@@ -129,7 +129,7 @@ contract LaminatorTest is Test {
         uint256 sequenceNumber = laminator.pushToProxy(cData, 0);
         assertEq(sequenceNumber, 0);
 
-        vm.prank(address(callBreaker));
+        vm.prank(address(callBreaker), address(callBreaker));
         // try pulls as a random address, make sure the events were emitted
         vm.expectEmit(true, true, true, true);
         emit CallPulled(callObj, 0);
@@ -151,7 +151,7 @@ contract LaminatorTest is Test {
         assertEq(sequenceNumber, 0);
 
         // try pulls, make sure it reverts
-        vm.prank(address(callBreaker));
+        vm.prank(address(callBreaker), address(callBreaker));
         vm.expectRevert(LaminatedProxy.TooEarly.selector);
         proxy.pull(0);
     }
@@ -173,7 +173,7 @@ contract LaminatorTest is Test {
         vm.roll(block.number + 1);
 
         // try pulls, make sure it reverts
-        vm.prank(address(callBreaker));
+        vm.prank(address(callBreaker), address(callBreaker));
         vm.expectRevert(LaminatedProxy.TooEarly.selector);
         proxy.pull(0);
     }
@@ -190,7 +190,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        vm.prank(randomFriendAddress);
+        vm.prank(randomFriendAddress, randomFriendAddress);
         vm.expectRevert(LaminatedProxy.NotLaminatorOrProxy.selector);
         proxy.push(cData, 0);
     }
@@ -208,7 +208,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        vm.prank(address(laminator));
+        vm.prank(address(laminator), address(laminator));
         vm.expectEmit(true, true, true, true);
         emit CallPushed(callObj, 0);
         proxy.push(cData, 1);
@@ -230,7 +230,7 @@ contract LaminatorTest is Test {
         assertEq(sequenceNumber, 0);
 
         // pull once
-        vm.prank(address(randomFriendAddress));
+        vm.prank(address(randomFriendAddress), address(randomFriendAddress));
         vm.expectRevert(LaminatedProxy.NotCallBreaker.selector);
         proxy.pull(0);
     }
@@ -261,11 +261,11 @@ contract LaminatorTest is Test {
 
         proxy.cancelAllPending();
 
-        vm.prank(address(callBreaker));
+        vm.prank(address(callBreaker), address(callBreaker));
         vm.expectRevert(LaminatedProxy.AlreadyExecuted.selector);
         proxy.pull(0);
 
-        vm.prank(address(callBreaker));
+        vm.prank(address(callBreaker), address(callBreaker));
         vm.expectRevert(LaminatedProxy.AlreadyExecuted.selector);
         proxy.pull(1);
     }
@@ -286,7 +286,7 @@ contract LaminatorTest is Test {
         assertEq(sequenceNumber, 0);
 
         // pull once
-        vm.prank(address(randomFriendAddress));
+        vm.prank(address(randomFriendAddress), address(randomFriendAddress));
         vm.expectRevert(LaminatedProxy.NotCallBreaker.selector);
         proxy.pull(0);
     }
@@ -307,11 +307,11 @@ contract LaminatorTest is Test {
         assertEq(sequenceNumber, 0);
 
         // pull once
-        vm.prank(address(callBreaker));
+        vm.prank(address(callBreaker), address(callBreaker));
         proxy.pull(0);
 
         // and try to pull again
-        vm.prank(address(callBreaker));
+        vm.prank(address(callBreaker), address(callBreaker));
         vm.expectRevert(LaminatedProxy.AlreadyExecuted.selector);
         proxy.pull(0);
     }
@@ -337,7 +337,7 @@ contract LaminatorTest is Test {
         assertEq(sequenceNumber, 0);
 
         // try to pull out of order
-        vm.prank(address(callBreaker));
+        vm.prank(address(callBreaker), address(callBreaker));
         vm.expectRevert(LaminatedProxy.Uninitialized.selector);
         proxy.pull(1);
     }
@@ -359,7 +359,7 @@ contract LaminatorTest is Test {
 
         vm.roll(block.number + 1);
 
-        vm.prank(address(callBreaker));
+        vm.prank(address(callBreaker), address(callBreaker));
         vm.expectRevert(LaminatedProxy.CallFailed.selector);
         proxy.pull(0);
     }
@@ -376,7 +376,7 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
 
         // pretend to be a random address and call directly, should fail
-        vm.prank(randomFriendAddress);
+        vm.prank(randomFriendAddress, randomFriendAddress);
         vm.expectRevert(LaminatedProxy.NotLaminator.selector);
         proxy.execute(cData);
     }
@@ -394,7 +394,7 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObjs);
 
         // pretend to be the laminator and call directly, should work
-        vm.prank(address(laminator));
+        vm.prank(address(laminator), address(laminator));
         vm.expectEmit(true, true, true, true);
         emit CallExecuted(callObjs[0]);
         proxy.execute(cData);
@@ -412,7 +412,7 @@ contract LaminatorTest is Test {
         });
         bytes memory cData = abi.encode(callObj);
 
-        vm.prank(me);
+        vm.prank(me, me);
         vm.expectRevert(LaminatedProxy.NotLaminator.selector);
         proxy.execute(cData);
     }
@@ -448,7 +448,7 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
 
         // pretend to be a random address and call directly, should fail
-        vm.prank(randomFriendAddress);
+        vm.prank(randomFriendAddress, randomFriendAddress);
         vm.expectRevert(LaminatedProxy.NotLaminator.selector);
         proxy.execute(cData);
     }
@@ -465,7 +465,7 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
 
         // pretend to be laminator and call directly, should succeed
-        vm.prank(address(laminator));
+        vm.prank(address(laminator), address(laminator));
         proxy.execute(cData);
     }
 
@@ -481,7 +481,7 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
         laminator.pushToProxy(cData, 0);
 
-        vm.prank(address(callBreaker));
+        vm.prank(address(callBreaker), address(callBreaker));
         bytes memory returnValue = proxy.pull(0);
         ReturnObject[] memory returnObj = abi.decode(returnValue, (ReturnObject[]));
         CallObject memory returnCallObject = abi.decode(returnObj[0].returnvalue, (CallObject));
@@ -500,7 +500,7 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
         laminator.pushToProxy(cData, 0);
 
-        vm.prank(address(callBreaker));
+        vm.prank(address(callBreaker), address(callBreaker));
         bytes memory returnValue = proxy.pull(0);
         ReturnObject[] memory returnObj = abi.decode(returnValue, (ReturnObject[]));
         CallObjectHolder memory returnCallObjectHolder = abi.decode(returnObj[0].returnvalue, (CallObjectHolder));
@@ -528,7 +528,7 @@ contract LaminatorTest is Test {
         assertEq(holder.callObjs.length, callObj1.length);
 
         // pull one
-        vm.prank(address(callBreaker));
+        vm.prank(address(callBreaker), address(callBreaker));
         proxy.pull(0);
 
         // clean after pull clears executed call objects
