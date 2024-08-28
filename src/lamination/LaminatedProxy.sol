@@ -48,6 +48,9 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @dev Selector 0x0dc10197
     error AlreadyExecuted();
 
+    /// @notice revert direct execution by owner when calls being executed through call breaker
+    error PortalOpenInCallBreaker();
+
     /// @dev Emitted when a function call is deferred and added to the queue.
     /// @param callObjs The CallObject[] containing details of the deferred function call.
     /// @param sequenceNumber The sequence number assigned to the deferred function call.
@@ -164,7 +167,11 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     ///      Can only be invoked by the owner of the contract.
     /// @param input The encoded CallObject containing information about the function call to execute.
     /// @return returnValue The return value from the executed function call.
-    function execute(bytes calldata input) external onlyLaminator nonReentrant returns (bytes memory) {
+    function execute(bytes calldata input) external onlyOwner() nonReentrant returns (bytes memory) {
+        ICallBreaker cb = callBreaker();
+        if (cb.isPortalOpen()) {
+            revert PortalOpenInCallBreaker();
+        }
         CallObject[] memory callsToMake = abi.decode(input, (CallObject[]));
         return _executeAll(callsToMake);
     }
