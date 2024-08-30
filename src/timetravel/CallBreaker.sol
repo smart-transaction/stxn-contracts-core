@@ -77,7 +77,7 @@ contract CallBreaker is CallBreakerStorage {
         bytes calldata associatedData,
         bytes calldata hintdices
     ) external payable onlyPortalClosed {
-        if (msg.sender.code.length != 0) {
+        if (msg.sender != tx.origin) {
             revert MustBeEOA();
         }
         _setPortalOpen();

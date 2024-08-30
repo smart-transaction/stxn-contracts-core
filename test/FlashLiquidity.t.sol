@@ -32,14 +32,14 @@ contract FlashLiquidityTest is Test, FlashLiquidityLib {
     function testFlashLiquidity() external {
         uint256 laminatorSequenceNumber;
 
-        vm.startPrank(pusher);
+        vm.startPrank(pusher, pusher);
         laminatorSequenceNumber = userLand(100000000000000000000, 10, 1);
         vm.stopPrank();
 
         // go forward in time
         vm.roll(block.number + 1);
 
-        vm.startPrank(filler);
+        vm.startPrank(filler, filler);
         solverLand(1000, laminatorSequenceNumber, 1, filler);
         vm.stopPrank();
 
@@ -54,14 +54,14 @@ contract FlashLiquidityTest is Test, FlashLiquidityLib {
     function testFlashLiquiditySlippage() public {
         uint256 laminatorSequenceNumber;
 
-        vm.startPrank(pusher);
+        vm.startPrank(pusher, pusher);
         laminatorSequenceNumber = userLand(100000000000000000000, 80, 1);
         vm.stopPrank();
 
         // go forward in time
         vm.roll(block.number + 1);
 
-        vm.startPrank(filler);
+        vm.startPrank(filler, filler);
         vm.expectRevert();
         solverLand(0, laminatorSequenceNumber, 1, filler); // No liquidity provided
         vm.stopPrank();

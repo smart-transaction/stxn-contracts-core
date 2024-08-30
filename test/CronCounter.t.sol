@@ -36,7 +36,7 @@ contract CronTest is Test, CronCounterLib {
     function testrun1Cron() external {
         uint256 laminatorSequenceNumber;
 
-        vm.startPrank(pusher);
+        vm.startPrank(pusher, pusher);
         laminatorSequenceNumber = userLand();
         vm.stopPrank();
 
@@ -45,7 +45,7 @@ contract CronTest is Test, CronCounterLib {
         // go forward in time
         vm.roll(block.number + 1);
 
-        vm.startPrank(filler);
+        vm.startPrank(filler, filler);
 
         solverLand(laminatorSequenceNumber, filler, true);
 
@@ -53,7 +53,7 @@ contract CronTest is Test, CronCounterLib {
 
         vm.roll(block.number + 8000);
 
-        vm.startPrank(filler);
+        vm.startPrank(filler, filler);
         solverLand(laminatorSequenceNumber, filler, false);
         vm.stopPrank();
 

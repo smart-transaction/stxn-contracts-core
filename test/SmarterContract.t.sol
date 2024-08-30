@@ -108,7 +108,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("frontrunBlocker()")
         });
 
-        vm.prank(pusher);
+        vm.prank(pusher, pusher);
         laminator.pushToProxy(abi.encode(pusherCallObjs), 0);
 
         CallObject[] memory callObjs = new CallObject[](2);
@@ -139,7 +139,7 @@ contract SmarterContractTest is Test {
         hintindicesVals[0] = 0;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
 
-        vm.prank(address(0xdeadbeef));
+        vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
 
@@ -156,7 +156,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("frontrunBlocker()")
         });
 
-        vm.prank(pusher);
+        vm.prank(pusher, pusher);
         laminator.pushToProxy(abi.encode(pusherCallObjs), 0);
 
         CallObject[] memory callObjs = new CallObject[](2);
@@ -188,7 +188,7 @@ contract SmarterContractTest is Test {
         hintindicesVals[0] = 0;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
 
-        vm.prank(address(0xdeadbeef));
+        vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
 
@@ -205,7 +205,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("backrunBlocker()")
         });
 
-        vm.prank(pusher);
+        vm.prank(pusher, pusher);
         laminator.pushToProxy(abi.encode(pusherCallObjs), 0);
 
         CallObject[] memory callObjs = new CallObject[](2);
@@ -237,7 +237,7 @@ contract SmarterContractTest is Test {
         hintindicesVals[0] = 0;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
 
-        vm.prank(address(0xdeadbeef));
+        vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
 
@@ -254,7 +254,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("backrunBlocker()")
         });
 
-        vm.prank(pusher);
+        vm.prank(pusher, pusher);
         laminator.pushToProxy(abi.encode(pusherCallObjs), 0);
 
         CallObject[] memory callObjs = new CallObject[](2);
@@ -286,7 +286,7 @@ contract SmarterContractTest is Test {
         hintindicesVals[0] = 0;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
 
-        vm.prank(address(0xdeadbeef));
+        vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
 
@@ -303,7 +303,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("assertFutureCallTestHarness()")
         });
 
-        vm.prank(pusher);
+        vm.prank(pusher, pusher);
         laminator.pushToProxy(abi.encode(pusherCallObjs), 0);
 
         CallObject[] memory callObjs = new CallObject[](2);
@@ -342,7 +342,7 @@ contract SmarterContractTest is Test {
         hintindicesVals[1] = 1;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
 
-        vm.prank(address(0xdeadbeef));
+        vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
 
         callbreakerHarness.setPortalOpen();
@@ -365,7 +365,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("assertFutureCallWithIndexTestHarness()")
         });
 
-        vm.prank(pusher);
+        vm.prank(pusher, pusher);
         laminator.pushToProxy(abi.encode(pusherCallObjs), 0);
 
         CallObject[] memory callObjs = new CallObject[](2);
@@ -404,7 +404,7 @@ contract SmarterContractTest is Test {
         hintindicesVals[1] = 1;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
 
-        vm.prank(address(0xdeadbeef));
+        vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
 
         uint256 callLength = 3;
@@ -440,7 +440,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("assertFutureCallTestHarness()")
         });
 
-        vm.prank(pusher);
+        vm.prank(pusher, pusher);
         laminator.pushToProxy(abi.encode(pusherCallObjs), 0);
 
         CallObject[] memory callObjs = new CallObject[](2);
@@ -479,7 +479,7 @@ contract SmarterContractTest is Test {
         hintindicesVals[1] = 1;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
 
-        vm.prank(address(0xdeadbeef));
+        vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
 
         uint256 callLength = 3;
