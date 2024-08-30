@@ -187,7 +187,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     }
 
     function cancelPending(uint256 callSequenceNumber) external onlyOwner {
-        if (_deferredCalls[callSequenceNumber].executed == false) {
+        if (_deferredCalls[callSequenceNumber].executed == false && _deferredCalls[callSequenceNumber].initialized) {
             _deferredCalls[callSequenceNumber].executed = true;
         }
     }
