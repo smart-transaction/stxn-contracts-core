@@ -100,8 +100,8 @@ contract CallBreaker is CallBreakerStorage {
             _executeAndVerifyCall(i);
         }
 
-        _cleanUpStorage();
         _setPortalClosed();
+        _cleanUpStorage();
         emit VerifyStxn();
     }
 
