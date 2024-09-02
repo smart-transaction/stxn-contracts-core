@@ -376,8 +376,8 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
 
         // pretend to be a random address and call directly, should fail
-        vm.prank(randomFriendAddress, randomFriendAddress);
-        vm.expectRevert(LaminatedProxy.NotLaminator.selector);
+        vm.prank(randomFriendAddress);
+        vm.expectRevert(LaminatedProxy.NotOwner.selector);
         proxy.execute(cData);
     }
 
@@ -394,15 +394,13 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObjs);
 
         // pretend to be the laminator and call directly, should work
-        vm.prank(address(laminator), address(laminator));
-        vm.expectEmit(true, true, true, true);
-        emit CallExecuted(callObjs[0]);
+        vm.prank(address(laminator));
+        vm.expectRevert(LaminatedProxy.NotOwner.selector);
         proxy.execute(cData);
     }
 
     // ensure executions as the owner directly into the proxy contract do NOT work
     function testExecuteAsOwner() public {
-        address me = address(this);
         laminator.harness_getOrCreateProxy(address(this));
         CallObject memory callObj = CallObject({
             amount: 0,
@@ -410,10 +408,8 @@ contract LaminatorTest is Test {
             gas: saneGasLeft(),
             callvalue: abi.encodeWithSignature("emitArg(uint256)", 42)
         });
-        bytes memory cData = abi.encode(callObj);
 
-        vm.prank(me, me);
-        vm.expectRevert(LaminatedProxy.NotLaminator.selector);
+        bytes memory cData = abi.encode(callObj);
         proxy.execute(cData);
     }
 
@@ -448,8 +444,8 @@ contract LaminatorTest is Test {
         bytes memory cData = abi.encode(callObj);
 
         // pretend to be a random address and call directly, should fail
-        vm.prank(randomFriendAddress, randomFriendAddress);
-        vm.expectRevert(LaminatedProxy.NotLaminator.selector);
+        vm.prank(randomFriendAddress);
+        vm.expectRevert(LaminatedProxy.NotOwner.selector);
         proxy.execute(cData);
     }
 
@@ -462,10 +458,8 @@ contract LaminatorTest is Test {
             gas: saneGasLeft(),
             callvalue: abi.encodeWithSignature("emitArg(uint256)", 42)
         });
-        bytes memory cData = abi.encode(callObj);
 
-        // pretend to be laminator and call directly, should succeed
-        vm.prank(address(laminator), address(laminator));
+        bytes memory cData = abi.encode(callObj);
         proxy.execute(cData);
     }
 
