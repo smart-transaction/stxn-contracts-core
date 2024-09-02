@@ -142,7 +142,6 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
 
         cohStorage.executed = true;
         _setCurrentlyExecutingSeqNum(seqNumber);
-        _setCurrentlyExecutingCallIndex(0);
         _setExecuting();
         CallObjectHolder memory coh = cohStorage.load();
         emit CallableBlock(coh.firstCallableBlock, block.number);
