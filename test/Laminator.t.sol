@@ -261,12 +261,12 @@ contract LaminatorTest is Test {
 
         proxy.cancelAllPending();
 
-        vm.prank(address(callBreaker), address(callBreaker));
-        vm.expectRevert(LaminatedProxy.AlreadyExecuted.selector);
+        vm.prank(address(callBreaker));
+        vm.expectRevert(LaminatedProxy.CancelledCall.selector);
         proxy.pull(0);
 
-        vm.prank(address(callBreaker), address(callBreaker));
-        vm.expectRevert(LaminatedProxy.AlreadyExecuted.selector);
+        vm.prank(address(callBreaker));
+        vm.expectRevert(LaminatedProxy.CancelledCall.selector);
         proxy.pull(1);
     }
 
