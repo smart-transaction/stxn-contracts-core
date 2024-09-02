@@ -80,7 +80,6 @@ contract CallBreaker is CallBreakerStorage {
         if (msg.sender != tx.origin) {
             revert MustBeEOA();
         }
-        _setPortalOpen();
 
         CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
         ReturnObject[] memory returnValues = abi.decode(returnsBytes, (ReturnObject[]));
@@ -100,7 +99,6 @@ contract CallBreaker is CallBreakerStorage {
             _executeAndVerifyCall(i);
         }
 
-        _setPortalClosed();
         _cleanUpStorage();
         emit VerifyStxn();
     }
