@@ -167,10 +167,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @param shouldCopy The condition under which the job should be copied.
     /// @return The sequence number of the copied job.
     /// @custom:reverts It reverts if the sequence number is not set or if the sender is not the proxy.
-    function copyCurrentJob(uint256 delay, bytes calldata shouldCopy) external onlyWhileExecuting returns (uint256) {
-        if (msg.sender != address(this)) {
-            revert NotProxy();
-        }
+    function copyCurrentJob(uint256 delay, bytes calldata shouldCopy) external onlyProxy returns (uint256) {
         return _copyJob(executingSequenceNumber(), delay, shouldCopy);
     }
 
