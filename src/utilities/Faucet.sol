@@ -26,7 +26,7 @@ contract Faucet is AccessControlUpgradeable {
     }
 
     /// @notice call to get funds from the faucet
-    function requestFunds(address payable _requestor) external payable onlyRole(ADMIN_ROLE) {
+    function requestFunds(address payable _requestor) external payable {
         // check if funds were transferred recently
         require(block.timestamp > lockTime[_requestor], "Faucet: Please try later");
         // check if there is enough balance
