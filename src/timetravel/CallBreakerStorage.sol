@@ -59,8 +59,8 @@ abstract contract CallBreakerStorage {
     /// @notice Get the portal status
     function isPortalOpen() public view returns (bool status) {
         uint256 slot = uint256(PORTAL_SLOT);
-        assembly ("memory-safe") {
-            status := sload(slot)
+        assembly {
+            status := tload(slot)
         }
     }
 
@@ -76,16 +76,16 @@ abstract contract CallBreakerStorage {
     /// @notice Set the portal status to open
     function _setPortalOpen() internal {
         uint256 slot = uint256(PORTAL_SLOT);
-        assembly ("memory-safe") {
-            sstore(slot, 1)
+        assembly {
+            tstore(slot, true)
         }
     }
 
     /// @notice Set the portal status to closed
     function _setPortalClosed() internal {
         uint256 slot = uint256(PORTAL_SLOT);
-        assembly ("memory-safe") {
-            sstore(slot, 0)
+        assembly {
+            tstore(slot, false)
         }
     }
 

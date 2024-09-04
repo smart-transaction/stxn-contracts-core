@@ -100,8 +100,8 @@ abstract contract LaminatedStorage {
     /// @return _isExec Whether or not a call is executing in the laminator
     function isCallExecuting() public view returns (bool _isExec) {
         uint256 slot = uint256(CALL_STATUS_SLOT);
-        assembly ("memory-safe") {
-            _isExec := sload(slot)
+        assembly {
+            _isExec := tload(slot)
         }
     }
 
@@ -176,8 +176,8 @@ abstract contract LaminatedStorage {
     /// @dev This is used in conjunction with modifiers that allow / disallow calls to be made based on whether or not a call is executing
     function _setExecuting() internal {
         uint256 slot = uint256(CALL_STATUS_SLOT);
-        assembly ("memory-safe") {
-            sstore(slot, 1)
+        assembly {
+            tstore(slot, true)
         }
     }
 
@@ -185,8 +185,8 @@ abstract contract LaminatedStorage {
     /// @dev This function should only be called while a call in deferredCalls is being executed.
     function _setFree() internal {
         uint256 slot = uint256(CALL_STATUS_SLOT);
-        assembly ("memory-safe") {
-            sstore(slot, 0)
+        assembly {
+            tstore(slot, false)
         }
     }
 }
