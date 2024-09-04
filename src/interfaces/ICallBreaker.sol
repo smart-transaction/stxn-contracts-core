@@ -13,6 +13,6 @@ interface ICallBreaker {
     /* 
      * @notice Get the portal status
      * @return boolean value as true if portal is open
-    */ 
+    */
     function isPortalOpen() external view returns (bool status);
 }

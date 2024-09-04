@@ -166,7 +166,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     ///      Can only be invoked by the owner of the contract.
     /// @param input The encoded CallObject containing information about the function call to execute.
     /// @return returnValue The return value from the executed function call.
-    function execute(bytes calldata input) external onlyOwner() nonReentrant returns (bytes memory) {
+    function execute(bytes calldata input) external onlyOwner nonReentrant returns (bytes memory) {
         ICallBreaker cb = callBreaker();
         if (cb.isPortalOpen()) {
             revert PortalOpenInCallBreaker();
