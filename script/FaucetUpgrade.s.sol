@@ -7,7 +7,7 @@ import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 contract UpgradeFaucet is Script {
     function run() external returns (address, address) {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
-        address proxyAddress = vm.evmAddress("PROXY");
+        address proxyAddress = vm.envAddress("PROXY");
         vm.startBroadcast(deployerPrivateKey);
         // Upgrade the upgradeable contract
         Upgrades.upgradeProxy(proxyAddress, "FaucetV1.sol", "");
