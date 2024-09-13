@@ -51,9 +51,7 @@ abstract contract CallBreakerStorage {
         if (isPortalOpen()) {
             revert PortalOpen();
         }
-        _setPortalOpen();
         _;
-        _setPortalClosed();
     }
 
     /// @notice Get the portal status
