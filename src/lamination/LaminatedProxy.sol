@@ -231,8 +231,9 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         callSequenceNumber = count();
         holder.initialized = true;
         holder.executed = false;
+        holder.nonce = executingNonce;
         holder.firstCallableBlock = block.number + delay;
-        _deferredCalls[callSequenceNumber].store(holder, executingNonce);
+        _deferredCalls[callSequenceNumber].store(holder);
 
         emit CallableBlock(block.number + delay, block.number);
         emit CallPushed(holder.callObjs, callSequenceNumber);

@@ -45,6 +45,7 @@ struct ReturnObject {
 struct CallObjectHolder {
     bool initialized;
     bool executed;
+    uint256 nonce;
     uint256 firstCallableBlock;
     CallObject[] callObjs;
 }
@@ -70,9 +71,7 @@ library CallObjectLib {
     uint256 internal constant AMOUNT_NON_ZERO_FLAG = uint256(1) << 31;
     uint256 internal constant GAS_MASK = 0x7fffffff;
 
-    function store(CallObjectHolderStorage storage holderStorage, CallObjectHolder memory holder, uint256 nonce)
-        internal
-    {
+    function store(CallObjectHolderStorage storage holderStorage, CallObjectHolder memory holder) internal {
         holderStorage.initialized = holder.initialized;
         holderStorage.executed = holder.executed;
         holderStorage.firstCallableBlock = holder.firstCallableBlock.toUint40();
@@ -87,7 +86,7 @@ library CallObjectLib {
         }
 
         holderStorage.callObjsHead = callObjsHead;
-        holderStorage.executionNonce = nonce;
+        holderStorage.executionNonce = holder.nonce;
     }
 
     function store(CallObjectStorage storage callObjStorage, CallObject memory callObj) internal {
