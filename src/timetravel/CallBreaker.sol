@@ -156,10 +156,22 @@ contract CallBreaker is CallBreakerStorage {
     /// @param callObj The callObj to search for
     function getCompleteCallIndexList(CallObject calldata callObj) public view returns (uint256[] memory) {
         bytes32 callId = keccak256(abi.encode(callObj));
-        uint256[] memory index = new uint256[](callList.length);
+
+        // First, determine the count of matching elements
+        uint256 count = 0;
         for (uint256 i = 0; i < callList.length; i++) {
             if (callList[i].callId == callId) {
-                index[i] = i;
+                count++;
+            }
+        }
+
+        // Allocate the result array with the correct size
+        uint256[] memory index = new uint256[](count);
+        uint256 j = 0;
+        for (uint256 i = 0; i < callList.length; i++) {
+            if (callList[i].callId == callId) {
+                index[j] = i;
+                j++;
             }
         }
         return index;
