@@ -17,15 +17,19 @@ contract MockSwapRouter is ISwapRouter {
     IWETH private _weth;
     IERC20 private _dai;
 
+    event LiquiditySetForPriceTest();
+
     error InvalidPriceLimit();
 
     constructor(address dai, address weth) {
         _dai = IERC20(dai);
         _weth = IWETH(weth);
 
-        // let initial liquidity be 10 Weth for 100 Dai
+        // let initial liquidity be 10 Weth for 100 Dai for the purpose of this mock
         _balanceOfDai = 100 * DECIMAL;
         _balanceOfWeth = 10 * DECIMAL;
+        _dai.mint(address(this), _balanceOfDai);
+        _weth.mint(address(this), _balanceOfWeth);
     }
 
     function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut) {
@@ -57,5 +61,21 @@ contract MockSwapRouter is ISwapRouter {
         ) / expectedPrice;
 
         if (slippage > maxDeviationPercentage) revert InvalidPriceLimit();
+    }
+
+    /// @notice functions to allow setting prices for price based test scenarios
+    function setExactLiquidity(uint256 amount0, uint256 amount1) external {
+        /// TODO: modify liqudity by burning and minting
+        require(amount0 > DECIMAL, "LiquidityTooLow");
+        require(amount1 > DECIMAL, "LiquidityTooLow");
+
+        _balanceOfDai = amount0;
+        _balanceOfWeth = amount1;
+
+        emit LiquiditySetForPriceTest();
+    }
+
+    function getPriceOfDai() external view returns (uint256) {
+        return (_balanceOfDai / _balanceOfWeth);
     }
 }
