@@ -19,7 +19,11 @@ contract Laminator is ILaminator {
     /// @param proxyAddress The address of the proxy contract where the function call is pushed.
     /// @param callObjs The CallObject containing the function call details.
     /// @param sequenceNumber The sequence number assigned to the deferred function call.
-    event ProxyPushed(address indexed proxyAddress, CallObject[] callObjs, uint256 sequenceNumber);
+    /// @param selector code identifier for solvers to select relevant actions
+    /// @param data values to be used by solvers in serving the user objective
+    event ProxyPushed(
+        address indexed proxyAddress, CallObject[] callObjs, uint256 sequenceNumber, bytes indexed selector, bytes data
+    );
 
     /// @dev Emitted when a function call is pulled from a proxy contract for execution.
     /// @param returnData The ABI-encoded data payload returned from the function call.
@@ -77,14 +81,19 @@ contract Laminator is ILaminator {
     ///      A new proxy will be created if one does not already exist for the sender.
     /// @param cData The calldata to be pushed.
     /// @param delay The delay for when the call can be executed.
+    /// @param selector code identifier for solvers to select relevant actions
+    /// @param data values to be used by solvers in serving the user objective
     /// @return sequenceNumber The sequence number of the deferred function call.
-    function pushToProxy(bytes calldata cData, uint32 delay) external returns (uint256 sequenceNumber) {
+    function pushToProxy(bytes calldata cData, uint32 delay, bytes calldata selector, bytes calldata data)
+        external
+        returns (uint256 sequenceNumber)
+    {
         LaminatedProxy proxy = LaminatedProxy(payable(_getOrCreateProxy(msg.sender)));
 
         sequenceNumber = proxy.push(cData, delay);
 
         CallObject[] memory callObjs = abi.decode(cData, (CallObject[]));
-        emit ProxyPushed(address(proxy), callObjs, sequenceNumber);
+        emit ProxyPushed(address(proxy), callObjs, sequenceNumber, selector, data);
     }
 
     /// @notice Gets the proxy address for the sender or creates a new one if it doesn't exist.
