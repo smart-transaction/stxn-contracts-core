@@ -4,13 +4,9 @@ pragma solidity 0.8.26;
 import {IERC20} from "./interfaces/IWeth.sol";
 
 interface IFlashLoanBorrower {
-    function onFlashLoan(
-        address initiator,
-        address token1,
-        uint256 amount1,
-        address token2,
-        uint256 amount2
-    ) external returns (bytes32);
+    function onFlashLoan(address initiator, address token1, uint256 amount1, address token2, uint256 amount2)
+        external
+        returns (bytes32);
 }
 
 /**
@@ -49,9 +45,7 @@ contract MockFlashLoan {
     function flashLoan(
         address receiver,
         uint256 usdtAmount,
-        bytes calldata usdtData,
-        uint256 daiAmount,
-        bytes calldata daiData
+        uint256 daiAmount
     ) external returns (bool) {
         uint256 usdtFee = flashFee(address(usdt), _balanceOfUsdt);
         uint256 daiFee = flashFee(address(dai), _balanceOfDai);
@@ -64,9 +58,7 @@ contract MockFlashLoan {
         dai.transfer(receiver, daiAmount);
 
         // Call the borrower's onFlashLoan function once (consolidated)
-        IFlashLoanBorrower(receiver).onFlashLoan(
-            msg.sender, address(usdt), usdtAmount, address(dai), daiAmount
-        );
+        IFlashLoanBorrower(receiver).onFlashLoan(msg.sender, address(usdt), usdtAmount, address(dai), daiAmount);
 
         // Fetch the amount + fee via transferFrom
         usdt.transferFrom(receiver, address(this), usdtAmount + usdtFee);
