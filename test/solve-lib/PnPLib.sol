@@ -46,7 +46,7 @@ contract PnPLib {
 
         pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
 
-        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
+        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", "0x00");
     }
 
     function solverLand(uint256 laminatorSequenceNumber, address filler) public {

@@ -60,7 +60,7 @@ contract FlashLiquidityLib {
             callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", amountIn, slippagePercent)
         });
 
-        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
+        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", "0x00");
     }
 
     function solverLand(

@@ -58,9 +58,9 @@ contract SelfCheckoutLib {
             gas: 1000000,
             callvalue: abi.encodeWithSignature("takeSomeAtokenFromOwner(uint256)", 10)
         });
-        laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
+        laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", "0x00");
 
-        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
+        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", "0x00");
     }
 
     // msg.sender here is the filler. all transfers of funds and approvals are made by the filler.
