@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.13;
+pragma solidity 0.8.26;
 
-interface ISwapRouter {
+interface ISwapPool {
     struct ExactInputSingleParams {
         address tokenIn;
         address tokenOut;

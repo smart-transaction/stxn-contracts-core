@@ -2,13 +2,13 @@
 pragma solidity 0.8.26;
 
 import {IWETH, IMintableERC20} from "test/utils/interfaces/IWeth.sol";
-import {ISwapRouter} from "test/utils/interfaces/ISwapRouter.sol";
+import {ISwapPool} from "test/utils/interfaces/ISwapPool.sol";
 
 /**
  * @notice Oversimplified mock version of a router
  * @dev not to be used for anything other than local tests
  */
-contract SwapPool is ISwapRouter {
+contract SwapPool is ISwapPool {
     uint256 public constant DECIMAL = 1e18;
 
     uint256 private _balanceOfWeth;
