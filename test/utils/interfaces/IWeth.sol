@@ -7,4 +7,14 @@ interface IWETH is IERC20 {
     function deposit() external payable;
 
     function withdraw(uint256 amount) external;
+
+    function mint(address to, uint256 amount) external;
+
+    function burn(uint256 amount) external;
+}
+
+interface IMintableERC20 is IERC20 {
+    function mint(address to, uint256 amount) external;
+
+    function burn(uint256 amount) external;
 }
