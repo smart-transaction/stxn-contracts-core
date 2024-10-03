@@ -20,9 +20,13 @@ contract Laminator is ILaminator {
     /// @param callObjs The CallObject containing the function call details.
     /// @param sequenceNumber The sequence number assigned to the deferred function call.
     /// @param selector code identifier for solvers to select relevant actions
-    /// @param data values to be used by solvers in serving the user objective
+    /// @param dataValues to be used by solvers in serving the user objective
     event ProxyPushed(
-        address indexed proxyAddress, CallObject[] callObjs, uint256 sequenceNumber, bytes indexed selector, bytes data
+        address indexed proxyAddress,
+        CallObject[] callObjs,
+        uint256 sequenceNumber,
+        bytes indexed selector,
+        AdditionalData[] dataValues
     );
 
     /// @dev Emitted when a function call is pulled from a proxy contract for execution.
@@ -82,18 +86,20 @@ contract Laminator is ILaminator {
     /// @param cData The calldata to be pushed.
     /// @param delay The delay for when the call can be executed.
     /// @param selector code identifier for solvers to select relevant actions
-    /// @param data values to be used by solvers in serving the user objective
+    /// @param dataValues to be used by solvers in serving the user objective
     /// @return sequenceNumber The sequence number of the deferred function call.
-    function pushToProxy(bytes calldata cData, uint32 delay, bytes calldata selector, bytes calldata data)
-        external
-        returns (uint256 sequenceNumber)
-    {
+    function pushToProxy(
+        bytes calldata cData,
+        uint32 delay,
+        bytes calldata selector,
+        AdditionalData[] memory dataValues
+    ) external returns (uint256 sequenceNumber) {
         LaminatedProxy proxy = LaminatedProxy(payable(_getOrCreateProxy(msg.sender)));
 
         sequenceNumber = proxy.push(cData, delay);
 
         CallObject[] memory callObjs = abi.decode(cData, (CallObject[]));
-        emit ProxyPushed(address(proxy), callObjs, sequenceNumber, selector, data);
+        emit ProxyPushed(address(proxy), callObjs, sequenceNumber, selector, dataValues);
     }
 
     /// @notice Gets the proxy address for the sender or creates a new one if it doesn't exist.
