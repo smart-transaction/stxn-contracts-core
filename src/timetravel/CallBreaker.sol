@@ -237,8 +237,7 @@ contract CallBreaker is CallBreakerStorage {
 
         if (success) {
             /// TODO: check if subcalls were executed
-        }
-        {
+        } else {
             revert CallFailed();
         }
 
