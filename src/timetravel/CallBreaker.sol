@@ -140,7 +140,14 @@ contract CallBreaker is CallBreakerStorage {
     /// @param i The index at which the CallObject and ReturnObject are to be fetched
     /// @return A pair of CallObject and ReturnObject at the given index
     function getPair(uint256 i) public view returns (CallObject memory, ReturnObject memory) {
-        return (_getCall(i), returnStore[i]);
+        return (_getCall(i), _getReturn(i));
+    }
+
+    /// @notice Fetches the CallBackObject and SubcallReturnObject at a given index from the subcallStore and subcallReturnStore respectively
+    /// @param cbindex The index at which the CallBackObject and SubcallReturnObject are to be fetched
+    /// @return A pair of CallBackObject and SubcallReturnObject at the given index
+    function getSubcallPair(uint256 cbindex) public view returns (SubcallObject memory, SubcallReturnObject memory) {
+        return (_getSubcall(cbindex), _getSubcallReturn(cbindex));
     }
 
     /// @notice Fetches the Call at a given index from the callList
@@ -221,15 +228,30 @@ contract CallBreaker is CallBreakerStorage {
 
         emit EnterPortal(callObj, retObj, i);
 
+        // TODO: load and keep subcalls
+        // TO Discuss: tie subcalls to specific call or let it float through all call objects
+        SubcallObject[] memory subcalls = abi.decode(callObj.subcalls, (SubcallObject[]));
+
         (bool success, bytes memory returnvalue) =
             callObj.addr.call{gas: callObj.gas, value: callObj.amount}(callObj.callvalue);
-        if (!success) {
+
+        if (success) {
+            /// TODO: check if subcalls were executed
+        }
+        {
             revert CallFailed();
         }
 
         if (keccak256(retObj.returnvalue) != keccak256(returnvalue)) {
             revert CallVerificationFailed();
         }
+    }
+
+    function _executeSubCalls(uint256 i) internal {
+        // TODO: execute subcalls through a call back
+        // TODO: think about limitations on this call
+        // Should it be only executed as subcall of a specific call object?
+        // How do we specify when and who can execute subcalls
     }
 
     /// @notice Populates the associatedDataStore with a list of key-value pairs

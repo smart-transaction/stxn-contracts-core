@@ -15,6 +15,14 @@ struct CallObject {
     uint256 gas;
     address addr;
     bytes callvalue;
+    bytes subcalls; // array of subcall objects
+}
+
+struct SubcallObject {
+    uint256 amount;
+    uint256 gas;
+    address addr;
+    bytes callvalue;
 }
 
 struct CallObjectStorage {
@@ -36,6 +44,11 @@ struct CallObjectWithIndex {
 /// @dev Struct for holding return object details
 /// @param returnvalue The ABI-encoded data payload returned from the call
 struct ReturnObject {
+    bytes returnvalue;
+    bytes subcallReturnValues; // array of subcall return values
+}
+
+struct SubcallReturnObject {
     bytes returnvalue;
 }
 
