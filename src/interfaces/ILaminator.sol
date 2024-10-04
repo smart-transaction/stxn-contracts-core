@@ -4,9 +4,17 @@ pragma solidity >=0.6.2 <0.9.0;
 import "../TimeTypes.sol";
 
 interface ILaminator {
+    enum DATATYPE {
+        INT256,
+        UINT256,
+        STRING,
+        BYTES,
+        BYTES32
+    }
+
     struct AdditionalData {
         string name;
-        string datatype;
+        DATATYPE datatype;
         string value;
     }
 
