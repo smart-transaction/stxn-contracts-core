@@ -7,6 +7,7 @@ import "test/examples/DeFi/SwapPool.sol";
 import "test/utils/MockERC20Token.sol";
 import "test/utils/MockSwapRouter.sol";
 import "test/utils/MockPositionManager.sol";
+import "test/utils/Constants.sol";
 
 contract SlippageProtectionLib {
     address payable public pusherLaminated;
@@ -56,8 +57,9 @@ contract SlippageProtectionLib {
             callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", 100, maxSlippage)
         });
         pusherCallObjs[2] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
 
-        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", "0x00");
+        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", dataValues);
     }
 
     function solverLand(uint256 laminatorSequenceNumber, address filler, uint256 maxSlippage) public {

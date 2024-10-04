@@ -3,12 +3,14 @@ pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 
+import {ILaminator} from "src/interfaces/ILaminator.sol";
 import {Laminator} from "src/lamination/Laminator.sol";
 import {CallBreaker} from "src/timetravel/CallBreaker.sol";
 import {LaminatedProxy} from "src/lamination/LaminatedProxy.sol";
 import {CallObjectLib, CallObject, CallObjectHolder, ReturnObject} from "src/TimeTypes.sol";
 import {Math} from "openzeppelin/utils/math/Math.sol";
 import {Dummy} from "./utils/Dummy.sol";
+import {Constants} from "test/utils/Constants.sol";
 
 contract LaminatorHarness is Laminator {
     constructor(address _callBreaker) Laminator(_callBreaker) {}
@@ -20,7 +22,6 @@ contract LaminatorHarness is Laminator {
 
 contract LaminatorTest is Test {
     bytes public constant DEFAULT_CODE = abi.encode(keccak256("DEFAULT_CODE"));
-    bytes public constant EMPTY_DATA = abi.encode(keccak256("0x00"));
 
     CallBreaker public callBreaker;
     Dummy public dummy;
@@ -30,8 +31,14 @@ contract LaminatorTest is Test {
 
     address randomFriendAddress = address(0xbeefd3ad);
 
+    event ProxyPushed(
+        address indexed proxyAddress,
+        CallObject[] callObjs,
+        uint256 sequenceNumber,
+        bytes indexed selector,
+        ILaminator.AdditionalData[] dataValues
+    );
     event ProxyCreated(address indexed owner, address indexed proxyAddress);
-    event ProxyPushed(address indexed proxyAddress, CallObject[] callObjs, uint256 sequenceNumber);
     event ProxyExecuted(address indexed proxyAddress, CallObject[] callObjs);
     event CallPushed(CallObject[] callObjs, uint256 sequenceNumber);
     event CallPulled(CallObject[] callObjs, uint256 sequenceNumber);
@@ -73,10 +80,13 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val1)
         });
         bytes memory cData = abi.encode(callObj1);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
         vm.expectEmit(true, true, true, true);
-        emit ProxyPushed(address(proxy), callObj1, 0);
+        emit ProxyPushed(address(proxy), callObj1, 0, DEFAULT_CODE, dataValues);
         emit CallPushed(callObj1, 0);
-        uint256 sequenceNumber1 = laminator.pushToProxy(cData, 1, DEFAULT_CODE, EMPTY_DATA);
+
+        uint256 sequenceNumber1 = laminator.pushToProxy(cData, 1, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber1, 0);
 
         nextSeq = laminator.getNextSeqNumber();
@@ -93,9 +103,9 @@ contract LaminatorTest is Test {
         });
         cData = abi.encode(callObj2);
         vm.expectEmit(true, true, true, true);
-        emit ProxyPushed(address(proxy), callObj2, 1);
+        emit ProxyPushed(address(proxy), callObj2, 1, DEFAULT_CODE, dataValues);
         emit CallPushed(callObj2, 1);
-        uint256 sequenceNumber2 = laminator.pushToProxy(cData, 1, DEFAULT_CODE, EMPTY_DATA);
+        uint256 sequenceNumber2 = laminator.pushToProxy(cData, 1, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber2, 1);
 
         nextSeq = laminator.getNextSeqNumber();
@@ -129,7 +139,9 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, EMPTY_DATA);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
 
         vm.prank(address(callBreaker), address(callBreaker));
@@ -150,7 +162,9 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        uint256 sequenceNumber = laminator.pushToProxy(cData, 1, DEFAULT_CODE, EMPTY_DATA);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 1, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
 
         // try pulls, make sure it reverts
@@ -170,7 +184,9 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        uint256 sequenceNumber = laminator.pushToProxy(cData, 3, DEFAULT_CODE, EMPTY_DATA);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 3, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
 
         vm.roll(block.number + 1);
@@ -229,7 +245,9 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, EMPTY_DATA);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
 
         // pull once
@@ -250,7 +268,9 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj1);
-        laminator.pushToProxy(cData, 0, DEFAULT_CODE, EMPTY_DATA);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
 
         CallObject[] memory callObj2 = new CallObject[](1);
         callObj2[0] = CallObject({
@@ -260,7 +280,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         cData = abi.encode(callObj2);
-        laminator.pushToProxy(cData, 0, DEFAULT_CODE, EMPTY_DATA);
+        laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
 
         proxy.cancelAllPending();
 
@@ -285,7 +305,9 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, EMPTY_DATA);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
 
         // pull once
@@ -306,7 +328,9 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, EMPTY_DATA);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
 
         // pull once
@@ -336,7 +360,9 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, EMPTY_DATA);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
 
         // try to pull out of order
@@ -357,7 +383,9 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("reverter()")
         });
         bytes memory cData = abi.encode(callObj);
-        uint256 sequenceNumber = laminator.pushToProxy(cData, 1, DEFAULT_CODE, EMPTY_DATA);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 1, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
 
         vm.roll(block.number + 1);
@@ -476,7 +504,9 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("getExecutingCallObject()")
         });
         bytes memory cData = abi.encode(callObj);
-        laminator.pushToProxy(cData, 0, DEFAULT_CODE, EMPTY_DATA);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
 
         vm.prank(address(callBreaker), address(callBreaker));
         bytes memory returnValue = proxy.pull(0);
@@ -495,7 +525,9 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("getExecutingCallObjectHolder()")
         });
         bytes memory cData = abi.encode(callObj);
-        laminator.pushToProxy(cData, 0, DEFAULT_CODE, EMPTY_DATA);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
 
         vm.prank(address(callBreaker), address(callBreaker));
         bytes memory returnValue = proxy.pull(0);
@@ -517,7 +549,9 @@ contract LaminatorTest is Test {
         });
         bytes memory cData = abi.encode(callObj1);
         uint256[] memory sequenceNumber = new uint256[](1);
-        sequenceNumber[0] = laminator.pushToProxy(cData, 0, DEFAULT_CODE, EMPTY_DATA);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        sequenceNumber[0] = laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
 
         // clean before any pull changess nothing
         proxy.cleanupLaminatorStorage(sequenceNumber);

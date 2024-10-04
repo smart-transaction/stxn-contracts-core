@@ -7,6 +7,7 @@ import "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
 import "test/examples/DeFi/SelfCheckout.sol";
 import "test/examples/MyErc20.sol";
+import "test/utils/Constants.sol";
 
 contract SelfCheckoutLib {
     CallBreaker public callbreaker;
@@ -58,9 +59,11 @@ contract SelfCheckoutLib {
             gas: 1000000,
             callvalue: abi.encodeWithSignature("takeSomeAtokenFromOwner(uint256)", 10)
         });
-        laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", "0x00");
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
 
-        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", "0x00");
+        laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", dataValues);
+
+        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", dataValues);
     }
 
     // msg.sender here is the filler. all transfers of funds and approvals are made by the filler.

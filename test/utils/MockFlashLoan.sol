@@ -42,11 +42,7 @@ contract MockFlashLoan {
         return (amount * feePercentage) / 1000; // Fee as 1% of the loaned amount
     }
 
-    function flashLoan(
-        address receiver,
-        uint256 usdtAmount,
-        uint256 daiAmount
-    ) external returns (bool) {
+    function flashLoan(address receiver, uint256 usdtAmount, uint256 daiAmount) external returns (bool) {
         uint256 usdtFee = flashFee(address(usdt), _balanceOfUsdt);
         uint256 daiFee = flashFee(address(dai), _balanceOfDai);
 
