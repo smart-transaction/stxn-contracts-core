@@ -5,8 +5,9 @@ import "forge-std/Vm.sol";
 
 import "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
-import "test/examples/CronCounter.sol";
 import "src/timetravel/SmarterContract.sol";
+import "test/examples/CronCounter.sol";
+import "test/utils/Constants.sol";
 
 // for the next year, every day:
 // tip the pusher with a little eth
@@ -65,7 +66,10 @@ contract CronCounterLib {
             gas: 10000000,
             callvalue: abi.encodeWithSignature("frontrunBlocker()")
         });
-        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
+
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", dataValues);
     }
 
     function solverLand(uint256 laminatorSequenceNumber, address filler, bool isFirstTime) public {

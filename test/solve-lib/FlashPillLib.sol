@@ -5,6 +5,7 @@ import "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
 import "src/timetravel/SmarterContract.sol";
 import "test/examples/FlashPill.sol";
+import "test/utils/Constants.sol";
 
 contract FlashPillLib {
     address payable public pusherLaminated;
@@ -31,7 +32,9 @@ contract FlashPillLib {
 
         pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
 
-        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", dataValues);
     }
 
     function solverLand(uint256 laminatorSequenceNumber, address filler) public {

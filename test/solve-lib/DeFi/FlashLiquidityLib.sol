@@ -8,6 +8,7 @@ import "test/examples/DeFi/SwapPool.sol";
 import "test/utils/MockERC20Token.sol";
 import "test/utils/MockSwapRouter.sol";
 import "test/utils/MockPositionManager.sol";
+import "test/utils/Constants.sol";
 
 contract FlashLiquidityLib {
     address payable public pusherLaminated;
@@ -60,7 +61,9 @@ contract FlashLiquidityLib {
             callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", amountIn, slippagePercent)
         });
 
-        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1);
+        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+
+        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", dataValues);
     }
 
     function solverLand(
