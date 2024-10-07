@@ -13,7 +13,7 @@ import {Dummy} from "./utils/Dummy.sol";
 import {Constants} from "test/utils/Constants.sol";
 
 contract SmarterContractTest is Test {
-    bytes public constant DEFAULT_CODE = abi.encode(keccak256("DEFAULT_CODE"));
+    bytes32 public constant DEFAULT_CODE = keccak256(abi.encode("DEFAULT_CODE"));
 
     CallBreaker public callbreaker;
     CallBreakerHarness callbreakerHarness = new CallBreakerHarness();

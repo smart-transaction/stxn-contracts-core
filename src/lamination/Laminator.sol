@@ -25,7 +25,7 @@ contract Laminator is ILaminator {
         address indexed proxyAddress,
         CallObject[] callObjs,
         uint256 sequenceNumber,
-        bytes indexed selector,
+        bytes32 indexed selector,
         AdditionalData[] dataValues
     );
 
@@ -91,7 +91,7 @@ contract Laminator is ILaminator {
     function pushToProxy(
         bytes calldata cData,
         uint32 delay,
-        bytes calldata selector,
+        bytes32 selector,
         AdditionalData[] memory dataValues
     ) external returns (uint256 sequenceNumber) {
         LaminatedProxy proxy = LaminatedProxy(payable(_getOrCreateProxy(msg.sender)));
