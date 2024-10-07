@@ -29,6 +29,8 @@ abstract contract CallBreakerStorage {
 
     CallObjectStorage[] public callStore;
     ReturnObject[] public returnStore;
+    SubcallObject[] public subcallStore;
+    SubcallReturnObject[] public subcallReturnStore;
 
     bytes32[] public associatedDataKeyList;
     mapping(bytes32 => AssociatedDataStorage) public associatedDataStore;
@@ -170,5 +172,13 @@ abstract contract CallBreakerStorage {
 
     function _getCall(uint256 index) internal view returns (CallObject memory callobj) {
         return callStore[index].load();
+    }
+
+    function _getSubcallReturn(uint256 index) internal view returns (SubcallReturnObject memory _returnObj) {
+        return subcallReturnStore[index];
+    }
+
+    function _getSubcall(uint256 index) internal view returns (SubcallObject memory callobj) {
+        return subcallStore[index];
     }
 }
