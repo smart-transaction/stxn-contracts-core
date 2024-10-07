@@ -12,6 +12,8 @@ interface ISwapPool {
         uint160 sqrtPriceLimitX96;
     }
 
+    function mintAndApproveInitialSupply() external;
+
     function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
 
     function addLiquidity(uint256 amount0, uint256 amount1) external;

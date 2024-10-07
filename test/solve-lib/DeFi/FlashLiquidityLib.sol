@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
 import "src/timetravel/SmarterContract.sol";
-import "test/examples/DeFi/SwapPool.sol";
+import "test/utils/MockDaiWethPool.sol";
 import "test/utils/MockERC20Token.sol";
 import "test/utils/MockSwapRouter.sol";
 import "test/utils/MockPositionManager.sol";
@@ -12,11 +12,9 @@ import "test/utils/Constants.sol";
 
 contract FlashLiquidityLib {
     address payable public pusherLaminated;
-    MockERC20Token public aToken;
-    MockERC20Token public bToken;
-    MockSwapRouter public swapRouter;
-    MockPositionManager public positionManager;
-    SwapPool public pool;
+    MockERC20Token public dai;
+    MockERC20Token public weth;
+    MockDaiWethPool public daiWethPool;
     Laminator public laminator;
     CallBreaker public callbreaker;
     uint256 _tipWei = 33;
@@ -25,16 +23,14 @@ contract FlashLiquidityLib {
         // Initializing contracts
         callbreaker = new CallBreaker();
         laminator = new Laminator(address(callbreaker));
-        aToken = new MockERC20Token("AToken", "AT");
-        bToken = new MockERC20Token("BToken", "BT");
-        swapRouter = new MockSwapRouter(address(aToken), address(bToken));
-        positionManager = new MockPositionManager(address(swapRouter));
-        pool = new SwapPool(
-            address(swapRouter), address(callbreaker), address(positionManager), address(aToken), address(bToken)
-        );
+        dai = new MockERC20Token("Dai", "DAI");
+        weth = new MockERC20Token("Weth", "WETH");
+        daiWethPool = new MockDaiWethPool(address(callbreaker), address(dai), address(weth));
+        daiWethPool.mintInitialLiquidity();
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
-        aToken.mint(100000000000000000000, pusherLaminated);
-        aToken.mint(100000000000000000000, address(callbreaker));
+        dai.mint(pusherLaminated, 100000000000000000000);
+        dai.mint(address(callbreaker), 100000000000000000000);
+        weth.mint(address(callbreaker), 100000000000000000000);
     }
 
     function userLand(uint256 tokenToApprove, uint256 amountIn, uint256 slippagePercent) public returns (uint256) {
@@ -50,13 +46,13 @@ contract FlashLiquidityLib {
         pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
         pusherCallObjs[2] = CallObject({
             amount: 0,
-            addr: address(aToken),
+            addr: address(dai),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("approve(address,uint256)", pool, tokenToApprove)
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", daiWethPool, tokenToApprove)
         });
         pusherCallObjs[3] = CallObject({
             amount: 0,
-            addr: address(pool),
+            addr: address(daiWethPool),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", amountIn, slippagePercent)
         });
@@ -77,7 +73,7 @@ contract FlashLiquidityLib {
 
         callObjs[0] = CallObject({
             amount: 0,
-            addr: address(pool),
+            addr: address(daiWethPool),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("provideLiquidityToDAIETHPool(uint256,uint256)", liquidity, liquidity)
         });
@@ -91,16 +87,16 @@ contract FlashLiquidityLib {
 
         callObjs[2] = CallObject({
             amount: 0,
-            addr: address(swapRouter),
+            addr: address(daiWethPool),
             gas: 10000000,
             callvalue: abi.encodeWithSignature("checkSlippage(uint256)", maxDeviationPercentage)
         });
 
         callObjs[3] = CallObject({
             amount: 0,
-            addr: address(pool),
+            addr: address(daiWethPool),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("withdrawLiquidityFromDAIETHPool()")
+            callvalue: abi.encodeWithSignature("withdrawLiquidityFromDAIETHPool()", liquidity, liquidity)
         });
 
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](4);

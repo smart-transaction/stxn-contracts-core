@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import {IERC20} from "./interfaces/IWeth.sol";
+import {IERC20} from "./interfaces/IMintableERC20.sol";
 
 interface IFlashLoanBorrower {
     function onFlashLoan(address initiator, address token1, uint256 amount1, address token2, uint256 amount2)
