@@ -40,7 +40,7 @@ contract MockDaiWethPool is SmarterContract {
         _balanceOfDai += amountIn;
         uint256 amountOut = (amountIn * _balanceOfWeth) / _balanceOfDai;
         _balanceOfWeth -= amountOut;
-        require(weth.transferFrom(address(this), msg.sender, amountOut), "transferFrom failed.");
+        require(weth.transfer(msg.sender, amountOut), "transferFrom failed.");
 
         // check whether or not
         CallObject[] memory callObjs = new CallObject[](1);
@@ -67,8 +67,8 @@ contract MockDaiWethPool is SmarterContract {
     function withdrawLiquidityFromDAIETHPool(uint256 _amount0Out, uint256 _amount1Out) external {
         uint256 amount0Desired = _amount0Out * 1e18;
         uint256 amount1Desired = _amount1Out * 1e18;
-        require(dai.transferFrom(address(this), msg.sender, amount0Desired), "transferFrom _amount0Out failed.");
-        require(weth.transferFrom(address(this), msg.sender, amount1Desired), "transferFrom _amount1Out failed.");
+        require(dai.transfer(msg.sender, amount0Desired), "transferFrom _amount0Out failed.");
+        require(weth.transfer(msg.sender, amount1Desired), "transferFrom _amount1Out failed.");
 
         _balanceOfDai -= amount0Desired;
         _balanceOfWeth -= amount1Desired;
