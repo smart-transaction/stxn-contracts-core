@@ -29,7 +29,7 @@ interface ILaminator {
     function pushToProxy(
         bytes calldata cData,
         uint32 delay,
-        bytes calldata selector,
+        bytes32 selector,
         AdditionalData[] memory dataValues
     ) external returns (uint256 sequenceNumber);
 }
