@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
 import "src/timetravel/SmarterContract.sol";
-import "test/utils/MockDaiWethPool.sol";
+import "test/examples/DeFi/MockDaiWethPool.sol";
 import "test/utils/MockERC20Token.sol";
 import "test/utils/MockSwapRouter.sol";
 import "test/utils/MockPositionManager.sol";
