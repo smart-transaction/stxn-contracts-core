@@ -21,7 +21,7 @@ contract LaminatorHarness is Laminator {
 }
 
 contract LaminatorTest is Test {
-    bytes public constant DEFAULT_CODE = abi.encode(keccak256("DEFAULT_CODE"));
+    bytes32 public constant DEFAULT_CODE = keccak256(abi.encode("DEFAULT_CODE"));
 
     CallBreaker public callBreaker;
     Dummy public dummy;
@@ -35,7 +35,7 @@ contract LaminatorTest is Test {
         address indexed proxyAddress,
         CallObject[] callObjs,
         uint256 sequenceNumber,
-        bytes indexed selector,
+        bytes32 indexed selector,
         ILaminator.AdditionalData[] dataValues
     );
     event ProxyCreated(address indexed owner, address indexed proxyAddress);
