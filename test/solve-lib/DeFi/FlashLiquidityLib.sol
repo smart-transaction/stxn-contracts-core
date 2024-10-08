@@ -133,6 +133,6 @@ contract FlashLiquidityLib {
         hintindicesVals[2] = 2;
         hintindicesVals[3] = 3;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
 }

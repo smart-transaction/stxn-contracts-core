@@ -49,6 +49,6 @@ contract NoopTurnerTest is Test {
 
         // call verify
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.verify(callObjsBytes, returnObjsBytes, encodedData, hintindices);
+        callbreaker.executeAndVerify(callObjsBytes, returnObjsBytes, encodedData, hintindices);
     }
 }
