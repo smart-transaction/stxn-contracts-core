@@ -104,10 +104,7 @@ contract CallBreaker is CallBreakerStorage {
         _setupExecutionData(callsBytes, returnsBytes, associatedData, hintdices);
         FlashLoanData memory _flashLoanData = abi.decode(flashLoanData, (FlashLoanData));
         IFlashLoan(_flashLoanData.provider).flashLoan(
-            address(this),
-            _flashLoanData.amountA,
-            _flashLoanData.amountB,
-            callsBytes
+            address(this), _flashLoanData.amountA, _flashLoanData.amountB, callsBytes
         );
     }
 

@@ -2,7 +2,6 @@
 pragma solidity 0.8.26;
 
 import "src/timetravel/SmarterContract.sol";
-
 import {IMintableERC20} from "test/utils/interfaces/IMintableERC20.sol";
 
 contract MockDaiWethPool is SmarterContract {
@@ -16,11 +15,10 @@ contract MockDaiWethPool is SmarterContract {
     IMintableERC20 public dai;
 
     event LiquiditySetForPriceTest();
+
     error InvalidPriceLimit();
 
-    constructor(address _callbreaker, address _dai, address _weth)
-        SmarterContract(_callbreaker)
-    {
+    constructor(address _callbreaker, address _dai, address _weth) SmarterContract(_callbreaker) {
         dai = IMintableERC20(_dai);
         weth = IMintableERC20(_weth);
         owner = msg.sender;
@@ -54,21 +52,21 @@ contract MockDaiWethPool is SmarterContract {
         assertFutureCallTo(callObjs[0]);
     }
 
-    function provideLiquidityToDAIETHPool(uint256 _amount0In, uint256 _amount1In) external {
+    function provideLiquidityToDAIETHPool(address provider, uint256 _amount0In, uint256 _amount1In) external {
         uint256 amount0Desired = _amount0In * 1e18;
         uint256 amount1Desired = _amount1In * 1e18;
-        require(dai.transferFrom(msg.sender, address(this), amount0Desired), "transferFrom _amount0In failed.");
-        require(weth.transferFrom(msg.sender, address(this), amount1Desired), "transferFrom _amount1In failed.");
+        require(dai.transferFrom(provider, address(this), amount0Desired), "transferFrom _amount0In failed.");
+        require(weth.transferFrom(provider, address(this), amount1Desired), "transferFrom _amount1In failed.");
 
         _balanceOfDai += amount0Desired;
         _balanceOfWeth += amount1Desired;
     }
 
-    function withdrawLiquidityFromDAIETHPool(uint256 _amount0Out, uint256 _amount1Out) external {
+    function withdrawLiquidityFromDAIETHPool(address provider, uint256 _amount0Out, uint256 _amount1Out) external {
         uint256 amount0Desired = _amount0Out * 1e18;
         uint256 amount1Desired = _amount1Out * 1e18;
-        require(dai.transfer(msg.sender, amount0Desired), "transferFrom _amount0Out failed.");
-        require(weth.transfer(msg.sender, amount1Desired), "transferFrom _amount1Out failed.");
+        require(dai.transfer(provider, amount0Desired), "transferFrom _amount0Out failed.");
+        require(weth.transfer(provider, amount1Desired), "transferFrom _amount1Out failed.");
 
         _balanceOfDai -= amount0Desired;
         _balanceOfWeth -= amount1Desired;

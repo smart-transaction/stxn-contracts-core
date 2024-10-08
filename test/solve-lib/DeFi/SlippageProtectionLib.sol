@@ -10,7 +10,7 @@ import "test/utils/MockPositionManager.sol";
 import "test/utils/Constants.sol";
 
 contract SlippageProtectionLib {
-    uint256 constant public DECIMAL = 1e18;
+    uint256 public constant DECIMAL = 1e18;
 
     address payable public pusherLaminated;
     MockERC20Token public dai;

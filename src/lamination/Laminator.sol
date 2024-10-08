@@ -88,12 +88,10 @@ contract Laminator is ILaminator {
     /// @param selector code identifier for solvers to select relevant actions
     /// @param dataValues to be used by solvers in serving the user objective
     /// @return sequenceNumber The sequence number of the deferred function call.
-    function pushToProxy(
-        bytes calldata cData,
-        uint32 delay,
-        bytes32 selector,
-        AdditionalData[] memory dataValues
-    ) external returns (uint256 sequenceNumber) {
+    function pushToProxy(bytes calldata cData, uint32 delay, bytes32 selector, AdditionalData[] memory dataValues)
+        external
+        returns (uint256 sequenceNumber)
+    {
         LaminatedProxy proxy = LaminatedProxy(payable(_getOrCreateProxy(msg.sender)));
 
         sequenceNumber = proxy.push(cData, delay);

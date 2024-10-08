@@ -5,6 +5,7 @@ import "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
 import "src/timetravel/SmarterContract.sol";
 import "test/examples/DeFi/MockDaiWethPool.sol";
+import "test/examples/DeFi/MockLiquidityProvider.sol";
 import "test/utils/MockERC20Token.sol";
 import "test/utils/MockSwapRouter.sol";
 import "test/utils/MockPositionManager.sol";
@@ -15,6 +16,8 @@ contract FlashLiquidityLib {
     MockERC20Token public dai;
     MockERC20Token public weth;
     MockDaiWethPool public daiWethPool;
+    MockLiquidityProvider public liquidityProvider;
+
     Laminator public laminator;
     CallBreaker public callbreaker;
     uint256 _tipWei = 33;
@@ -29,8 +32,10 @@ contract FlashLiquidityLib {
         daiWethPool.mintInitialLiquidity();
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
         dai.mint(pusherLaminated, 100000000000000000000);
-        dai.mint(address(callbreaker), 100000000000000000000);
-        weth.mint(address(callbreaker), 100000000000000000000);
+
+        liquidityProvider = new MockLiquidityProvider(dai, weth);
+        dai.mint(address(liquidityProvider), 100000000000000000000);
+        weth.mint(address(liquidityProvider), 100000000000000000000);
     }
 
     function userLand(uint256 tokenToApprove, uint256 amountIn, uint256 slippagePercent) public returns (uint256) {
@@ -41,16 +46,15 @@ contract FlashLiquidityLib {
         // Temporarily, this example uses a call to swap but only sets slippage protection in
         // sqrtPriceLimitX96 (not within the call to Uniswaps)
         // TODO: On swap, needs to also enforce invariant: funds must get returned to the user.
-        CallObject[] memory pusherCallObjs = new CallObject[](4);
+        CallObject[] memory pusherCallObjs = new CallObject[](3);
         pusherCallObjs[0] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
-        pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
-        pusherCallObjs[2] = CallObject({
+        pusherCallObjs[1] = CallObject({
             amount: 0,
             addr: address(dai),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("approve(address,uint256)", daiWethPool, tokenToApprove)
         });
-        pusherCallObjs[3] = CallObject({
+        pusherCallObjs[2] = CallObject({
             amount: 0,
             addr: address(daiWethPool),
             gas: 1000000,
@@ -75,7 +79,9 @@ contract FlashLiquidityLib {
             amount: 0,
             addr: address(daiWethPool),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("provideLiquidityToDAIETHPool(uint256,uint256)", liquidity, liquidity)
+            callvalue: abi.encodeWithSignature(
+                "provideLiquidityToDAIETHPool(address, uint256,uint256)", provider, liquidity, liquidity
+            )
         });
 
         callObjs[1] = CallObject({
