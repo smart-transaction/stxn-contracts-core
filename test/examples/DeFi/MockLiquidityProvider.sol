@@ -19,8 +19,8 @@ contract MockLiquidityProvider {
     }
 
     function approveTransfer(address spender, uint256 amountA, uint256 amountB) external returns (bool) {
-        tokenA.approve(spender, amountA);
-        tokenB.approve(spender, amountB);
+        tokenA.approve(spender, amountA * 1e18);
+        tokenB.approve(spender, amountB * 1e18);
         return true;
     }
 }

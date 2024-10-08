@@ -32,8 +32,8 @@ contract FlashLiquidityLib {
         dai.mint(pusherLaminated, 100000000000000000000);
 
         liquidityProvider = new MockLiquidityProvider(dai, weth);
-        dai.mint(address(liquidityProvider), 100000000000000000000);
-        weth.mint(address(liquidityProvider), 100000000000000000000);
+        dai.mint(address(liquidityProvider), 1009000000000000000000);
+        weth.mint(address(liquidityProvider), 1000000000000000000000);
     }
 
     function userLand(uint256 tokenToApprove, uint256 amountIn, uint256 slippagePercent) public returns (uint256) {
@@ -65,7 +65,8 @@ contract FlashLiquidityLib {
     }
 
     function solverLand(
-        uint256 liquidity,
+        uint256 liquidity0,
+        uint256 liquidity1,
         uint256 laminatorSequenceNumber,
         uint256 maxDeviationPercentage,
         address filler
@@ -78,7 +79,7 @@ contract FlashLiquidityLib {
             addr: address(liquidityProvider),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
-                "approveTransfer(address,uint256,uint256)", address(daiWethPool), liquidity, liquidity
+                "approveTransfer(address,uint256,uint256)", address(daiWethPool), liquidity0, liquidity1
             )
         });
 
@@ -87,7 +88,7 @@ contract FlashLiquidityLib {
             addr: address(daiWethPool),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
-                "provideLiquidityToDAIETHPool(address,uint256,uint256)", liquidityProvider, liquidity, liquidity
+                "provideLiquidityToDAIETHPool(address,uint256,uint256)", liquidityProvider, liquidity0, liquidity1
             )
         });
 
@@ -109,7 +110,9 @@ contract FlashLiquidityLib {
             amount: 0,
             addr: address(daiWethPool),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("withdrawLiquidityFromDAIETHPool()", liquidity, liquidity)
+            callvalue: abi.encodeWithSignature(
+                "withdrawLiquidityFromDAIETHPool(address,uint256,uint256)", liquidityProvider, liquidity0, liquidity1
+            )
         });
 
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](3);
