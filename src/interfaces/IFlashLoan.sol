@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 interface IFlashLoan {
-    function flashLoan(address receiver, address tokenA, uint256 amountA, address tokenB, uint256 amountB, bytes data)
+    function flashLoan(address receiver, uint256 amountA, uint256 amountB, bytes calldata data)
         external
         returns (bool);
 }

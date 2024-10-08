@@ -54,7 +54,7 @@ contract CallBreaker is CallBreakerStorage {
 
     event CallPopulated(CallObject callObj, uint256 index);
 
-    /// @todo Will be removed after updating the flash loan logic
+    /// @notice Will be removed after updating the flash loan logic
     event CallBreakerFlashFunds(address tokenA, uint256 amountA, address tokenB, uint256 amountB);
 
     /// @notice Initializes the contract; sets the initial portal status to closed
@@ -82,14 +82,13 @@ contract CallBreaker is CallBreakerStorage {
         bytes calldata associatedData,
         bytes calldata hintdices
     ) external payable onlyPortalClosed {
-        _setPortalOpen();
         CallObject[] memory calls = _setupExecutionData(callsBytes, returnsBytes, associatedData, hintdices);
         _executeAndVerifyCalls(calls);
     }
 
     /// @notice fetches flash loan before executing and verifying call objects who might use the loaned amount
     /// @dev SECURITY NOTICE: This function is a temporary place holder for a nested call objects solution which is still under development
-    /// @todo Remove and replace with a generic version of nested call objects
+    /// TODO: Remove and replace with a generic version of nested call objects
     /// @param callsBytes The bytes representing the calls to be verified
     /// @param returnsBytes The bytes representing the returns to be verified against
     /// @param associatedData Bytes representing associated data with the verify call, reserved for tipping the solver
@@ -102,14 +101,11 @@ contract CallBreaker is CallBreakerStorage {
         bytes calldata hintdices,
         bytes calldata flashLoanData
     ) external payable onlyPortalClosed {
-        _setPortalOpen();
-        CallObject[] memory calls = _setupExecutionData(callsBytes, returnsBytes, associatedData, hintdices);
+        _setupExecutionData(callsBytes, returnsBytes, associatedData, hintdices);
         FlashLoanData memory _flashLoanData = abi.decode(flashLoanData, (FlashLoanData));
         IFlashLoan(_flashLoanData.provider).flashLoan(
             address(this),
-            _flashLoanData.tokenA,
             _flashLoanData.amountA,
-            _flashLoanData.tokenB,
             _flashLoanData.amountB,
             callsBytes
         );
@@ -136,9 +132,7 @@ contract CallBreaker is CallBreakerStorage {
         emit CallBreakerFlashFunds(tokenA, amountA, tokenB, amountB);
         CallObject[] memory calls = abi.decode(data, (CallObject[]));
 
-        if (success) {
-            _executeAndVerifyCalls(calls);
-        }
+        _executeAndVerifyCalls(calls);
         IERC20(tokenA).approve(msg.sender, amountA);
         IERC20(tokenB).approve(msg.sender, amountB);
         return true;
@@ -250,6 +244,7 @@ contract CallBreaker is CallBreakerStorage {
         if (msg.sender != tx.origin) {
             revert MustBeEOA();
         }
+        _setPortalOpen();
 
         CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
         ReturnObject[] memory returnValues = abi.decode(returnsBytes, (ReturnObject[]));

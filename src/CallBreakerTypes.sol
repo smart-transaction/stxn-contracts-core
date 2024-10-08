@@ -18,13 +18,11 @@ struct AssociatedDataStorage {
 
 /// @dev struct used to get flash loan through call breaker
 /// @param provider of flash loan should be EIP 3165 complaint
-/// @param token address of the token being loaned
-/// @param amount to fetched as flash loan
+/// @param amountA amount of first token
+/// @param amountB amount of second token
 struct FlashLoanData {
     address provider;
-    address tokenA;
     uint256 amountA;
-    address tokenB;
     uint256 amountB;
 }
 
