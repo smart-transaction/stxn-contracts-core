@@ -4,7 +4,7 @@ pragma solidity >=0.6.2 <0.9.0;
 import "src/TimeTypes.sol";
 import "src/timetravel/CallBreakerStorage.sol";
 import "src/interfaces/IFlashLoan.sol";
-import {IERC20} from "test/utils/interfaces/IWeth.sol";
+import {IERC20} from "test/utils/interfaces/IMintableERC20.sol";
 
 contract CallBreaker is CallBreakerStorage {
     /// @dev Error thrown when there are no return values left
@@ -110,7 +110,6 @@ contract CallBreaker is CallBreakerStorage {
 
     /**
      * @dev Receive a flash loan.
-     * @param initiator The initiator of the loan.
      * @param tokenA The first loan currency.
      * @param amountA The amount of tokens lent.
      * @param tokenB The second loan currency.
@@ -119,7 +118,7 @@ contract CallBreaker is CallBreakerStorage {
      * @return true if the function executed successfully
      */
     function onFlashLoan(
-        address initiator,
+        address, /*initiator*/
         address tokenA,
         uint256 amountA,
         address tokenB,

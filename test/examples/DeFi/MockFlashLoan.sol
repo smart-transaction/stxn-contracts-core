@@ -28,29 +28,19 @@ contract MockFlashLoan {
         return (weth.balanceOf(address(this)), dai.balanceOf(address(this)));
     }
 
-    function flashLoan(
-        address receiver,
-        uint256 usdtAmount,
-        bytes calldata usdtData,
-        uint256 daiAmount,
-        bytes calldata daiData
-    ) external returns (bool) {
-        uint256 usdtFee = flashFee(address(usdt), _balanceOfUsdt);
-        uint256 daiFee = flashFee(address(dai), _balanceOfDai);
-
-        require(usdtAmount <= _balanceOfUsdt, "Insufficient usdt liquidity");
-        require(daiAmount <= _balanceOfDai, "Insufficient dai liquidity");
-
-        // Transfer tokens to the borrower
-        weth.transfer(receiver, amountA);
-        dai.transfer(receiver, amountB);
+    function flashLoan(address receiver, uint256 daiAmount, uint256 wethAmount, bytes calldata data)
+        external
+        returns (bool)
+    {
+        require(dai.transfer(receiver, daiAmount), "Insufficient dai liquidity");
+        require(weth.transfer(receiver, wethAmount), "Insufficient usdt liquidity");
 
         // Call the borrower's onFlashLoan function once (consolidated)
-        IFlashLoanBorrower(receiver).onFlashLoan(msg.sender, address(usdt), usdtAmount, address(dai), daiAmount);
+        IFlashLoanBorrower(receiver).onFlashLoan(msg.sender, address(dai), daiAmount, address(weth), wethAmount);
 
         // Fetch the amount + fee via transferFrom
-        weth.transferFrom(receiver, address(this), amountA);
-        dai.transferFrom(receiver, address(this), amountB);
+        require(dai.transferFrom(receiver, address(this), daiAmount), "Loan repayment failed");
+        require(weth.transferFrom(receiver, address(this), wethAmount), "Loan repayment failed");
 
         return true;
     }

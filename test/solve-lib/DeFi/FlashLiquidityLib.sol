@@ -7,8 +7,6 @@ import "src/timetravel/SmarterContract.sol";
 import "test/examples/DeFi/MockDaiWethPool.sol";
 import "test/examples/DeFi/MockLiquidityProvider.sol";
 import "test/utils/MockERC20Token.sol";
-import "test/utils/MockSwapRouter.sol";
-import "test/utils/MockPositionManager.sol";
 import "test/utils/Constants.sol";
 
 contract FlashLiquidityLib {
@@ -72,49 +70,58 @@ contract FlashLiquidityLib {
         uint256 maxDeviationPercentage,
         address filler
     ) public {
-        CallObject[] memory callObjs = new CallObject[](4);
-        ReturnObject[] memory returnObjs = new ReturnObject[](4);
+        CallObject[] memory callObjs = new CallObject[](5);
+        ReturnObject[] memory returnObjs = new ReturnObject[](5);
 
         callObjs[0] = CallObject({
             amount: 0,
-            addr: address(daiWethPool),
+            addr: address(liquidityProvider),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
-                "provideLiquidityToDAIETHPool(address, uint256,uint256)", provider, liquidity, liquidity
+                "approveTransfer(address,uint256,uint256)", address(daiWethPool), liquidity, liquidity
             )
         });
 
         callObjs[1] = CallObject({
+            amount: 0,
+            addr: address(daiWethPool),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature(
+                "provideLiquidityToDAIETHPool(address,uint256,uint256)", liquidityProvider, liquidity, liquidity
+            )
+        });
+
+        callObjs[2] = CallObject({
             amount: 0,
             addr: pusherLaminated,
             gas: 1000000,
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
 
-        callObjs[2] = CallObject({
+        callObjs[3] = CallObject({
             amount: 0,
             addr: address(daiWethPool),
             gas: 10000000,
             callvalue: abi.encodeWithSignature("checkSlippage(uint256)", maxDeviationPercentage)
         });
 
-        callObjs[3] = CallObject({
+        callObjs[4] = CallObject({
             amount: 0,
             addr: address(daiWethPool),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("withdrawLiquidityFromDAIETHPool()", liquidity, liquidity)
         });
 
-        ReturnObject[] memory returnObjsFromPull = new ReturnObject[](4);
+        ReturnObject[] memory returnObjsFromPull = new ReturnObject[](3);
         returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
-        returnObjsFromPull[1] = ReturnObject({returnvalue: ""});
-        returnObjsFromPull[2] = ReturnObject({returnvalue: abi.encode(true)});
-        returnObjsFromPull[3] = ReturnObject({returnvalue: ""});
+        returnObjsFromPull[1] = ReturnObject({returnvalue: abi.encode(true)});
+        returnObjsFromPull[2] = ReturnObject({returnvalue: ""});
 
-        returnObjs[0] = ReturnObject({returnvalue: ""});
-        returnObjs[1] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
-        returnObjs[2] = ReturnObject({returnvalue: ""});
+        returnObjs[0] = ReturnObject({returnvalue: abi.encode(true)});
+        returnObjs[1] = ReturnObject({returnvalue: ""});
+        returnObjs[2] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
         returnObjs[3] = ReturnObject({returnvalue: ""});
+        returnObjs[4] = ReturnObject({returnvalue: ""});
 
         bytes32[] memory keys = new bytes32[](2);
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
@@ -124,16 +131,18 @@ contract FlashLiquidityLib {
         values[1] = abi.encode(laminatorSequenceNumber);
         bytes memory encodedData = abi.encode(keys, values);
 
-        bytes32[] memory hintdicesKeys = new bytes32[](4);
+        bytes32[] memory hintdicesKeys = new bytes32[](5);
         hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
         hintdicesKeys[1] = keccak256(abi.encode(callObjs[1]));
         hintdicesKeys[2] = keccak256(abi.encode(callObjs[2]));
         hintdicesKeys[3] = keccak256(abi.encode(callObjs[3]));
-        uint256[] memory hintindicesVals = new uint256[](4);
+        hintdicesKeys[4] = keccak256(abi.encode(callObjs[4]));
+        uint256[] memory hintindicesVals = new uint256[](5);
         hintindicesVals[0] = 0;
         hintindicesVals[1] = 1;
         hintindicesVals[2] = 2;
         hintindicesVals[3] = 3;
+        hintindicesVals[4] = 4;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
         callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
