@@ -3,19 +3,17 @@ pragma solidity 0.8.26;
 
 import "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
-import "test/examples/DeFi/SwapPool.sol";
+import "test/examples/DeFi/MockDaiWethPool.sol";
 import "test/utils/MockERC20Token.sol";
-import "test/utils/MockSwapRouter.sol";
-import "test/utils/MockPositionManager.sol";
 import "test/utils/Constants.sol";
 
 contract SlippageProtectionLib {
+    uint256 public constant DECIMAL = 1e18;
+
     address payable public pusherLaminated;
-    MockERC20Token public aToken;
-    MockERC20Token public bToken;
-    MockSwapRouter public swapRouter;
-    MockPositionManager public positionManager;
-    SwapPool public pool;
+    MockERC20Token public dai;
+    MockERC20Token public weth;
+    MockDaiWethPool public daiWethPool;
     Laminator public laminator;
     CallBreaker public callbreaker;
     uint256 private _tipWei = 33;
@@ -24,16 +22,13 @@ contract SlippageProtectionLib {
         // Initializing contracts
         callbreaker = new CallBreaker();
         laminator = new Laminator(address(callbreaker));
-        aToken = new MockERC20Token("AToken", "AT");
-        bToken = new MockERC20Token("BToken", "BT");
-        swapRouter = new MockSwapRouter(address(aToken), address(bToken));
-        positionManager = new MockPositionManager(address(swapRouter));
-        pool = new SwapPool(
-            address(swapRouter), address(callbreaker), address(positionManager), address(aToken), address(bToken)
-        );
+        dai = new MockERC20Token("Dai", "DAI");
+        weth = new MockERC20Token("Weth", "WETH");
+        daiWethPool = new MockDaiWethPool(address(callbreaker), address(dai), address(weth));
+        daiWethPool.mintInitialLiquidity();
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
-        aToken.mint(100e18, pusherLaminated);
-        bToken.mint(100e18, address(callbreaker));
+        dai.mint(pusherLaminated, 100e18);
+        weth.mint(address(callbreaker), 100e18);
     }
 
     function userLand(uint256 maxSlippage) public returns (uint256) {
@@ -46,13 +41,13 @@ contract SlippageProtectionLib {
         CallObject[] memory pusherCallObjs = new CallObject[](3);
         pusherCallObjs[0] = CallObject({
             amount: 0,
-            addr: address(aToken),
+            addr: address(dai),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("approve(address,uint256)", pool, 100e18)
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", daiWethPool, 100e18)
         });
         pusherCallObjs[1] = CallObject({
             amount: 0,
-            addr: address(pool),
+            addr: address(daiWethPool),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", 100, maxSlippage)
         });
@@ -82,7 +77,7 @@ contract SlippageProtectionLib {
 
         callObjs[1] = CallObject({
             amount: 0,
-            addr: address(swapRouter),
+            addr: address(daiWethPool),
             gas: 10000000,
             callvalue: abi.encodeWithSignature("checkSlippage(uint256)", maxSlippage)
         });

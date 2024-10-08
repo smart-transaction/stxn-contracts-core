@@ -33,14 +33,14 @@ contract FlashLiquidityTest is Test, FlashLiquidityLib {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher, pusher);
-        laminatorSequenceNumber = userLand(100000000000000000000, 10, 1);
+        laminatorSequenceNumber = userLand(100000000000000000000, 10, 2);
         vm.stopPrank();
 
         // go forward in time
         vm.roll(block.number + 1);
 
         vm.startPrank(filler, filler);
-        solverLand(1000, laminatorSequenceNumber, 1, filler);
+        solverLand(1000, 100, laminatorSequenceNumber, 2, filler);
         vm.stopPrank();
 
         assertFalse(callbreaker.isPortalOpen());
@@ -63,7 +63,7 @@ contract FlashLiquidityTest is Test, FlashLiquidityLib {
 
         vm.startPrank(filler, filler);
         vm.expectRevert();
-        solverLand(0, laminatorSequenceNumber, 1, filler); // No liquidity provided
+        solverLand(0, 0, laminatorSequenceNumber, 1, filler); // No liquidity provided
         vm.stopPrank();
     }
 }

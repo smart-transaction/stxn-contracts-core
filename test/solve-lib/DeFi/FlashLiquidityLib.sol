@@ -4,19 +4,18 @@ pragma solidity 0.8.26;
 import "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
 import "src/timetravel/SmarterContract.sol";
-import "test/examples/DeFi/SwapPool.sol";
+import "test/examples/DeFi/MockDaiWethPool.sol";
+import "test/examples/DeFi/MockLiquidityProvider.sol";
 import "test/utils/MockERC20Token.sol";
-import "test/utils/MockSwapRouter.sol";
-import "test/utils/MockPositionManager.sol";
 import "test/utils/Constants.sol";
 
 contract FlashLiquidityLib {
     address payable public pusherLaminated;
-    MockERC20Token public aToken;
-    MockERC20Token public bToken;
-    MockSwapRouter public swapRouter;
-    MockPositionManager public positionManager;
-    SwapPool public pool;
+    MockERC20Token public dai;
+    MockERC20Token public weth;
+    MockDaiWethPool public daiWethPool;
+    MockLiquidityProvider public liquidityProvider;
+
     Laminator public laminator;
     CallBreaker public callbreaker;
     uint256 _tipWei = 33;
@@ -25,16 +24,16 @@ contract FlashLiquidityLib {
         // Initializing contracts
         callbreaker = new CallBreaker();
         laminator = new Laminator(address(callbreaker));
-        aToken = new MockERC20Token("AToken", "AT");
-        bToken = new MockERC20Token("BToken", "BT");
-        swapRouter = new MockSwapRouter(address(aToken), address(bToken));
-        positionManager = new MockPositionManager(address(swapRouter));
-        pool = new SwapPool(
-            address(swapRouter), address(callbreaker), address(positionManager), address(aToken), address(bToken)
-        );
+        dai = new MockERC20Token("Dai", "DAI");
+        weth = new MockERC20Token("Weth", "WETH");
+        daiWethPool = new MockDaiWethPool(address(callbreaker), address(dai), address(weth));
+        daiWethPool.mintInitialLiquidity();
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
-        aToken.mint(100000000000000000000, pusherLaminated);
-        aToken.mint(100000000000000000000, address(callbreaker));
+        dai.mint(pusherLaminated, 100000000000000000000);
+
+        liquidityProvider = new MockLiquidityProvider(dai, weth);
+        dai.mint(address(liquidityProvider), 1009000000000000000000);
+        weth.mint(address(liquidityProvider), 1000000000000000000000);
     }
 
     function userLand(uint256 tokenToApprove, uint256 amountIn, uint256 slippagePercent) public returns (uint256) {
@@ -45,18 +44,17 @@ contract FlashLiquidityLib {
         // Temporarily, this example uses a call to swap but only sets slippage protection in
         // sqrtPriceLimitX96 (not within the call to Uniswaps)
         // TODO: On swap, needs to also enforce invariant: funds must get returned to the user.
-        CallObject[] memory pusherCallObjs = new CallObject[](4);
+        CallObject[] memory pusherCallObjs = new CallObject[](3);
         pusherCallObjs[0] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
-        pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
+        pusherCallObjs[1] = CallObject({
+            amount: 0,
+            addr: address(dai),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", daiWethPool, tokenToApprove)
+        });
         pusherCallObjs[2] = CallObject({
             amount: 0,
-            addr: address(aToken),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("approve(address,uint256)", pool, tokenToApprove)
-        });
-        pusherCallObjs[3] = CallObject({
-            amount: 0,
-            addr: address(pool),
+            addr: address(daiWethPool),
             gas: 1000000,
             callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", amountIn, slippagePercent)
         });
@@ -67,52 +65,66 @@ contract FlashLiquidityLib {
     }
 
     function solverLand(
-        uint256 liquidity,
+        uint256 liquidity0,
+        uint256 liquidity1,
         uint256 laminatorSequenceNumber,
         uint256 maxDeviationPercentage,
         address filler
     ) public {
-        CallObject[] memory callObjs = new CallObject[](4);
-        ReturnObject[] memory returnObjs = new ReturnObject[](4);
+        CallObject[] memory callObjs = new CallObject[](5);
+        ReturnObject[] memory returnObjs = new ReturnObject[](5);
 
         callObjs[0] = CallObject({
             amount: 0,
-            addr: address(pool),
+            addr: address(liquidityProvider),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("provideLiquidityToDAIETHPool(uint256,uint256)", liquidity, liquidity)
+            callvalue: abi.encodeWithSignature(
+                "approveTransfer(address,uint256,uint256)", address(daiWethPool), liquidity0, liquidity1
+            )
         });
 
         callObjs[1] = CallObject({
+            amount: 0,
+            addr: address(daiWethPool),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature(
+                "provideLiquidityToDAIETHPool(address,uint256,uint256)", liquidityProvider, liquidity0, liquidity1
+            )
+        });
+
+        callObjs[2] = CallObject({
             amount: 0,
             addr: pusherLaminated,
             gas: 1000000,
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
 
-        callObjs[2] = CallObject({
+        callObjs[3] = CallObject({
             amount: 0,
-            addr: address(swapRouter),
+            addr: address(daiWethPool),
             gas: 10000000,
             callvalue: abi.encodeWithSignature("checkSlippage(uint256)", maxDeviationPercentage)
         });
 
-        callObjs[3] = CallObject({
+        callObjs[4] = CallObject({
             amount: 0,
-            addr: address(pool),
+            addr: address(daiWethPool),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("withdrawLiquidityFromDAIETHPool()")
+            callvalue: abi.encodeWithSignature(
+                "withdrawLiquidityFromDAIETHPool(address,uint256,uint256)", liquidityProvider, liquidity0, liquidity1
+            )
         });
 
-        ReturnObject[] memory returnObjsFromPull = new ReturnObject[](4);
+        ReturnObject[] memory returnObjsFromPull = new ReturnObject[](3);
         returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
-        returnObjsFromPull[1] = ReturnObject({returnvalue: ""});
-        returnObjsFromPull[2] = ReturnObject({returnvalue: abi.encode(true)});
-        returnObjsFromPull[3] = ReturnObject({returnvalue: ""});
+        returnObjsFromPull[1] = ReturnObject({returnvalue: abi.encode(true)});
+        returnObjsFromPull[2] = ReturnObject({returnvalue: ""});
 
-        returnObjs[0] = ReturnObject({returnvalue: ""});
-        returnObjs[1] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
-        returnObjs[2] = ReturnObject({returnvalue: ""});
+        returnObjs[0] = ReturnObject({returnvalue: abi.encode(true)});
+        returnObjs[1] = ReturnObject({returnvalue: ""});
+        returnObjs[2] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
         returnObjs[3] = ReturnObject({returnvalue: ""});
+        returnObjs[4] = ReturnObject({returnvalue: ""});
 
         bytes32[] memory keys = new bytes32[](2);
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
@@ -122,16 +134,18 @@ contract FlashLiquidityLib {
         values[1] = abi.encode(laminatorSequenceNumber);
         bytes memory encodedData = abi.encode(keys, values);
 
-        bytes32[] memory hintdicesKeys = new bytes32[](4);
+        bytes32[] memory hintdicesKeys = new bytes32[](5);
         hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
         hintdicesKeys[1] = keccak256(abi.encode(callObjs[1]));
         hintdicesKeys[2] = keccak256(abi.encode(callObjs[2]));
         hintdicesKeys[3] = keccak256(abi.encode(callObjs[3]));
-        uint256[] memory hintindicesVals = new uint256[](4);
+        hintdicesKeys[4] = keccak256(abi.encode(callObjs[4]));
+        uint256[] memory hintindicesVals = new uint256[](5);
         hintindicesVals[0] = 0;
         hintindicesVals[1] = 1;
         hintindicesVals[2] = 2;
         hintindicesVals[3] = 3;
+        hintindicesVals[4] = 4;
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
         callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
