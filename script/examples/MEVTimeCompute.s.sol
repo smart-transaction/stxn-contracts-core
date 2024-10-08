@@ -40,7 +40,7 @@ contract DeployMEVTimeCompute is Script, BaseDeployer {
 
             createSelectFork(deployForks[i]);
 
-            chainDeploySmartedContract();
+            chainDeployMEVTimeCompute();
 
             unchecked {
                 ++i;
@@ -50,7 +50,7 @@ contract DeployMEVTimeCompute is Script, BaseDeployer {
     }
 
     /// @dev Function to perform actual deployment.
-    function chainDeploySmartedContract() private broadcast(_deployerPrivateKey) {
+    function chainDeployMEVTimeCompute() private broadcast(_deployerPrivateKey) {
         // passing 8 as a random divisor value for this example, can be updated with setters
         address mevTimeCompute = address(new MEVTimeCompute{salt: _salt}(_callBreaker, 8));
 

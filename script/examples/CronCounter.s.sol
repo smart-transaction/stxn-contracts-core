@@ -39,7 +39,7 @@ contract DeployCronCounter is Script, BaseDeployer {
 
             createSelectFork(deployForks[i]);
 
-            chainDeploySmartedContract();
+            chainDeployCronCounter();
 
             unchecked {
                 ++i;
@@ -49,7 +49,7 @@ contract DeployCronCounter is Script, BaseDeployer {
     }
 
     /// @dev Function to perform actual deployment.
-    function chainDeploySmartedContract() private broadcast(_deployerPrivateKey) {
+    function chainDeployCronCounter() private broadcast(_deployerPrivateKey) {
         address cronCounter = address(new CronCounter{salt: _salt}(_callBreaker));
 
         require(_create2addr == cronCounter, "Address mismatch CronCounter");
