@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.6.2 <0.9.0;
 
-import "../TimeTypes.sol";
-import "./CallBreakerStorage.sol";
+import "src/TimeTypes.sol";
+import "src/timetravel/CallBreakerStorage.sol";
+import "src/interfaces/IFlashLoan.sol";
+import {IERC20} from "test/utils/interfaces/IWeth.sol";
 
 contract CallBreaker is CallBreakerStorage {
     /// @dev Error thrown when there are no return values left
@@ -52,6 +54,9 @@ contract CallBreaker is CallBreakerStorage {
 
     event CallPopulated(CallObject callObj, uint256 index);
 
+    /// @notice Will be removed after updating the flash loan logic
+    event CallBreakerFlashFunds(address tokenA, uint256 amountA, address tokenB, uint256 amountB);
+
     /// @notice Initializes the contract; sets the initial portal status to closed
     constructor() {
         _setPortalClosed();
@@ -66,43 +71,71 @@ contract CallBreaker is CallBreakerStorage {
         payable(tipAddr).transfer(msg.value);
     }
 
-    /// @notice Verifies that the given calls, when executed, gives the correct return values
+    /// @notice executes and verifies that the given calls, when executed, gives the correct return values
     /// @dev SECURITY NOTICE: This function is only callable when the portal is closed. It requires the caller to be an EOA.
     /// @param callsBytes The bytes representing the calls to be verified
     /// @param returnsBytes The bytes representing the returns to be verified against
     /// @param associatedData Bytes representing associated data with the verify call, reserved for tipping the solver
-    function verify(
+    function executeAndVerify(
         bytes calldata callsBytes,
         bytes calldata returnsBytes,
         bytes calldata associatedData,
         bytes calldata hintdices
     ) external payable onlyPortalClosed {
-        _setPortalOpen();
-        if (msg.sender != tx.origin) {
-            revert MustBeEOA();
-        }
+        CallObject[] memory calls = _setupExecutionData(callsBytes, returnsBytes, associatedData, hintdices);
+        _executeAndVerifyCalls(calls);
+    }
 
-        CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
-        ReturnObject[] memory returnValues = abi.decode(returnsBytes, (ReturnObject[]));
+    /// @notice fetches flash loan before executing and verifying call objects who might use the loaned amount
+    /// @dev SECURITY NOTICE: This function is a temporary place holder for a nested call objects solution which is still under development
+    /// TODO: Remove and replace with a generic version of nested call objects
+    /// @param callsBytes The bytes representing the calls to be verified
+    /// @param returnsBytes The bytes representing the returns to be verified against
+    /// @param associatedData Bytes representing associated data with the verify call, reserved for tipping the solver
+    /// @param hintdices Bytes representing indexes of the call objects
+    /// @param flashLoanData Bytes representing associated data with the verify call, reserved for tipping the solver
+    function executeAndVerify(
+        bytes calldata callsBytes,
+        bytes calldata returnsBytes,
+        bytes calldata associatedData,
+        bytes calldata hintdices,
+        bytes calldata flashLoanData
+    ) external payable onlyPortalClosed {
+        _setupExecutionData(callsBytes, returnsBytes, associatedData, hintdices);
+        FlashLoanData memory _flashLoanData = abi.decode(flashLoanData, (FlashLoanData));
+        IFlashLoan(_flashLoanData.provider).flashLoan(
+            address(this),
+            _flashLoanData.amountA,
+            _flashLoanData.amountB,
+            callsBytes
+        );
+    }
 
-        if (calls.length != returnValues.length) {
-            revert LengthMismatch();
-        }
+    /**
+     * @dev Receive a flash loan.
+     * @param initiator The initiator of the loan.
+     * @param tokenA The first loan currency.
+     * @param amountA The amount of tokens lent.
+     * @param tokenB The second loan currency.
+     * @param amountB The amount of tokens lent.
+     * @param data the execute and verify data
+     * @return true if the function executed successfully
+     */
+    function onFlashLoan(
+        address initiator,
+        address tokenA,
+        uint256 amountA,
+        address tokenB,
+        uint256 amountB,
+        bytes calldata data
+    ) external onlyPortalOpen returns (bool) {
+        emit CallBreakerFlashFunds(tokenA, amountA, tokenB, amountB);
+        CallObject[] memory calls = abi.decode(data, (CallObject[]));
 
-        _resetTraceStoresWith(calls, returnValues);
-        _populateAssociatedDataStore(associatedData);
-        _populateHintdices(hintdices);
-        _populateCallIndices();
-
-        uint256 l = calls.length;
-        for (uint256 i = 0; i < l; i++) {
-            _setCurrentlyExecutingCallIndex(i);
-            _executeAndVerifyCall(i);
-        }
-
-        _setPortalClosed();
-        _cleanUpStorage();
-        emit VerifyStxn();
+        _executeAndVerifyCalls(calls);
+        IERC20(tokenA).approve(msg.sender, amountA);
+        IERC20(tokenB).approve(msg.sender, amountB);
+        return true;
     }
 
     /// @notice Returns a value from the record of return values from the callObject.
@@ -202,13 +235,42 @@ contract CallBreaker is CallBreakerStorage {
         return _executingCallIndex();
     }
 
-    function _populateCallIndices() internal {
-        uint256 l = callStore.length;
-        for (uint256 i = 0; i < l; i++) {
-            Call memory call = Call({callId: keccak256(abi.encode(_getCall(i))), index: i});
-            callList.push(call);
-            emit CallPopulated(_getCall(i), i);
+    function _setupExecutionData(
+        bytes calldata callsBytes,
+        bytes calldata returnsBytes,
+        bytes calldata associatedData,
+        bytes calldata hintdices
+    ) internal returns (CallObject[] memory) {
+        if (msg.sender != tx.origin) {
+            revert MustBeEOA();
         }
+        _setPortalOpen();
+
+        CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
+        ReturnObject[] memory returnValues = abi.decode(returnsBytes, (ReturnObject[]));
+
+        if (calls.length != returnValues.length) {
+            revert LengthMismatch();
+        }
+
+        _resetTraceStoresWith(calls, returnValues);
+        _populateAssociatedDataStore(associatedData);
+        _populateHintdices(hintdices);
+        _populateCallIndices();
+
+        return calls;
+    }
+
+    function _executeAndVerifyCalls(CallObject[] memory calls) internal {
+        uint256 l = calls.length;
+        for (uint256 i = 0; i < l; i++) {
+            _setCurrentlyExecutingCallIndex(i);
+            _executeAndVerifyCall(i);
+        }
+
+        _setPortalClosed();
+        _cleanUpStorage();
+        emit VerifyStxn();
     }
 
     /// @dev Executes a single call and verifies the result by generating the call-return pair ID
@@ -229,6 +291,15 @@ contract CallBreaker is CallBreakerStorage {
 
         if (keccak256(retObj.returnvalue) != keccak256(returnvalue)) {
             revert CallVerificationFailed();
+        }
+    }
+
+    function _populateCallIndices() internal {
+        uint256 l = callStore.length;
+        for (uint256 i = 0; i < l; i++) {
+            Call memory call = Call({callId: keccak256(abi.encode(_getCall(i))), index: i});
+            callList.push(call);
+            emit CallPopulated(_getCall(i), i);
         }
     }
 

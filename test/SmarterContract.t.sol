@@ -146,7 +146,7 @@ contract SmarterContractTest is Test {
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
 
     function testFail_FrontrunBlocker() external {
@@ -197,7 +197,7 @@ contract SmarterContractTest is Test {
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
 
     function testBackrunBlocker() external {
@@ -248,7 +248,7 @@ contract SmarterContractTest is Test {
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
 
     function testFail_BackrunBlocker() external {
@@ -299,7 +299,7 @@ contract SmarterContractTest is Test {
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
     }
 
     function testAssertFutureCallTo() external {
@@ -357,7 +357,7 @@ contract SmarterContractTest is Test {
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
 
         callbreakerHarness.setPortalOpen();
 
@@ -421,7 +421,7 @@ contract SmarterContractTest is Test {
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
 
         uint256 callLength = 3;
         uint256 executeIndex = 2;
@@ -498,7 +498,7 @@ contract SmarterContractTest is Test {
         bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
 
         uint256 callLength = 3;
         uint256 executeIndex = 2;

@@ -133,6 +133,6 @@ contract SelfCheckoutLib {
         hintindicesVals[2] = 2;
         bytes memory hintindices = abi.encode(hintdicesKeys, hintindicesVals);
 
-        callbreaker.verify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintindices);
+        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintindices);
     }
 }

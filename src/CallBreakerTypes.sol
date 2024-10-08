@@ -16,6 +16,16 @@ struct AssociatedDataStorage {
     uint256 _head;
 }
 
+/// @dev struct used to get flash loan through call breaker
+/// @param provider of flash loan should be EIP 3165 complaint
+/// @param amountA amount of first token
+/// @param amountB amount of second token
+struct FlashLoanData {
+    address provider;
+    uint256 amountA;
+    uint256 amountB;
+}
+
 using AssociatedDataLib for AssociatedDataStorage global;
 
 library AssociatedDataLib {
