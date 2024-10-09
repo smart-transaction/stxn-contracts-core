@@ -20,8 +20,10 @@ read NETWORK
 
 if [ "$NETWORK" = "mainnet" ]; then
    SIGNATURE="deployMainnet()"
-else
+elif [ "$NETWORK" = "testnet" ]; then
    SIGNATURE="deployTestnet(uint256)"
+else
+   SIGNATURE="deployLestnet(uint256)"
 fi
 
 if [ "$NETWORK" = "mainnet" ]
