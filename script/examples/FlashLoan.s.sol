@@ -4,21 +4,23 @@ pragma solidity 0.8.26;
 
 import {Script} from "forge-std/Script.sol";
 import {BaseDeployer} from "../BaseDeployer.s.sol";
-import {CronCounter} from "test/examples/CronCounter.sol";
+import {MockFlashLoan} from "test/examples/DeFi/MockFlashLoan.sol";
 
 /* solhint-disable no-console*/
 import {console2} from "forge-std/console2.sol";
 
-contract DeployCronCounter is Script, BaseDeployer {
-    address private _callBreaker;
+contract DeployMockFlashLoan is Script, BaseDeployer {
+    address private _weth;
+    address private _dai;
 
     /// @dev Compute the CREATE2 addresses for contracts (proxy, counter).
-    /// @param salt The salt for the CronCounter contract.
+    /// @param salt The salt for the MockFlashLoan contract.
     modifier computeCreate2(bytes32 salt) {
-        _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
+        _weth = vm.envAddress("WETH_ADDRESS");
+        _dai = vm.envAddress("DAI_ADDRESS");
 
         _create2addr =
-            computeCreate2Address(salt, hashInitCode(type(CronCounter).creationCode, abi.encode(_callBreaker)));
+            computeCreate2Address(salt, hashInitCode(type(MockFlashLoan).creationCode, abi.encode(_weth, _dai)));
 
         _;
     }
@@ -32,14 +34,14 @@ contract DeployCronCounter is Script, BaseDeployer {
         computeCreate2(_salt)
         returns (address)
     {
-        console2.log("CronCounter create2 address:", _create2addr, "\n");
+        console2.log("MockFlashLoan create2 address:", _create2addr, "\n");
 
         for (uint256 i; i < deployForks.length;) {
-            console2.log("Deploying CronCounter to chain: ", uint256(deployForks[i]), "\n");
+            console2.log("Deploying MockFlashLoan to chain: ", uint256(deployForks[i]), "\n");
 
             createSelectFork(deployForks[i]);
 
-            chainDeployCronCounter();
+            _chainDeployFlashLoan();
 
             unchecked {
                 ++i;
@@ -49,11 +51,11 @@ contract DeployCronCounter is Script, BaseDeployer {
     }
 
     /// @dev Function to perform actual deployment.
-    function chainDeployCronCounter() private broadcast(_deployerPrivateKey) {
-        address cronCounter = address(new CronCounter{salt: _salt}(_callBreaker));
+    function _chainDeployFlashLoan() private broadcast(_deployerPrivateKey) {
+        address mockFlashLoan = address(new MockFlashLoan{salt: _salt}(_weth, _dai));
 
-        require(_create2addr == cronCounter, "Address mismatch CronCounter");
+        require(_create2addr == mockFlashLoan, "Address mismatch MockFlashLoan");
 
-        console2.log("CronCounter deployed at address:", cronCounter, "\n");
+        console2.log("MockFlashLoan deployed at address:", mockFlashLoan, "\n");
     }
 }

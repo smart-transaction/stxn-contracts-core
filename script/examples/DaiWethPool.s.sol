@@ -4,22 +4,25 @@ pragma solidity 0.8.26;
 
 import {Script} from "forge-std/Script.sol";
 import {BaseDeployer} from "../BaseDeployer.s.sol";
-import {MEVTimeCompute} from "test/examples/MEVOracle/MEVTimeCompute.sol";
+import {MockDaiWethPool} from "test/examples/DeFi/MockDaiWethPool.sol";
 
 /* solhint-disable no-console*/
 import {console2} from "forge-std/console2.sol";
 
-contract DeployMEVTimeCompute is Script, BaseDeployer {
+contract DeployMockDaiWethPool is Script, BaseDeployer {
     address private _callBreaker;
+    address private _weth;
+    address private _dai;
 
     /// @dev Compute the CREATE2 addresses for contracts (proxy, counter).
-    /// @param salt The salt for the MEVTimeCompute contract.
+    /// @param salt The salt for the MockDaiWethPool contract.
     modifier computeCreate2(bytes32 salt) {
         _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
+        _dai = vm.envAddress("DAI_ADDRESS");
+        _weth = vm.envAddress("WETH_ADDRESS");
 
-        // passing 8 as a random divisor value for this example, can be updated with setters
         _create2addr =
-            computeCreate2Address(salt, hashInitCode(type(MEVTimeCompute).creationCode, abi.encode(_callBreaker, 8)));
+            computeCreate2Address(salt, hashInitCode(type(MockDaiWethPool).creationCode, abi.encode(_callBreaker, _dai, _weth)));
 
         _;
     }
@@ -33,14 +36,14 @@ contract DeployMEVTimeCompute is Script, BaseDeployer {
         computeCreate2(_salt)
         returns (address)
     {
-        console2.log("MEVTimeCompute create2 address:", _create2addr, "\n");
+        console2.log("MockDaiWethPool create2 address:", _create2addr, "\n");
 
         for (uint256 i; i < deployForks.length;) {
-            console2.log("Deploying MEVTimeCompute to chain: ", uint256(deployForks[i]), "\n");
+            console2.log("Deploying MockDaiWethPool to chain: ", uint256(deployForks[i]), "\n");
 
             createSelectFork(deployForks[i]);
 
-            chainDeployMEVTimeCompute();
+            _chainDeployDaiWethPool();
 
             unchecked {
                 ++i;
@@ -50,12 +53,11 @@ contract DeployMEVTimeCompute is Script, BaseDeployer {
     }
 
     /// @dev Function to perform actual deployment.
-    function chainDeployMEVTimeCompute() private broadcast(_deployerPrivateKey) {
-        // passing 8 as a random divisor value for this example, can be updated with setters
-        address mevTimeCompute = address(new MEVTimeCompute{salt: _salt}(_callBreaker, 8));
+    function _chainDeployDaiWethPool() private broadcast(_deployerPrivateKey) {
+        address mockDaiWethPool = address(new MockDaiWethPool{salt: _salt}(_callBreaker, _dai, _weth));
 
-        require(_create2addr == mevTimeCompute, "Address mismatch MEVTimeCompute");
+        require(_create2addr == mockDaiWethPool, "Address mismatch MockDaiWethPool");
 
-        console2.log("MEVTimeCompute contract deployed at address:", mevTimeCompute, "\n");
+        console2.log("MockDaiWethPool deployed at address:", mockDaiWethPool, "\n");
     }
 }

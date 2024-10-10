@@ -38,7 +38,7 @@ contract DeploySmarterContract is Script, BaseDeployer {
 
             createSelectFork(deployForks[i]);
 
-            chainDeploySmartedContract();
+            chainDeploySmarterContract();
 
             unchecked {
                 ++i;
@@ -48,7 +48,7 @@ contract DeploySmarterContract is Script, BaseDeployer {
     }
 
     /// @dev Function to perform actual deployment.
-    function chainDeploySmartedContract() private broadcast(_deployerPrivateKey) {
+    function chainDeploySmarterContract() private broadcast(_deployerPrivateKey) {
         SmarterContract sc = new SmarterContract{salt: _salt}(_callBreaker);
 
         require(_create2addr == address(sc), "Address mismatch SmarterContract");

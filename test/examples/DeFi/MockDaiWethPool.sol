@@ -24,19 +24,20 @@ contract MockDaiWethPool is SmarterContract {
         owner = msg.sender;
     }
 
-    function mintInitialLiquidity() external {
+    function mintInitialLiquidity() external returns(uint256, uint256) {
         dai.mint(address(this), 100 * DECIMAL);
         weth.mint(address(this), 10 * DECIMAL);
         _balanceOfWeth = 10 * DECIMAL;
         _balanceOfDai = 100 * DECIMAL;
+        return(_balanceOfDai, _balanceOfWeth);
     }
 
-    function swapDAIForWETH(uint256 _amountIn, uint256 slippagePercent) public {
+    function swapDAIForWETH(uint256 _amountIn, uint256 slippagePercent) public returns (uint256 amountOut) {
         uint256 amountIn = _amountIn * 1e18;
         require(dai.transferFrom(msg.sender, address(this), amountIn), "transferFrom failed.");
 
         _balanceOfDai += amountIn;
-        uint256 amountOut = (amountIn * _balanceOfWeth) / _balanceOfDai;
+        amountOut = (amountIn * _balanceOfWeth) / _balanceOfDai;
         _balanceOfWeth -= amountOut;
         require(weth.transfer(msg.sender, amountOut), "transferFrom failed.");
 
