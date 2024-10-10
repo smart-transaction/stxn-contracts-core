@@ -21,7 +21,7 @@ struct AssociatedDataStorage {
 /// @param amountA amount of first token
 /// @param amountB amount of second token
 struct FlashLoanData {
-    address provider;
+    address provider; //mock loan
     uint256 amountA;
     uint256 amountB;
 }
