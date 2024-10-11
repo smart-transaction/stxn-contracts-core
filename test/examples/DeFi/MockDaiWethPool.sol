@@ -116,7 +116,7 @@ contract MockDaiWethPool is SmarterContract {
         if (slippage > maxDeviationPercentage) revert InvalidPriceLimit();
     }
 
-    function getPriceOfDai() external view returns (uint256) {
+    function getPriceOfWeth() external view returns (uint256) {
         return (_balanceOfDai / _balanceOfWeth);
     }
 }
