@@ -20,6 +20,9 @@ contract FlashLiquidityLib {
     CallBreaker public callbreaker;
     uint256 _tipWei = 33;
 
+    uint256 public balanceOfWeth;
+    uint256 public balanceOfDai;
+
     function deployerLand(address pusher) public {
         // Initializing contracts
         callbreaker = new CallBreaker();
@@ -27,7 +30,8 @@ contract FlashLiquidityLib {
         dai = new MockERC20Token("Dai", "DAI");
         weth = new MockERC20Token("Weth", "WETH");
         daiWethPool = new MockDaiWethPool(address(callbreaker), address(dai), address(weth));
-        daiWethPool.mintInitialLiquidity();
+        (balanceOfDai, balanceOfWeth) = daiWethPool.mintInitialLiquidity();
+
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
         dai.mint(pusherLaminated, 100000000000000000000);
 
@@ -119,6 +123,12 @@ contract FlashLiquidityLib {
         returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
         returnObjsFromPull[1] = ReturnObject({returnvalue: abi.encode(true)});
         returnObjsFromPull[2] = ReturnObject({returnvalue: ""});
+
+        // calculate amount out on solver side to compare return value
+        // balanceOfDai = balanceOfDai + (10 * 1e18) + (liquidity0 * 1e18);
+        // balanceOfWeth = balanceOfWeth + (liquidity1 * 1e18);
+        // uint256 amountOut = ((10 * 1e18) * balanceOfWeth) / balanceOfDai;
+        // returnObjsFromPull[2] = ReturnObject({returnvalue: abi.encode(amountOut)});
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(true)});
         returnObjs[1] = ReturnObject({returnvalue: ""});

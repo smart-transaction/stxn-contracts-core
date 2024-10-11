@@ -46,7 +46,7 @@ contract DeploySelfCheckout is Script, BaseDeployer {
 
             createSelectFork(deployForks[i]);
 
-            chainDeploySmartedContract();
+            chainDeploySelfCheckout();
 
             unchecked {
                 ++i;
@@ -56,7 +56,7 @@ contract DeploySelfCheckout is Script, BaseDeployer {
     }
 
     /// @dev Function to perform actual deployment.
-    function chainDeploySmartedContract() private broadcast(_deployerPrivateKey) {
+    function chainDeploySelfCheckout() private broadcast(_deployerPrivateKey) {
         address selfCheckout = address(new SelfCheckout{salt: _salt}(_ownerAddress, _tokenA, _tokenB, _callBreaker));
 
         require(_create2addr == selfCheckout, "Address mismatch SelfCheckout");

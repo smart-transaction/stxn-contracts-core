@@ -24,11 +24,12 @@ contract MockDaiWethPool is SmarterContract {
         owner = msg.sender;
     }
 
-    function mintInitialLiquidity() external {
+    function mintInitialLiquidity() external returns(uint256, uint256) {
         dai.mint(address(this), 100 * DECIMAL);
         weth.mint(address(this), 10 * DECIMAL);
         _balanceOfWeth = 10 * DECIMAL;
         _balanceOfDai = 100 * DECIMAL;
+        return(_balanceOfDai, _balanceOfWeth);
     }
 
     function swapDAIForWETH(uint256 _amountIn, uint256 slippagePercent) public {
@@ -115,7 +116,7 @@ contract MockDaiWethPool is SmarterContract {
         if (slippage > maxDeviationPercentage) revert InvalidPriceLimit();
     }
 
-    function getPriceOfDai() external view returns (uint256) {
+    function getPriceOfWeth() external view returns (uint256) {
         return (_balanceOfDai / _balanceOfWeth);
     }
 }

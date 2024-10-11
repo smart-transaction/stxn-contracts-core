@@ -8,6 +8,7 @@ interface ILaminator {
         INT256,
         UINT256,
         STRING,
+        ADDRESS,
         BYTES,
         BYTES32
     }
