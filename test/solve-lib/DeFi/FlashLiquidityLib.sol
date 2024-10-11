@@ -122,12 +122,13 @@ contract FlashLiquidityLib {
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](3);
         returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
         returnObjsFromPull[1] = ReturnObject({returnvalue: abi.encode(true)});
+        returnObjsFromPull[2] = ReturnObject({returnvalue: ""});
 
         // calculate amount out on solver side to compare return value
-        balanceOfDai = balanceOfDai + (10 * 1e18) + (liquidity0 * 1e18);
-        balanceOfWeth = balanceOfWeth + (liquidity1 * 1e18);
-        uint256 amountOut = ((10 * 1e18) * balanceOfWeth) / balanceOfDai;
-        returnObjsFromPull[2] = ReturnObject({returnvalue: abi.encode(amountOut)});
+        // balanceOfDai = balanceOfDai + (10 * 1e18) + (liquidity0 * 1e18);
+        // balanceOfWeth = balanceOfWeth + (liquidity1 * 1e18);
+        // uint256 amountOut = ((10 * 1e18) * balanceOfWeth) / balanceOfDai;
+        // returnObjsFromPull[2] = ReturnObject({returnvalue: abi.encode(amountOut)});
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(true)});
         returnObjs[1] = ReturnObject({returnvalue: ""});

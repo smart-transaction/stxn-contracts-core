@@ -32,12 +32,12 @@ contract MockDaiWethPool is SmarterContract {
         return(_balanceOfDai, _balanceOfWeth);
     }
 
-    function swapDAIForWETH(uint256 _amountIn, uint256 slippagePercent) public returns (uint256 amountOut) {
+    function swapDAIForWETH(uint256 _amountIn, uint256 slippagePercent) public {
         uint256 amountIn = _amountIn * 1e18;
         require(dai.transferFrom(msg.sender, address(this), amountIn), "transferFrom failed.");
 
         _balanceOfDai += amountIn;
-        amountOut = (amountIn * _balanceOfWeth) / _balanceOfDai;
+        uint256 amountOut = (amountIn * _balanceOfWeth) / _balanceOfDai;
         _balanceOfWeth -= amountOut;
         require(weth.transfer(msg.sender, amountOut), "transferFrom failed.");
 
