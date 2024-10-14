@@ -4,9 +4,14 @@ pragma solidity 0.8.26;
 import {IERC20} from "test/utils/interfaces/IMintableERC20.sol";
 
 interface IFlashLoanBorrower {
-    function onFlashLoan(address initiator, address token1, uint256 amount1, address token2, uint256 amount2, bytes calldata data)
-        external
-        returns (bytes32);
+    function onFlashLoan(
+        address initiator,
+        address token1,
+        uint256 amount1,
+        address token2,
+        uint256 amount2,
+        bytes calldata data
+    ) external returns (bytes32);
 }
 
 /**
@@ -42,6 +47,12 @@ contract MockFlashLoan {
         require(dai.transferFrom(receiver, address(this), daiAmount), "Loan repayment failed");
         require(weth.transferFrom(receiver, address(this), wethAmount), "Loan repayment failed");
 
+        return true;
+    }
+
+    function approveTransfer(address spender, uint256 amountA, uint256 amountB) external returns (bool) {
+        weth.approve(spender, amountA * 1e18);
+        dai.approve(spender, amountB * 1e18);
         return true;
     }
 }
