@@ -72,47 +72,52 @@ contract FlashLoanLib {
         uint256 maxDeviationPercentage,
         address filler
     ) public {
-        CallObject[] memory callObjs = new CallObject[](5);
-        ReturnObject[] memory returnObjs = new ReturnObject[](5);
+        CallObject[] memory callObjs = new CallObject[](6);
+        ReturnObject[] memory returnObjs = new ReturnObject[](6);
 
         callObjs[0] = CallObject({
             amount: 0,
-            addr: address(flashLoan),
+            addr: address(dai),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature(
-                "approveTransfer(address,uint256,uint256)", address(daiWethPool), liquidity0, liquidity1
-            )
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(daiWethPool), liquidity0 * 1e18)
         });
 
         callObjs[1] = CallObject({
             amount: 0,
-            addr: address(daiWethPool),
+            addr: address(weth),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature(
-                "provideLiquidityToDAIETHPool(address,uint256,uint256)", flashLoan, liquidity0, liquidity1
-            )
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", address(daiWethPool), liquidity1 * 1e18)
         });
 
         callObjs[2] = CallObject({
+            amount: 0,
+            addr: address(daiWethPool),
+            gas: 1000000,
+            callvalue: abi.encodeWithSignature(
+                "provideLiquidityToDAIETHPool(address,uint256,uint256)", address(callbreaker), liquidity0, liquidity1
+            )
+        });
+
+        callObjs[3] = CallObject({
             amount: 0,
             addr: pusherLaminated,
             gas: 1000000,
             callvalue: abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber)
         });
 
-        callObjs[3] = CallObject({
+        callObjs[4] = CallObject({
             amount: 0,
             addr: address(daiWethPool),
             gas: 10000000,
             callvalue: abi.encodeWithSignature("checkSlippage(uint256)", maxDeviationPercentage)
         });
 
-        callObjs[4] = CallObject({
+        callObjs[5] = CallObject({
             amount: 0,
             addr: address(daiWethPool),
             gas: 1000000,
             callvalue: abi.encodeWithSignature(
-                "withdrawLiquidityFromDAIETHPool(address,uint256,uint256)", flashLoan, liquidity0, liquidity1
+                "withdrawLiquidityFromDAIETHPool(address,uint256,uint256)", address(callbreaker), liquidity0, liquidity1
             )
         });
 
@@ -122,10 +127,11 @@ contract FlashLoanLib {
         returnObjsFromPull[2] = ReturnObject({returnvalue: ""});
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(true)});
-        returnObjs[1] = ReturnObject({returnvalue: ""});
-        returnObjs[2] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
-        returnObjs[3] = ReturnObject({returnvalue: ""});
+        returnObjs[1] = ReturnObject({returnvalue: abi.encode(true)});
+        returnObjs[2] = ReturnObject({returnvalue: ""});
+        returnObjs[3] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
         returnObjs[4] = ReturnObject({returnvalue: ""});
+        returnObjs[5] = ReturnObject({returnvalue: ""});
 
         bytes32[] memory keys = new bytes32[](2);
         keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
@@ -159,7 +165,8 @@ contract FlashLoanLib {
     }
 
     function generateFlashLoanData(address _flashLoan) public pure returns (FlashLoanData memory) {
-        FlashLoanData memory flashLoanData = FlashLoanData({provider: _flashLoan, amountA: 100, amountB: 100});
+        FlashLoanData memory flashLoanData =
+            FlashLoanData({provider: _flashLoan, amountA: 1000 * 1e18, amountB: 100 * 1e18});
         return flashLoanData;
     }
 }

@@ -24,13 +24,13 @@ contract MockFlashLoan {
     IERC20 public weth;
     IERC20 public dai;
 
-    constructor(address _weth, address _dai) {
-        weth = IERC20(_weth);
+    constructor(address _dai, address _weth) {
         dai = IERC20(_dai);
+        weth = IERC20(_weth);
     }
 
     function maxFlashLoan() external view returns (uint256, uint256) {
-        return (weth.balanceOf(address(this)), dai.balanceOf(address(this)));
+        return (dai.balanceOf(address(this)), weth.balanceOf(address(this)));
     }
 
     function flashLoan(address receiver, uint256 daiAmount, uint256 wethAmount, bytes calldata data)
@@ -47,12 +47,6 @@ contract MockFlashLoan {
         require(dai.transferFrom(receiver, address(this), daiAmount), "Loan repayment failed");
         require(weth.transferFrom(receiver, address(this), wethAmount), "Loan repayment failed");
 
-        return true;
-    }
-
-    function approveTransfer(address spender, uint256 amountA, uint256 amountB) external returns (bool) {
-        weth.approve(spender, amountA * 1e18);
-        dai.approve(spender, amountB * 1e18);
         return true;
     }
 }
