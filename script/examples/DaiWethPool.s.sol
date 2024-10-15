@@ -21,8 +21,9 @@ contract DeployMockDaiWethPool is Script, BaseDeployer {
         _dai = vm.envAddress("DAI_ADDRESS");
         _weth = vm.envAddress("WETH_ADDRESS");
 
-        _create2addr =
-            computeCreate2Address(salt, hashInitCode(type(MockDaiWethPool).creationCode, abi.encode(_callBreaker, _dai, _weth)));
+        _create2addr = computeCreate2Address(
+            salt, hashInitCode(type(MockDaiWethPool).creationCode, abi.encode(_callBreaker, _dai, _weth))
+        );
 
         _;
     }
