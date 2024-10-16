@@ -48,7 +48,9 @@ contract SmarterContractTest is Test {
     }
 
     function testOnlyPortalOpenModifier() public {
-        callbreakerHarness.setPortalOpen();
+        CallObject[] memory callObjs = new CallObject[](1);
+        ReturnObject[] memory returnObjs = new ReturnObject[](1);
+        callbreakerHarness.setPortalOpen(callObjs, returnObjs);
 
         // should not revert
         smarterContractWithCallBreakerHarness.dummyCallWhenPortalOpen();
@@ -359,7 +361,7 @@ contract SmarterContractTest is Test {
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
 
-        callbreakerHarness.setPortalOpen();
+        callbreakerHarness.setPortalOpen(callObjs, returnObjs);
 
         // Expect a revert with FutureCallExpected error when asserting the future call
         vm.expectRevert(SmarterContract.FutureCallExpected.selector);
@@ -427,7 +429,7 @@ contract SmarterContractTest is Test {
         uint256 executeIndex = 2;
         setupAndExecuteDummyCall(callLength, executeIndex);
 
-        callbreakerHarness.setPortalOpen();
+        callbreakerHarness.setPortalOpen(callObjs, returnObjs);
         // Expect a revert with FutureCallExpected error when asserting the future call
         vm.expectRevert(SmarterContract.FutureCallExpected.selector);
         smarterContractWithCallBreakerHarness.assertFutureCallWithIndexTestHarness();
@@ -436,7 +438,7 @@ contract SmarterContractTest is Test {
         executeIndex = 1;
         setupAndExecuteDummyCall(callLength, executeIndex);
 
-        callbreakerHarness.setPortalOpen();
+        callbreakerHarness.setPortalOpen(callObjs, returnObjs);
 
         // Expect a revert with CallMismatch error when asserting the future call
         vm.expectRevert(SmarterContract.CallMismatch.selector);
@@ -504,7 +506,7 @@ contract SmarterContractTest is Test {
         uint256 executeIndex = 2;
         setupAndExecuteDummyCall(callLength, executeIndex);
 
-        callbreakerHarness.setPortalOpen();
+        callbreakerHarness.setPortalOpen(callObjs, returnObjs);
         // Expect a revert with the CallMismatch error when asserting the next call
         vm.expectRevert(SmarterContract.CallMismatch.selector);
         smarterContractWithCallBreakerHarness.assertNextCallTestHarness();
@@ -569,7 +571,7 @@ contract SmarterContractTest is Test {
             returnValues[i] = ReturnObject({returnvalue: abi.encodePacked(uint256(i))});
         }
 
-        callbreakerHarness.setPortalOpen();
+        callbreakerHarness.setPortalOpen(calls, returnValues);
         callbreakerHarness.resetTraceStoresWithHarness(calls, returnValues);
         callbreakerHarness.populateCallIndicesHarness();
 

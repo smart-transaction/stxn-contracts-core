@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.6.2 <0.9.0;
+pragma solidity 0.8.26;
 
 import "./LaminatedProxy.sol";
 import "../interfaces/ICallBreaker.sol";
@@ -28,16 +28,6 @@ contract Laminator is ILaminator {
         bytes32 indexed selector,
         AdditionalData[] dataValues
     );
-
-    /// @dev Emitted when a function call is pulled from a proxy contract for execution.
-    /// @param returnData The ABI-encoded data payload returned from the function call.
-    /// @param sequenceNumber The sequence number of the deferred function call.
-    event ProxyPulled(bytes returnData, uint256 sequenceNumber);
-
-    /// @dev Emitted when a function call is executed immediately via a proxy contract.
-    /// @param proxyAddress The address of the proxy contract where the function call is executed.
-    /// @param callObjs The CallObject containing the function call details.
-    event ProxyExecuted(address indexed proxyAddress, CallObject[] callObjs);
 
     /// @notice Constructs a new contract instance - usually called by the Laminator contract
     /// @dev Initializes the contract, setting the call breaker address.
