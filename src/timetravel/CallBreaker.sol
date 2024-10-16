@@ -317,14 +317,15 @@ contract CallBreaker is CallBreakerStorage {
         // Decode the input data into an array of (bytes32, bytes32) pairs
         (bytes32[] memory keys, bytes[] memory values) = abi.decode(encodedData, (bytes32[], bytes[]));
 
+        uint256 len = keys.length;
+
         // Check that the keys and values arrays have the same length
-        if (keys.length != values.length) {
+        if (len != values.length) {
             revert LengthMismatch();
         }
 
-        uint256 l = keys.length;
         // Iterate over the keys and values arrays and insert each pair into the associatedDataStore
-        for (uint256 i = 0; i < l; i++) {
+        for (uint256 i = 0; i < len; i++) {
             _insertIntoAssociatedDataStore(keys[i], values[i]);
         }
     }
