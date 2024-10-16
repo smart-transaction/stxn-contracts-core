@@ -98,6 +98,9 @@ contract MockDaiWethPool is SmarterContract {
             weth.burn(address(this), burnAmountWeth);
         }
 
+        _balanceOfDai = dai.balanceOf(address(this));
+        _balanceOfWeth = weth.balanceOf(address(this));
+
         emit LiquiditySetForPriceTest();
     }
 
