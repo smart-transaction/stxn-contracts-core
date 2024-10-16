@@ -261,7 +261,7 @@ contract CallBreaker is CallBreakerStorage {
             revert LengthMismatch();
         }
 
-        _resetTraceStoresWith(calls, returnValues);
+        _populateCallsAndReturnValues(calls, returnValues);
         _populateAssociatedDataStore(associatedData);
         _populateHintdices(hintdices);
         _populateCallIndices();

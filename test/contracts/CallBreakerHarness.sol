@@ -13,7 +13,9 @@ contract CallBreakerHarness is CallBreaker {
     }
 
     function resetTraceStoresWithHarness(CallObject[] memory calls, ReturnObject[] memory returnValues) public {
-        _resetTraceStoresWith(calls, returnValues);
+        delete callStore;
+        delete returnStore;
+        _populateCallsAndReturnValues(calls, returnValues);
     }
 
     function _executeAndVerifyCallHarness(uint256 index) public {

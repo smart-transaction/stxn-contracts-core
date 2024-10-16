@@ -152,9 +152,7 @@ abstract contract CallBreakerStorage {
     /// @dev Resets the trace stores with the provided calls and return values.
     /// @param calls An array of CallObject to be stored in callStore.
     /// @param returnValues An array of ReturnObject to be stored in returnStore.
-    function _resetTraceStoresWith(CallObject[] memory calls, ReturnObject[] memory returnValues) internal {
-        delete callStore;
-        delete returnStore;
+    function _populateCallsAndReturnValues(CallObject[] memory calls, ReturnObject[] memory returnValues) internal {
         for (uint256 i = 0; i < calls.length; i++) {
             callStore.push().store(calls[i]);
             returnStore.push(returnValues[i]);
