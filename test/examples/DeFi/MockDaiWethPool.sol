@@ -24,12 +24,12 @@ contract MockDaiWethPool is SmarterContract {
         owner = msg.sender;
     }
 
-    function mintInitialLiquidity() external returns(uint256, uint256) {
+    function mintInitialLiquidity() external returns (uint256, uint256) {
         dai.mint(address(this), 100 * DECIMAL);
         weth.mint(address(this), 10 * DECIMAL);
         _balanceOfWeth = 10 * DECIMAL;
         _balanceOfDai = 100 * DECIMAL;
-        return(_balanceOfDai, _balanceOfWeth);
+        return (_balanceOfDai, _balanceOfWeth);
     }
 
     function swapDAIForWETH(uint256 _amountIn, uint256 slippagePercent) public {
@@ -97,6 +97,9 @@ contract MockDaiWethPool is SmarterContract {
             uint256 burnAmountWeth = _balanceOfWeth - amount1Desired;
             weth.burn(address(this), burnAmountWeth);
         }
+
+        _balanceOfDai = dai.balanceOf(address(this));
+        _balanceOfWeth = weth.balanceOf(address(this));
 
         emit LiquiditySetForPriceTest();
     }
