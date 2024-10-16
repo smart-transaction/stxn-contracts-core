@@ -183,15 +183,27 @@ contract CallBreaker is CallBreakerStorage {
     /// @notice Searches the callList for all indices of the callId
     /// @dev This is very gas-extensive as it computes in O(n)
     /// @param callObj The callObj to search for
-    function getCompleteCallIndexList(CallObject calldata callObj) public view returns (uint256[] memory) {
+    function getCompleteCallIndexList(CallObject calldata callObj) external view returns (uint256[] memory) {
         bytes32 callId = keccak256(abi.encode(callObj));
-        uint256[] memory index = new uint256[](callList.length);
-        for (uint256 i = 0; i < callList.length; i++) {
+
+        // First, determine the count of matching elements
+        uint256 count;
+        for (uint256 i; i < callList.length; i++) {
             if (callList[i].callId == callId) {
-                index[i] = i;
+                count++;
             }
         }
-        return index;
+
+        // Allocate the result array with the correct size
+        uint256[] memory indexList = new uint256[](count);
+        uint256 j;
+        for (uint256 i; i < callList.length; i++) {
+            if (callList[i].callId == callId) {
+                indexList[j] = i;
+                j++;
+            }
+        }
+        return indexList;
     }
 
     /// @notice Fetches the indices of a given CallObject from the hintdicesStore
