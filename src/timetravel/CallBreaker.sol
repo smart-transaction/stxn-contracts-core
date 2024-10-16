@@ -7,21 +7,12 @@ import "src/interfaces/IFlashLoan.sol";
 import {IERC20} from "test/utils/interfaces/IMintableERC20.sol";
 
 contract CallBreaker is CallBreakerStorage {
-    /// @dev Error thrown when there are no return values left
-    /// @dev Selector 0xc8acbe62
-    error OutOfReturnValues();
     /// @dev Error thrown when there is not enough Ether left
     /// @dev Selector 0x75483b53
     error OutOfEther();
     /// @dev Error thrown when a call fails
     /// @dev Selector 0x3204506f
     error CallFailed();
-    /// @dev Error thrown when call-return pairs don't have balanced counts
-    /// @dev Selector 0x8489203a
-    error TimeImbalance();
-    /// @dev Error thrown when receiving empty calldata
-    /// @dev Selector 0xc047a184
-    error EmptyCalldata();
     /// @dev Error thrown when there is a length mismatch
     /// @dev Selector 0xff633a38
     error LengthMismatch();

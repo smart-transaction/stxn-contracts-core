@@ -29,16 +29,6 @@ contract Laminator is ILaminator {
         AdditionalData[] dataValues
     );
 
-    /// @dev Emitted when a function call is pulled from a proxy contract for execution.
-    /// @param returnData The ABI-encoded data payload returned from the function call.
-    /// @param sequenceNumber The sequence number of the deferred function call.
-    event ProxyPulled(bytes returnData, uint256 sequenceNumber);
-
-    /// @dev Emitted when a function call is executed immediately via a proxy contract.
-    /// @param proxyAddress The address of the proxy contract where the function call is executed.
-    /// @param callObjs The CallObject containing the function call details.
-    event ProxyExecuted(address indexed proxyAddress, CallObject[] callObjs);
-
     /// @notice Constructs a new contract instance - usually called by the Laminator contract
     /// @dev Initializes the contract, setting the call breaker address.
     /// @param _callBreaker The address of the laminator contract.

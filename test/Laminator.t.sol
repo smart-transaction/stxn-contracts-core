@@ -39,10 +39,8 @@ contract LaminatorTest is Test {
         ILaminator.AdditionalData[] dataValues
     );
     event ProxyCreated(address indexed owner, address indexed proxyAddress);
-    event ProxyExecuted(address indexed proxyAddress, CallObject[] callObjs);
     event CallPushed(CallObject[] callObjs, uint256 sequenceNumber);
     event CallPulled(CallObject[] callObjs, uint256 sequenceNumber);
-    event CallExecuted(CallObject callObj);
 
     event DummyEvent(uint256 arg);
 
