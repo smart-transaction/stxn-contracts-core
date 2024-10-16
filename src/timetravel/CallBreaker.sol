@@ -41,12 +41,6 @@ contract CallBreaker is CallBreakerStorage {
     /// @dev Selector 0xd2c5d316
     error CallPositionFailed(CallObject, uint256);
 
-    /// @notice Emitted when the enterPortal function is called
-    /// @param callObj The CallObject instance containing details of the call
-    /// @param returnvalue The ReturnObject instance containing details of the return value
-    /// @param index The index of the return value in the returnStore
-    event EnterPortal(CallObject callObj, ReturnObject returnvalue, uint256 index);
-
     event Tip(address indexed from, address indexed to, uint256 amount);
 
     /// @notice Emitted when the verifyStxn function is called
@@ -252,7 +246,6 @@ contract CallBreaker is CallBreakerStorage {
         if (msg.sender != tx.origin) {
             revert MustBeEOA();
         }
-        _setPortalOpen();
 
         CallObject[] memory calls = abi.decode(callsBytes, (CallObject[]));
         ReturnObject[] memory returnValues = abi.decode(returnsBytes, (ReturnObject[]));
@@ -261,6 +254,7 @@ contract CallBreaker is CallBreakerStorage {
             revert LengthMismatch();
         }
 
+        _setPortalOpen(calls, returnValues);
         _populateCallsAndReturnValues(calls, returnValues);
         _populateAssociatedDataStore(associatedData);
         _populateHintdices(hintdices);
@@ -288,8 +282,6 @@ contract CallBreaker is CallBreakerStorage {
         if (callObj.amount > address(this).balance) {
             revert OutOfEther();
         }
-
-        emit EnterPortal(callObj, retObj, i);
 
         (bool success, bytes memory returnvalue) =
             callObj.addr.call{gas: callObj.gas, value: callObj.amount}(callObj.callvalue);

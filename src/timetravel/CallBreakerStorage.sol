@@ -5,6 +5,11 @@ import "../CallBreakerTypes.sol";
 import "../interfaces/ICallBreaker.sol";
 
 abstract contract CallBreakerStorage {
+    /// @notice Emitted when the enterPortal function is called
+    /// @param calls The CallObject instance containing details of the call
+    /// @param returnValues The ReturnObject instance containing details of the return value
+    event EnterPortal(CallObject[] calls, ReturnObject[] returnValues);
+
     /// @notice Error thrown when calling a function that can only be called when the portal is open
     /// @dev Selector 0x59f0d709
     error PortalClosed();
@@ -72,11 +77,12 @@ abstract contract CallBreakerStorage {
     }
 
     /// @notice Set the portal status to open
-    function _setPortalOpen() internal {
+    function _setPortalOpen(CallObject[] memory calls, ReturnObject[] memory returnValues) internal {
         uint256 slot = uint256(PORTAL_SLOT);
         assembly {
             tstore(slot, true)
         }
+        emit EnterPortal(calls, returnValues);
     }
 
     /// @notice Set the portal status to closed
