@@ -83,15 +83,6 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         _;
     }
 
-    /// @dev Modifier to make a function callable only by the laminator.
-    ///      Reverts the transaction if the sender is not the laminator.
-    modifier onlyLaminator() {
-        if (msg.sender != address(laminator())) {
-            revert NotLaminator();
-        }
-        _;
-    }
-
     modifier onlyOwner() {
         if (msg.sender != owner()) {
             revert NotOwner();
@@ -111,7 +102,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @dev Modifier to make a function callable only by the call breaker.
     ///      Reverts the transaction if the sender is not the call breaker.
     modifier onlyCallBreaker() {
-        if (msg.sender != address(callBreaker()) && msg.sender != address(this)) {
+        if (msg.sender != address(callBreaker())) {
             revert NotCallBreaker();
         }
         _;
@@ -200,16 +191,16 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @param seqNumber The sequence number of the deferred function call to view.
     /// @return exists A boolean indicating whether the deferred call exists.
     /// @return callObj The CallObject containing details of the deferred function call.
-    function viewDeferredCall(uint256 seqNumber) public view returns (bool, bool, CallObject[] memory) {
+    function viewDeferredCall(uint256 seqNumber) external view returns (bool, bool, CallObject[] memory) {
         CallObjectHolder memory coh = deferredCalls(seqNumber);
         return (coh.initialized, coh.executed, coh.callObjs);
     }
 
-    function getExecutingCallObject() public view onlyWhileExecuting returns (CallObject memory) {
+    function getExecutingCallObject() external view onlyWhileExecuting returns (CallObject memory) {
         return _deferredCalls[executingSequenceNumber()].getCallObj(executingCallIndex()).load();
     }
 
-    function getExecutingCallObjectHolder() public view onlyWhileExecuting returns (CallObjectHolder memory) {
+    function getExecutingCallObjectHolder() external view onlyWhileExecuting returns (CallObjectHolder memory) {
         return deferredCalls(executingSequenceNumber());
     }
 
