@@ -66,7 +66,7 @@ contract Laminator is ILaminator {
         if (size == 0) {
             return 0;
         } else {
-            return LaminatedProxy(payable(addr)).count();
+            return LaminatedProxy(payable(addr)).nextSequenceNumber();
         }
     }
 

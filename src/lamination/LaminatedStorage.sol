@@ -105,14 +105,6 @@ abstract contract LaminatedStorage {
         }
     }
 
-    /// @notice Get the number of calls in the mempool.
-    /// @dev This is an alias for nextSequenceNumber(). It allows clearer code when
-    ///      reading from the contract.
-    /// @return _count The sequence number of the next call pushed to the laminated mempool.
-    function count() public view returns (uint256 _count) {
-        return nextSequenceNumber();
-    }
-
     /// @notice Get the next message sequence number, then increment it
     /// @dev This function is used when storing a call in the mempool (push).
     /// @return _sequenceNumber The next message sequence number.
