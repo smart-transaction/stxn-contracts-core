@@ -41,6 +41,7 @@ contract LaminatorTest is Test {
     event ProxyCreated(address indexed owner, address indexed proxyAddress);
     event CallPushed(CallObject[] callObjs, uint256 sequenceNumber);
     event CallPulled(CallObject[] callObjs, uint256 sequenceNumber);
+    event CallExecuted(CallObject callObj);
 
     event DummyEvent(uint256 arg);
 
@@ -229,6 +230,40 @@ contract LaminatorTest is Test {
         vm.expectEmit(true, true, true, true);
         emit CallPushed(callObj, 0);
         proxy.push(cData, 1);
+    }
+
+    function testExecute() public {
+        laminator.harness_getOrCreateProxy(address(this));
+
+        uint256 val = 42;
+        CallObject[] memory callObj = new CallObject[](1);
+        callObj[0] = CallObject({
+            amount: 0,
+            addr: address(dummy),
+            gas: saneGasLeft(),
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+        });
+        bytes memory cData = abi.encode(callObj);
+        vm.expectEmit(true, true, true, true);
+        emit CallExecuted(callObj[0]);
+        proxy.execute(cData);
+    }
+
+    function testExecuteRevertNotOwner() public {
+        laminator.harness_getOrCreateProxy(address(this));
+
+        uint256 val = 42;
+        CallObject[] memory callObj = new CallObject[](1);
+        callObj[0] = CallObject({
+            amount: 0,
+            addr: address(dummy),
+            gas: saneGasLeft(),
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
+        });
+        bytes memory cData = abi.encode(callObj);
+        vm.prank(address(laminator), address(laminator));
+        vm.expectRevert(LaminatedProxy.NotOwner.selector);
+        proxy.execute(cData);
     }
 
     // test cancel pending call
