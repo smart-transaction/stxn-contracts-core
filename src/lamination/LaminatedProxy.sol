@@ -224,7 +224,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     function push(bytes memory input, uint256 delay) public onlyLaminatorOrProxy returns (uint256 callSequenceNumber) {
         CallObjectHolder memory holder;
         holder.callObjs = abi.decode(input, (CallObject[]));
-        callSequenceNumber = nextSequenceNumber();
+        callSequenceNumber = _incrementSequenceNumber();
         holder.initialized = true;
         holder.executed = false;
         holder.nonce = executingNonce;
@@ -233,7 +233,6 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
 
         emit CallableBlock(block.number + delay, block.number);
         emit CallPushed(holder.callObjs, callSequenceNumber);
-        _incrementSequenceNumber();
     }
 
     /// @dev Executes the function call specified by the CallObject `callToMake`.
