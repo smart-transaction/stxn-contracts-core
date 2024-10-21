@@ -16,11 +16,11 @@ contract DeployMockFlashLoan is Script, BaseDeployer {
     /// @dev Compute the CREATE2 addresses for contracts (proxy, counter).
     /// @param salt The salt for the MockFlashLoan contract.
     modifier computeCreate2(bytes32 salt) {
-        _weth = vm.envAddress("WETH_ADDRESS");
         _dai = vm.envAddress("DAI_ADDRESS");
+        _weth = vm.envAddress("WETH_ADDRESS");
 
         _create2addr =
-            computeCreate2Address(salt, hashInitCode(type(MockFlashLoan).creationCode, abi.encode(_weth, _dai)));
+            computeCreate2Address(salt, hashInitCode(type(MockFlashLoan).creationCode, abi.encode(_dai, _weth)));
 
         _;
     }
@@ -52,7 +52,7 @@ contract DeployMockFlashLoan is Script, BaseDeployer {
 
     /// @dev Function to perform actual deployment.
     function _chainDeployFlashLoan() private broadcast(_deployerPrivateKey) {
-        address mockFlashLoan = address(new MockFlashLoan{salt: _salt}(_weth, _dai));
+        address mockFlashLoan = address(new MockFlashLoan{salt: _salt}(_dai, _weth));
 
         require(_create2addr == mockFlashLoan, "Address mismatch MockFlashLoan");
 
