@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.6.2 <0.9.0;
+pragma solidity 0.8.26;
 
 import "../CallBreakerTypes.sol";
 import "../interfaces/ICallBreaker.sol";
 
 abstract contract CallBreakerStorage {
+    /// @notice Emitted when the enterPortal function is called
+    /// @param calls The CallObject instance containing details of the call
+    /// @param returnValues The ReturnObject instance containing details of the return value
+    event EnterPortal(CallObject[] calls, ReturnObject[] returnValues);
+
     /// @notice Error thrown when calling a function that can only be called when the portal is open
     /// @dev Selector 0x59f0d709
     error PortalClosed();
@@ -72,11 +77,12 @@ abstract contract CallBreakerStorage {
     }
 
     /// @notice Set the portal status to open
-    function _setPortalOpen() internal {
+    function _setPortalOpen(CallObject[] memory calls, ReturnObject[] memory returnValues) internal {
         uint256 slot = uint256(PORTAL_SLOT);
         assembly {
             tstore(slot, true)
         }
+        emit EnterPortal(calls, returnValues);
     }
 
     /// @notice Set the portal status to closed
@@ -147,18 +153,6 @@ abstract contract CallBreakerStorage {
         // Transfer remaining ETH balance to the block builder
         address payable blockBuilder = payable(block.coinbase);
         blockBuilder.transfer(address(this).balance);
-    }
-
-    /// @dev Resets the trace stores with the provided calls and return values.
-    /// @param calls An array of CallObject to be stored in callStore.
-    /// @param returnValues An array of ReturnObject to be stored in returnStore.
-    function _resetTraceStoresWith(CallObject[] memory calls, ReturnObject[] memory returnValues) internal {
-        delete callStore;
-        delete returnStore;
-        for (uint256 i = 0; i < calls.length; i++) {
-            callStore.push().store(calls[i]);
-            returnStore.push(returnValues[i]);
-        }
     }
 
     /// @dev Helper function to fetch and remove the last ReturnObject from the storage

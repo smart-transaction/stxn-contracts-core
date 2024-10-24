@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.6.2 <0.9.0;
+pragma solidity 0.8.26;
 
 import "./LaminatedProxy.sol";
 import "../interfaces/ICallBreaker.sol";
@@ -29,16 +29,6 @@ contract Laminator is ILaminator {
         AdditionalData[] dataValues
     );
 
-    /// @dev Emitted when a function call is pulled from a proxy contract for execution.
-    /// @param returnData The ABI-encoded data payload returned from the function call.
-    /// @param sequenceNumber The sequence number of the deferred function call.
-    event ProxyPulled(bytes returnData, uint256 sequenceNumber);
-
-    /// @dev Emitted when a function call is executed immediately via a proxy contract.
-    /// @param proxyAddress The address of the proxy contract where the function call is executed.
-    /// @param callObjs The CallObject containing the function call details.
-    event ProxyExecuted(address indexed proxyAddress, CallObject[] callObjs);
-
     /// @notice Constructs a new contract instance - usually called by the Laminator contract
     /// @dev Initializes the contract, setting the call breaker address.
     /// @param _callBreaker The address of the laminator contract.
@@ -67,7 +57,7 @@ contract Laminator is ILaminator {
 
     /// @notice Gets the next sequence number of the LaminatedProxy associated with the sender.
     /// @return sequenceNumber The sequence number of the next deferred function call.
-    function getNextSeqNumber() public view returns (uint256) {
+    function getNextSeqNumber() external view returns (uint256) {
         address addr = computeProxyAddress(msg.sender);
         uint32 size;
         assembly {
@@ -76,7 +66,7 @@ contract Laminator is ILaminator {
         if (size == 0) {
             return 0;
         } else {
-            return LaminatedProxy(payable(addr)).count();
+            return LaminatedProxy(payable(addr)).nextSequenceNumber();
         }
     }
 

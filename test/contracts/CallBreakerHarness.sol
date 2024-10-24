@@ -4,8 +4,8 @@ pragma solidity 0.8.26;
 import {CallBreaker, CallObject, ReturnObject} from "src/timetravel/CallBreaker.sol";
 
 contract CallBreakerHarness is CallBreaker {
-    function setPortalOpen() public {
-        _setPortalOpen();
+    function setPortalOpen(CallObject[] memory calls, ReturnObject[] memory returnValues) public {
+        _setPortalOpen(calls, returnValues);
     }
 
     function populateCallIndicesHarness() public {
@@ -13,7 +13,9 @@ contract CallBreakerHarness is CallBreaker {
     }
 
     function resetTraceStoresWithHarness(CallObject[] memory calls, ReturnObject[] memory returnValues) public {
-        _resetTraceStoresWith(calls, returnValues);
+        delete callStore;
+        delete returnStore;
+        _populateCallsAndReturnValues(calls, returnValues);
     }
 
     function _executeAndVerifyCallHarness(uint256 index) public {

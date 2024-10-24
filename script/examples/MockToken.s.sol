@@ -13,7 +13,6 @@ contract DeployMockToken is Script, BaseDeployer {
     /// @dev Compute the CREATE2 addresses for contracts (proxy, counter).
     /// @param salt The salt for the MockDai contract.
     modifier computeCreate2(bytes32 salt) {
-
         _create2addr =
             computeCreate2Address(salt, hashInitCode(type(MockERC20Token).creationCode, abi.encode("MyToken", "TOK")));
 
