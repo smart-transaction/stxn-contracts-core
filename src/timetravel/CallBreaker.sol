@@ -159,10 +159,7 @@ contract CallBreaker is CallBreakerStorage {
     /// @param key The key whose associated value is to be fetched
     /// @return The value associated with the given key
     function fetchFromAssociatedDataStore(bytes32 key) public view returns (bytes memory) {
-        if (!associatedDataStore[key].set()) {
-            revert NonexistentKey();
-        }
-        return associatedDataStore[key].load();
+        return associatedDataStore[key];
     }
 
     /// @notice Fetches the CallObject and ReturnObject at a given index from the callStore and returnStore respectively
@@ -302,34 +299,22 @@ contract CallBreaker is CallBreakerStorage {
     /// @notice Populates the associatedDataStore with a list of key-value pairs
     /// @param encodedData The abi-encoded list of (bytes32, bytes32) key-value pairs
     function _populateAssociatedDataStore(bytes memory encodedData) internal {
-        // Decode the input data into an array of (bytes32, bytes32) pairs
-        (bytes32[] memory keys, bytes[] memory values) = abi.decode(encodedData, (bytes32[], bytes[]));
+        AdditionalData[] memory associatedData = abi.decode(encodedData, (AdditionalData[]));
 
-        // Check that the keys and values arrays have the same length
-        if (keys.length != values.length) {
-            revert LengthMismatch();
-        }
-
-        uint256 l = keys.length;
-        // Iterate over the keys and values arrays and insert each pair into the associatedDataStore
+        uint256 l = associatedData.length;
         for (uint256 i = 0; i < l; i++) {
-            _insertIntoAssociatedDataStore(keys[i], values[i]);
+            associatedDataKeyList.push[associatedData[i].key];
+            associatedDataStore[associatedData[i].key] = associatedData[i].value;
         }
     }
 
     function _populateHintdices(bytes memory encodedData) internal {
-        // Decode the input data into an array of (bytes32, bytes32) pairs
-        (bytes32[] memory keys, uint256[] memory values) = abi.decode(encodedData, (bytes32[], uint256[]));
+        AdditionalData[] memory hintDices = abi.decode(encodedData, (AdditionalData[]));
 
-        // Check that the keys and values arrays have the same length
-        if (keys.length != values.length) {
-            revert LengthMismatch();
-        }
-
-        uint256 l = keys.length;
-        // Iterate over the keys and values arrays and insert each pair into the hintdices
+        uint256 l = hintDices.length;
         for (uint256 i = 0; i < l; i++) {
-            _insertIntoHintdices(keys[i], values[i]);
+            hintdicesStoreKeyList.push[hintDices[i].key];
+            hintdicesStore[hintDices[i].key] = hintDices[i].value;
         }
     }
 

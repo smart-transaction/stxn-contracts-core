@@ -34,11 +34,11 @@ contract CallBreakerHarness is CallBreaker {
     }
 
     function insertIntoHintdicesHarness(bytes32 key, uint256 value) public {
-        _insertIntoHintdices(key, value);
+        hintdicesStore[key] = abi.encode(value);
     }
 
     function insertIntoAssociatedDataStore(bytes32 key, bytes memory value) public {
-        _insertIntoAssociatedDataStore(key, value);
+        associatedDataStore[key] = value;
     }
 
     function expectCallAtHarness(CallObject memory callObj, uint256 index) public view {
