@@ -11,20 +11,20 @@ import {MyErc20} from "test/examples/MyErc20.sol";
 import {console2} from "forge-std/console2.sol";
 
 contract DeploySelfCheckout is Script, BaseDeployer {
-    address private _tokenA;
-    address private _tokenB;
+    address private _dai;
+    address private _weth;
     address private _callBreaker;
 
     /// @dev Compute the CREATE2 addresses for contracts (proxy, counter).
     /// @param salt The salt for the SelfCheckout contract.
     modifier computeCreate2(bytes32 salt) {
-        _tokenA = address(new MyErc20("TokenA", "A"));
-        _tokenB = address(new MyErc20("TokenB", "B"));
+        _dai = vm.envAddress("DAI_ADDRESS");
+        _weth = vm.envAddress("WETH_ADDRESS");
         _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
 
         _create2addr = computeCreate2Address(
             salt,
-            hashInitCode(type(SelfCheckout).creationCode, abi.encode(_ownerAddress, _tokenA, _tokenB, _callBreaker))
+            hashInitCode(type(SelfCheckout).creationCode, abi.encode(_ownerAddress, _dai, _weth, _callBreaker))
         );
 
         _;
@@ -57,7 +57,7 @@ contract DeploySelfCheckout is Script, BaseDeployer {
 
     /// @dev Function to perform actual deployment.
     function chainDeploySelfCheckout() private broadcast(_deployerPrivateKey) {
-        address selfCheckout = address(new SelfCheckout{salt: _salt}(_ownerAddress, _tokenA, _tokenB, _callBreaker));
+        address selfCheckout = address(new SelfCheckout{salt: _salt}(_ownerAddress, _dai, _weth, _callBreaker));
 
         require(_create2addr == selfCheckout, "Address mismatch SelfCheckout");
 
