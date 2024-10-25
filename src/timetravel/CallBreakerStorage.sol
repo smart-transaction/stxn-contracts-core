@@ -118,7 +118,7 @@ abstract contract CallBreakerStorage {
         delete hintdicesStoreKeyList;
 
         // Transfer remaining ETH balance to the block builder
-        if(address(this).balance > 0) {
+        if (address(this).balance > 0) {
             address payable blockBuilder = payable(block.coinbase);
             blockBuilder.transfer(address(this).balance);
         }
