@@ -91,25 +91,20 @@ contract CronCounterLib {
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
-        bytes32[] memory keys = new bytes32[](2);
-        keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
-        keys[1] = keccak256(abi.encodePacked("pullIndex"));
-        bytes[] memory values = new bytes[](2);
-        values[0] = abi.encodePacked(filler);
-        values[1] = abi.encode(laminatorSequenceNumber);
-        bytes memory encodedData = abi.encode(keys, values);
+        AdditionalData[] memory associatedData = new AdditionalData[](2);
+        associatedData[0] = AdditionalData({key: keccak256(abi.encodePacked("tipYourBartender")), value: abi.encodePacked(filler)});
+        associatedData[1] = AdditionalData({key: keccak256(abi.encodePacked("pullIndex")), value: abi.encode(laminatorSequenceNumber)});
+
+        AdditionalData[] memory hintdices = new AdditionalData[](1);
+        hintdices[0] = AdditionalData({key: keccak256(abi.encode(callObjs[0])), value: abi.encode(0)});
 
         if (!isFirstTime) {
             callObjs[0].callvalue = abi.encodeWithSignature("pull(uint256)", laminatorSequenceNumber + 1);
             returnObjsFromPull[2] = ReturnObject({returnvalue: abi.encode(2)});
             returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
-            values[1] = abi.encode(laminatorSequenceNumber + 1);
+            associatedData[1].value = abi.encode(laminatorSequenceNumber + 1);
         }
-        bytes32[] memory hintdicesKeys = new bytes32[](1);
-        hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
-        uint256[] memory hintindicesVals = new uint256[](1);
-        hintindicesVals[0] = 0;
-        bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
-        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+
+        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices));
     }
 }

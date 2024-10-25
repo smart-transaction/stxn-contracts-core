@@ -72,23 +72,15 @@ contract MEVTimeComputeLib {
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
         returnObjs[1] = ReturnObject({returnvalue: ""});
 
-        bytes32[] memory keys = new bytes32[](3);
-        keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
-        keys[1] = keccak256(abi.encodePacked("pullIndex"));
-        keys[2] = keccak256(abi.encodePacked("solvedValue"));
-        bytes[] memory values = new bytes[](3);
-        values[0] = abi.encodePacked(filler);
-        values[1] = abi.encode(laminatorSequenceNumber);
-        values[2] = abi.encode(solution);
-        bytes memory encodedData = abi.encode(keys, values);
+        AdditionalData[] memory associatedData = new AdditionalData[](3);
+        associatedData[0] = AdditionalData({key: keccak256(abi.encodePacked("tipYourBartender")), value: abi.encodePacked(filler)});
+        associatedData[1] = AdditionalData({key: keccak256(abi.encodePacked("pullIndex")), value: abi.encode(laminatorSequenceNumber)});
+        associatedData[2] = AdditionalData({key: keccak256(abi.encodePacked("solvedValue")), value: abi.encode(solution)});
 
-        bytes32[] memory hintdicesKeys = new bytes32[](2);
-        hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
-        hintdicesKeys[0] = keccak256(abi.encode(callObjs[1]));
-        uint256[] memory hintindicesVals = new uint256[](2);
-        hintindicesVals[0] = 0;
-        hintindicesVals[0] = 1;
-        bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
-        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+        AdditionalData[] memory hintdices = new AdditionalData[](2);
+        hintdices[0] = AdditionalData({key: keccak256(abi.encode(callObjs[0])), value: abi.encode(0)});
+        hintdices[1] = AdditionalData({key: keccak256(abi.encode(callObjs[1])), value: abi.encode(1)});
+
+        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices));
     }
 }
