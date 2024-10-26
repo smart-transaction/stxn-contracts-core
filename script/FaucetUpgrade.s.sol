@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import "forge-std/Script.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
+/// @notice not being used since faucet was not deployed using a proxy
 contract UpgradeFaucet is Script {
     function run() external returns (address, address) {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_KEY");

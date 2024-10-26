@@ -11,7 +11,7 @@ interface IFlashLoanBorrower {
         address token2,
         uint256 amount2,
         bytes calldata data
-    ) external returns (bytes32);
+    ) external returns (bool);
 }
 
 /**

@@ -1,40 +1,40 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.26;
 
-import "openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
+import "openzeppelin-contracts/contracts/access/AccessControl.sol";
 
-contract Faucet is AccessControlUpgradeable {
+contract Faucet is AccessControl {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     uint256 public dripAmount;
     /// @notice disable lock features for the initial version of the faucet
-    /// uint256 public lockDuration;
+    /// @dev defaults to zero on deployment
+    uint256 public lockDuration;
 
     /// @notice used to block users of faucet for 24 hours after taking every call
-    /// @dev mapping to store address and blocktime + 1 day
-    // mapping(address => uint256) public lockTime;
+    /// @dev mapping to store address and blocktime + lock duration
+    mapping(address => uint256) public lockTime;
 
+    event LockDurationUpdated(uint256 lockDuration);
     event DripAmountUpdated(uint256 amount);
-    // event LockDurationUpdated(uint256 lockDuration);
     event FundsTransferred(address indexed requestor, uint256 dripAmount);
     event FundsGranted(address indexed receiver, uint256 amount);
 
-    function initialize() external initializer {
+    constructor() {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(ADMIN_ROLE, _msgSender());
         _setDripAmount(5 ether);
-        // lockDuration = 1 days;
     }
 
     /// @notice call to get funds from the faucet
     function requestFunds(address payable _requestor) external payable {
         // check if funds were transferred recently
-        // require(block.timestamp > lockTime[_requestor], "Faucet: Please try later");
+        require(block.timestamp > lockTime[_requestor], "Faucet: Please try later");
         // check if there is enough balance
         require(address(this).balance > dripAmount, "Faucet: Not enough funds");
 
         _requestor.transfer(dripAmount);
-        // lockTime[_requestor] = block.timestamp + lockDuration;
+        lockTime[_requestor] = block.timestamp + lockDuration;
         emit FundsTransferred(_requestor, dripAmount);
     }
 
@@ -53,11 +53,11 @@ contract Faucet is AccessControlUpgradeable {
     }
 
     /// @notice commented lock feature for the initial version of the faucet
-    // function changeLockDuration(uint256 newLockDuration) external onlyRole(ADMIN_ROLE) {
-    //     require(newLockDuration > 0, "Faucet: Invalid duration value");
-    //     lockDuration = newLockDuration;
-    //     emit LockDurationUpdated(newLockDuration);
-    // }
+    function changeLockDuration(uint256 newLockDuration) external onlyRole(ADMIN_ROLE) {
+        require(newLockDuration > 0, "Faucet: Invalid duration value");
+        lockDuration = newLockDuration;
+        emit LockDurationUpdated(newLockDuration);
+    }
 
     // function to add funds to the smart contract
     receive() external payable {}

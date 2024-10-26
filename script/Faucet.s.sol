@@ -1,24 +1,54 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0
+
 pragma solidity 0.8.26;
 
 import "forge-std/Script.sol";
 import "src/utilities/Faucet.sol";
-import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import {BaseDeployer} from "./BaseDeployer.s.sol";
 
-contract DeployFaucet is Script {
-    function run() external returns (address, address) {
-        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+/* solhint-disable no-console*/
+import {console2} from "forge-std/console2.sol";
 
-        // Deploy the upgradeable contract
-        address _proxyAddress =
-            Upgrades.deployTransparentProxy("Faucet.sol", msg.sender, abi.encodeCall(Faucet.initialize, ()));
+contract DeployFaucet is Script, BaseDeployer {
+    /// @dev Compute the CREATE2 address for Faucet contract.
+    /// @param salt The salt for the Faucet contract.
+    modifier computeCreate2(bytes32 salt) {
+        _create2addr = computeCreate2Address(salt, hashInitCode(type(Faucet).creationCode));
 
-        // Get the implementation address
-        address implementationAddress = Upgrades.getImplementationAddress(_proxyAddress);
+        _;
+    }
 
-        vm.stopBroadcast();
+    /// @dev Helper to iterate over chains and select fork.
+    /// @param deployForks The chains to deploy to.
+    /// @return address of the deployed contract
+    function createDeployMultichain(Chains[] memory deployForks)
+        internal
+        override
+        computeCreate2(_salt)
+        returns (address)
+    {
+        console2.log("Faucet create2 address:", _create2addr, "\n");
 
-        return (implementationAddress, _proxyAddress);
+        for (uint256 i; i < deployForks.length;) {
+            console2.log("Deploying Faucet to chain: ", uint256(deployForks[i]), "\n");
+
+            createSelectFork(deployForks[i]);
+
+            _chainDeployCallBreaker();
+
+            unchecked {
+                ++i;
+            }
+        }
+        return _create2addr;
+    }
+
+    /// @dev Function to perform actual deployment.
+    function _chainDeployCallBreaker() private broadcast(_deployerPrivateKey) {
+        Faucet faucet = new Faucet{salt: _salt}();
+
+        require(_create2addr == address(faucet), "Address mismatch Faucet");
+
+        console2.log("Faucet deployed at address:", address(faucet), "\n");
     }
 }
