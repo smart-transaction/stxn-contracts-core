@@ -55,12 +55,16 @@ contract FlashPillLib {
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
         AdditionalData[] memory associatedData = new AdditionalData[](2);
-        associatedData[0] = AdditionalData({key: keccak256(abi.encodePacked("tipYourBartender")), value: abi.encodePacked(filler)});
-        associatedData[1] = AdditionalData({key: keccak256(abi.encodePacked("pullIndex")), value: abi.encode(laminatorSequenceNumber)});
+        associatedData[0] =
+            AdditionalData({key: keccak256(abi.encodePacked("tipYourBartender")), value: abi.encodePacked(filler)});
+        associatedData[1] =
+            AdditionalData({key: keccak256(abi.encodePacked("pullIndex")), value: abi.encode(laminatorSequenceNumber)});
 
         AdditionalData[] memory hintdices = new AdditionalData[](1);
         hintdices[0] = AdditionalData({key: keccak256(abi.encode(callObjs[0])), value: abi.encode(0)});
 
-        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices));
+        callbreaker.executeAndVerify(
+            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+        );
     }
 }

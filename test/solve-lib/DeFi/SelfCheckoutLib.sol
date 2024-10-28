@@ -109,30 +109,23 @@ contract SelfCheckoutLib {
         returnObjs[2] = ReturnObject({returnvalue: ""});
 
         // Constructing something that'll decode happily
-        bytes32[] memory keys = new bytes32[](5);
-        keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
-        keys[1] = keccak256(abi.encodePacked("swapPartner"));
-        keys[2] = keccak256(abi.encodePacked("pusherLaminated"));
-        keys[3] = keccak256(abi.encodePacked("x"));
-        keys[4] = keccak256(abi.encodePacked("seqNum"));
-        bytes[] memory values = new bytes[](5);
-        values[0] = abi.encodePacked(filler);
-        values[1] = abi.encodePacked(filler);
-        values[2] = abi.encode(pusherLaminated);
-        values[3] = abi.encode(x);
-        values[4] = abi.encode(laminatorSequenceNumber);
-        bytes memory encodedData = abi.encode(keys, values);
+        AdditionalData[] memory associatedData = new AdditionalData[](5);
+        associatedData[0] =
+            AdditionalData({key: keccak256(abi.encodePacked("tipYourBartender")), value: abi.encodePacked(filler)});
+        associatedData[1] = AdditionalData({key: keccak256(abi.encodePacked("swapPartner")), value: abi.encode(filler)});
+        associatedData[2] =
+            AdditionalData({key: keccak256(abi.encodePacked("pusherLaminated")), value: abi.encode(pusherLaminated)});
+        associatedData[3] = AdditionalData({key: keccak256(abi.encodePacked("x")), value: abi.encode(x)});
+        associatedData[4] =
+            AdditionalData({key: keccak256(abi.encodePacked("seqNum")), value: abi.encode(laminatorSequenceNumber)});
 
-        bytes32[] memory hintdicesKeys = new bytes32[](3);
-        hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
-        hintdicesKeys[1] = keccak256(abi.encode(callObjs[1]));
-        hintdicesKeys[2] = keccak256(abi.encode(callObjs[2]));
-        uint256[] memory hintindicesVals = new uint256[](3);
-        hintindicesVals[0] = 0;
-        hintindicesVals[1] = 1;
-        hintindicesVals[2] = 2;
-        bytes memory hintindices = abi.encode(hintdicesKeys, hintindicesVals);
+        AdditionalData[] memory hintdices = new AdditionalData[](3);
+        hintdices[0] = AdditionalData({key: keccak256(abi.encode(callObjs[0])), value: abi.encode(0)});
+        hintdices[1] = AdditionalData({key: keccak256(abi.encode(callObjs[1])), value: abi.encode(1)});
+        hintdices[2] = AdditionalData({key: keccak256(abi.encode(callObjs[2])), value: abi.encode(2)});
 
-        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintindices);
+        callbreaker.executeAndVerify(
+            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+        );
     }
 }

@@ -73,14 +73,19 @@ contract MEVTimeComputeLib {
         returnObjs[1] = ReturnObject({returnvalue: ""});
 
         AdditionalData[] memory associatedData = new AdditionalData[](3);
-        associatedData[0] = AdditionalData({key: keccak256(abi.encodePacked("tipYourBartender")), value: abi.encodePacked(filler)});
-        associatedData[1] = AdditionalData({key: keccak256(abi.encodePacked("pullIndex")), value: abi.encode(laminatorSequenceNumber)});
-        associatedData[2] = AdditionalData({key: keccak256(abi.encodePacked("solvedValue")), value: abi.encode(solution)});
+        associatedData[0] =
+            AdditionalData({key: keccak256(abi.encodePacked("tipYourBartender")), value: abi.encodePacked(filler)});
+        associatedData[1] =
+            AdditionalData({key: keccak256(abi.encodePacked("pullIndex")), value: abi.encode(laminatorSequenceNumber)});
+        associatedData[2] =
+            AdditionalData({key: keccak256(abi.encodePacked("solvedValue")), value: abi.encode(solution)});
 
         AdditionalData[] memory hintdices = new AdditionalData[](2);
         hintdices[0] = AdditionalData({key: keccak256(abi.encode(callObjs[0])), value: abi.encode(0)});
         hintdices[1] = AdditionalData({key: keccak256(abi.encode(callObjs[1])), value: abi.encode(1)});
 
-        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices));
+        callbreaker.executeAndVerify(
+            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+        );
     }
 }
