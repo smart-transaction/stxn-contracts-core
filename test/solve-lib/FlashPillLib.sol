@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.26;
 
-import "src/lamination/Laminator.sol";
+import {Laminator, SolverData} from "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
 import "src/timetravel/SmarterContract.sol";
 import "test/examples/FlashPill.sol";
@@ -32,7 +32,7 @@ contract FlashPillLib {
 
         pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
 
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", dataValues);
     }

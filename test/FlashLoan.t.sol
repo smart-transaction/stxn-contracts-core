@@ -3,6 +3,7 @@
 pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
+import "src/lamination/LaminatedProxy.sol";
 import "test/solve-lib/DeFi/FlashLoanLib.sol";
 
 contract FlashLoanTest is Test, FlashLoanLib {

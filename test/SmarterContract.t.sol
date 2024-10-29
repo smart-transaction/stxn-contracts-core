@@ -5,8 +5,7 @@ import "forge-std/Test.sol";
 
 import {SmarterContract} from "src/timetravel/SmarterContract.sol";
 import {CallBreaker, CallObject, ReturnObject, AdditionalData} from "src/timetravel/CallBreaker.sol";
-import {Laminator} from "src/lamination/Laminator.sol";
-import {ILaminator} from "src/interfaces/ILaminator.sol";
+import {Laminator, SolverData} from "src/lamination/Laminator.sol";
 import {SmarterContractHarness} from "test/contracts/SmarterContractHarness.sol";
 import {CallBreakerHarness} from "test/contracts/CallBreakerHarness.sol";
 import {Dummy} from "./utils/Dummy.sol";
@@ -114,7 +113,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("frontrunBlocker()")
         });
 
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.prank(pusher, pusher);
         laminator.pushToProxy(abi.encode(pusherCallObjs), 0, DEFAULT_CODE, dataValues);
@@ -162,7 +161,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("frontrunBlocker()")
         });
 
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.prank(pusher, pusher);
         laminator.pushToProxy(abi.encode(pusherCallObjs), 0, DEFAULT_CODE, dataValues);
@@ -211,7 +210,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("backrunBlocker()")
         });
 
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.prank(pusher, pusher);
         laminator.pushToProxy(abi.encode(pusherCallObjs), 0, DEFAULT_CODE, dataValues);
@@ -260,7 +259,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("backrunBlocker()")
         });
 
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.prank(pusher, pusher);
         laminator.pushToProxy(abi.encode(pusherCallObjs), 0, DEFAULT_CODE, dataValues);
@@ -309,7 +308,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("assertFutureCallTestHarness()")
         });
 
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.prank(pusher, pusher);
         laminator.pushToProxy(abi.encode(pusherCallObjs), 0, DEFAULT_CODE, dataValues);
@@ -369,7 +368,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("assertFutureCallWithIndexTestHarness()")
         });
 
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.prank(pusher, pusher);
         laminator.pushToProxy(abi.encode(pusherCallObjs), 0, DEFAULT_CODE, dataValues);
@@ -446,7 +445,7 @@ contract SmarterContractTest is Test {
             callvalue: abi.encodeWithSignature("assertFutureCallTestHarness()")
         });
 
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.prank(pusher, pusher);
         laminator.pushToProxy(abi.encode(pusherCallObjs), 0, DEFAULT_CODE, dataValues);

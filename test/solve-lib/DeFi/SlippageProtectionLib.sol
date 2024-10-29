@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.26;
 
-import "src/lamination/Laminator.sol";
+import {Laminator, SolverData} from "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
 import "test/examples/DeFi/MockDaiWethPool.sol";
 import "test/utils/MockERC20Token.sol";
@@ -52,7 +52,7 @@ contract SlippageProtectionLib {
             callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", 100, maxSlippage)
         });
         pusherCallObjs[2] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", dataValues);
     }

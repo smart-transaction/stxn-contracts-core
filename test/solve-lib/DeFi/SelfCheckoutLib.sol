@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import "forge-std/Vm.sol";
 
-import "src/lamination/Laminator.sol";
+import {Laminator, SolverData} from "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
 import "test/examples/DeFi/SelfCheckout.sol";
 import "test/examples/MyErc20.sol";
@@ -59,7 +59,7 @@ contract SelfCheckoutLib {
             gas: 1000000,
             callvalue: abi.encodeWithSignature("takeSomeAtokenFromOwner(uint256)", 10)
         });
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", dataValues);
 

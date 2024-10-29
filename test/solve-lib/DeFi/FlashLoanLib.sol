@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.26;
 
-import "src/lamination/Laminator.sol";
+import {FlashLoanData} from "src/CallBreakerTypes.sol";
+import {Laminator, SolverData} from "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
 import "src/timetravel/SmarterContract.sol";
 import "test/examples/DeFi/MockDaiWethPool.sol";
 import "test/examples/DeFi/MockFlashLoan.sol";
 import "test/utils/MockERC20Token.sol";
 import "test/utils/Constants.sol";
-import {FlashLoanData} from "src/CallBreakerTypes.sol";
 
 contract FlashLoanLib {
     address payable public pusherLaminated;
@@ -60,7 +60,7 @@ contract FlashLoanLib {
             callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", amountIn, slippagePercent)
         });
 
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", dataValues);
     }
