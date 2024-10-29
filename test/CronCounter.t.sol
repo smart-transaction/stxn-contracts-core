@@ -63,7 +63,7 @@ contract CronTest is Test, CronCounterLib {
         assertFalse(callbreaker.isPortalOpen());
 
         // Should be cleared so init should be false (testFail format is for compliance with Kontrol framework)
-        (bool init, bool exec,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
+        (bool init, bool exec,,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
 
         assertTrue(init);
         assertTrue(exec);

@@ -59,14 +59,18 @@ struct ReturnObject {
 }
 
 /// @param initialized Flag indicating if the CallObject has been pushed as a deferred call
+/// @param executed The first block where the CallObject is callable
+/// @param none The first block where the CallObject is callable
 /// @param firstCallableBlock The first block where the CallObject is callable
-/// @param callObj The actual CallObject instance
+/// @param callObjs The list of call objs
+/// @param data Additional info for the sequence of call objs
 struct CallObjectHolder {
     bool initialized;
     bool executed;
     uint256 nonce;
     uint256 firstCallableBlock;
     CallObject[] callObjs;
+    SolverData[] data;
 }
 
 struct CallObjectHolderStorage {

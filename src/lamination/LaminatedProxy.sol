@@ -54,7 +54,8 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @dev Emitted when a function call is deferred and added to the queue.
     /// @param callObjs The CallObject[] containing details of the deferred function call.
     /// @param sequenceNumber The sequence number assigned to the deferred function call.
-    event CallPushed(CallObject[] callObjs, uint256 sequenceNumber);
+    /// @param data Additional data to be associated with the sequence of call objs
+    event CallPushed(CallObject[] callObjs, uint256 sequenceNumber, SolverData[] data);
 
     /// @dev Emitted when a deferred function call is executed from the queue.
     /// @param callObjs The CallObject[] containing details of the executed function call.
@@ -189,11 +190,17 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @dev Returns a tuple containing a boolean indicating whether the deferred call exists,
     ///      and the CallObject containing details of the deferred function call.
     /// @param seqNumber The sequence number of the deferred function call to view.
-    /// @return exists A boolean indicating whether the deferred call exists.
-    /// @return callObj The CallObject containing details of the deferred function call.
-    function viewDeferredCall(uint256 seqNumber) external view returns (bool, bool, CallObject[] memory) {
+    /// @return boolean indicating whether the deferred call was initialized.
+    /// @return boolean indicating whether the deferred call was execured.
+    /// @return the sequence of call objs to within the deferred function call.
+    /// @return the data associated to the deferred function call.
+    function viewDeferredCall(uint256 seqNumber)
+        external
+        view
+        returns (bool, bool, CallObject[] memory, SolverData[] memory)
+    {
         CallObjectHolder memory coh = deferredCalls(seqNumber);
-        return (coh.initialized, coh.executed, coh.callObjs);
+        return (coh.initialized, coh.executed, coh.callObjs, coh.data);
     }
 
     function getExecutingCallObject() external view onlyWhileExecuting returns (CallObject memory) {
@@ -210,20 +217,25 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     ///      It can also be called re-entrantly to enable the contract to do cronjobs with tail recursion.
     /// @param input The encoded CallObject containing information about the function call to defer.
     /// @param delay The number of blocks to delay before the function call can be executed.
-    ///      Use 0 for no delay.
+    /// @param data Additional data to be associated with the sequence of call objs
     /// @return callSequenceNumber The sequence number assigned to this deferred call.
-    function push(bytes memory input, uint256 delay) public onlyLaminatorOrProxy returns (uint256 callSequenceNumber) {
+    function push(bytes memory input, uint256 delay, SolverData[] memory data)
+        public
+        onlyLaminatorOrProxy
+        returns (uint256 callSequenceNumber)
+    {
         CallObjectHolder memory holder;
         holder.callObjs = abi.decode(input, (CallObject[]));
         callSequenceNumber = _incrementSequenceNumber();
         holder.initialized = true;
         holder.executed = false;
         holder.nonce = executingNonce;
+        holder.data = data;
         holder.firstCallableBlock = block.number + delay;
         _deferredCalls[callSequenceNumber].store(holder);
 
         emit CallableBlock(block.number + delay, block.number);
-        emit CallPushed(holder.callObjs, callSequenceNumber);
+        emit CallPushed(holder.callObjs, callSequenceNumber, data);
     }
 
     /// @dev Executes the function call specified by the CallObject `callToMake`.
@@ -274,8 +286,9 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
 
         CallObjectHolderStorage storage coh = _deferredCalls[seqNumber];
         _checkInitialized(coh);
+        CallObjectHolder memory holder = coh.load();
 
-        return push(abi.encode(coh.load().callObjs), delay);
+        return push(abi.encode(holder.callObjs), delay, holder.data);
     }
 
     /// @dev Safety checks before pushing calls to the LaminatedProxy
