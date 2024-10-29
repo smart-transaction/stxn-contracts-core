@@ -46,7 +46,7 @@ contract FlashLoanTest is Test, FlashLoanLib {
 
         assertFalse(callbreaker.isPortalOpen());
 
-        (bool init, bool exec,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
+        (bool init, bool exec,,) = LaminatedProxy(pusherLaminated).viewDeferredCall(laminatorSequenceNumber);
 
         assertTrue(init);
         assertTrue(exec);

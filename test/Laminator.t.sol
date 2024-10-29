@@ -38,7 +38,7 @@ contract LaminatorTest is Test {
         SolverData[] dataValues
     );
     event ProxyCreated(address indexed owner, address indexed proxyAddress);
-    event CallPushed(CallObject[] callObjs, uint256 sequenceNumber);
+    event CallPushed(CallObject[] callObjs, uint256 sequenceNumber, SolverData[] data);
     event CallPulled(CallObject[] callObjs, uint256 sequenceNumber);
     event CallExecuted(CallObject callObj);
 
@@ -82,7 +82,7 @@ contract LaminatorTest is Test {
 
         vm.expectEmit(true, true, true, true);
         emit ProxyPushed(address(proxy), callObj1, 0, DEFAULT_CODE, dataValues);
-        emit CallPushed(callObj1, 0);
+        emit CallPushed(callObj1, 0, dataValues);
 
         uint256 sequenceNumber1 = laminator.pushToProxy(cData, 1, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber1, 0);
@@ -102,7 +102,7 @@ contract LaminatorTest is Test {
         cData = abi.encode(callObj2);
         vm.expectEmit(true, true, true, true);
         emit ProxyPushed(address(proxy), callObj2, 1, DEFAULT_CODE, dataValues);
-        emit CallPushed(callObj2, 1);
+        emit CallPushed(callObj1, 0, dataValues);
         uint256 sequenceNumber2 = laminator.pushToProxy(cData, 1, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber2, 1);
 
@@ -207,9 +207,11 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
+        SolverData[] memory dataValues = Constants.emptyDataValues();
+
         vm.prank(randomFriendAddress, randomFriendAddress);
         vm.expectRevert(LaminatedProxy.NotLaminatorOrProxy.selector);
-        proxy.push(cData, 0);
+        proxy.push(cData, 0, dataValues);
     }
 
     // ensure pushes as the laminator work
@@ -225,10 +227,12 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
+        SolverData[] memory dataValues = Constants.emptyDataValues();
+
         vm.prank(address(laminator), address(laminator));
         vm.expectEmit(true, true, true, true);
-        emit CallPushed(callObj, 0);
-        proxy.push(cData, 1);
+        emit CallPushed(callObj, 0, dataValues);
+        proxy.push(cData, 1, dataValues);
     }
 
     function testExecute() public {
