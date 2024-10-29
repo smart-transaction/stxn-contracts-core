@@ -12,7 +12,7 @@ contract KITNDisbursalContract is AccessControl {
 
     struct CoinsSpendResult {
         address receiver;
-        uint amount;
+        uint256 amount;
         bool result;
     }
 
@@ -22,29 +22,21 @@ contract KITNDisbursalContract is AccessControl {
     constructor(address _kitnAddress, address _owner) {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(DISBURSER, _msgSender());
-        
+
         kitnToken = IERC20(_kitnAddress);
         owner = _owner;
     }
 
     // Function to check the contract's balance
-    function getKitnBalance() external view returns (uint) {
+    function getKitnBalance() external view returns (uint256) {
         return kitnToken.balanceOf(address(this));
     }
 
     // Function to spend coins from allowance within the validity period
-    function spendCoins(
-        address[] calldata _receivers,
-        uint[] calldata _amounts
-    ) external onlyRole(DISBURSER) {
+    function spendCoins(address[] calldata _receivers, uint256[] calldata _amounts) external onlyRole(DISBURSER) {
         // Transfer KITN tokens from this contract to the _receiver
-        require(
-            _receivers.length == _amounts.length,
-            "A number of receivers must be equal to a number of amounts"
-        );
-        CoinsSpendResult[] memory results = new CoinsSpendResult[](
-            _receivers.length
-        );
+        require(_receivers.length == _amounts.length, "A number of receivers must be equal to a number of amounts");
+        CoinsSpendResult[] memory results = new CoinsSpendResult[](_receivers.length);
 
         for (uint256 i = 0; i < _receivers.length; i++) {
             results[i].receiver = _receivers[i];
