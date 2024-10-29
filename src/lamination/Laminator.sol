@@ -26,7 +26,7 @@ contract Laminator is ILaminator {
         CallObject[] callObjs,
         uint256 sequenceNumber,
         bytes32 indexed selector,
-        AdditionalData[] dataValues
+        SolverData[] dataValues
     );
 
     /// @notice Constructs a new contract instance - usually called by the Laminator contract
@@ -78,7 +78,7 @@ contract Laminator is ILaminator {
     /// @param selector code identifier for solvers to select relevant actions
     /// @param dataValues to be used by solvers in serving the user objective
     /// @return sequenceNumber The sequence number of the deferred function call.
-    function pushToProxy(bytes calldata cData, uint32 delay, bytes32 selector, AdditionalData[] memory dataValues)
+    function pushToProxy(bytes calldata cData, uint32 delay, bytes32 selector, SolverData[] memory dataValues)
         external
         returns (uint256 sequenceNumber)
     {

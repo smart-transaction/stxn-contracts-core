@@ -23,8 +23,7 @@ contract DeploySelfCheckout is Script, BaseDeployer {
         _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
 
         _create2addr = computeCreate2Address(
-            salt,
-            hashInitCode(type(SelfCheckout).creationCode, abi.encode(_ownerAddress, _dai, _weth, _callBreaker))
+            salt, hashInitCode(type(SelfCheckout).creationCode, abi.encode(_ownerAddress, _dai, _weth, _callBreaker))
         );
 
         _;

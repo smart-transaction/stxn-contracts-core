@@ -3,8 +3,7 @@ pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 
-import {ILaminator} from "src/interfaces/ILaminator.sol";
-import {Laminator} from "src/lamination/Laminator.sol";
+import {Laminator, SolverData} from "src/lamination/Laminator.sol";
 import {CallBreaker} from "src/timetravel/CallBreaker.sol";
 import {LaminatedProxy} from "src/lamination/LaminatedProxy.sol";
 import {CallObjectLib, CallObject, CallObjectHolder, ReturnObject} from "src/TimeTypes.sol";
@@ -36,7 +35,7 @@ contract LaminatorTest is Test {
         CallObject[] callObjs,
         uint256 sequenceNumber,
         bytes32 indexed selector,
-        ILaminator.AdditionalData[] dataValues
+        SolverData[] dataValues
     );
     event ProxyCreated(address indexed owner, address indexed proxyAddress);
     event CallPushed(CallObject[] callObjs, uint256 sequenceNumber);
@@ -79,7 +78,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val1)
         });
         bytes memory cData = abi.encode(callObj1);
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.expectEmit(true, true, true, true);
         emit ProxyPushed(address(proxy), callObj1, 0, DEFAULT_CODE, dataValues);
@@ -138,7 +137,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
@@ -161,7 +160,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         uint256 sequenceNumber = laminator.pushToProxy(cData, 1, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
@@ -183,7 +182,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         uint256 sequenceNumber = laminator.pushToProxy(cData, 3, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
@@ -278,7 +277,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
@@ -301,7 +300,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj1);
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
 
@@ -338,7 +337,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
@@ -361,7 +360,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
@@ -393,7 +392,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("emitArg(uint256)", val)
         });
         bytes memory cData = abi.encode(callObj);
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
@@ -416,7 +415,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("reverter()")
         });
         bytes memory cData = abi.encode(callObj);
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         uint256 sequenceNumber = laminator.pushToProxy(cData, 1, DEFAULT_CODE, dataValues);
         assertEq(sequenceNumber, 0);
@@ -537,7 +536,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("getExecutingCallObject()")
         });
         bytes memory cData = abi.encode(callObj);
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
 
@@ -558,7 +557,7 @@ contract LaminatorTest is Test {
             callvalue: abi.encodeWithSignature("getExecutingCallObjectHolder()")
         });
         bytes memory cData = abi.encode(callObj);
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
 
@@ -582,7 +581,7 @@ contract LaminatorTest is Test {
         });
         bytes memory cData = abi.encode(callObj1);
         uint256[] memory sequenceNumber = new uint256[](1);
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         sequenceNumber[0] = laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
 

@@ -5,6 +5,25 @@ import {compactCdHead, compactCdTailSlot} from "./libraries/CompactBytes.sol";
 import {genericDynArrayHead, genericElementPtr, genericDynArrayElementsSlot} from "./libraries/CompactDynArray.sol";
 import {SafeCast} from "openzeppelin/utils/math/SafeCast.sol";
 
+enum DATATYPE {
+    INT256,
+    UINT256,
+    STRING,
+    ADDRESS,
+    BYTES,
+    BYTES32
+}
+
+/// @dev Struct for addtional info for the solver to use
+/// @param name of the parameter
+/// @param type of the parameter
+/// @param value of parameter as string
+struct SolverData {
+    string name;
+    DATATYPE datatype;
+    string value;
+}
+
 /// @dev Struct for holding call object details
 /// @param amount The amount of Ether to send with the call
 /// @param addr The target address of the call

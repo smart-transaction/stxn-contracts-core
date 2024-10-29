@@ -36,10 +36,10 @@ abstract contract CallBreakerStorage {
     ReturnObject[] public returnStore;
 
     bytes32[] public associatedDataKeyList;
-    mapping(bytes32 => AssociatedDataStorage) public associatedDataStore;
+    mapping(bytes32 => bytes) public associatedDataStore;
 
     bytes32[] public hintdicesStoreKeyList;
-    mapping(bytes32 => Hintdex) public hintdicesStore;
+    mapping(bytes32 => uint256[]) public hintdicesStore;
 
     Call[] public callList;
 
@@ -102,46 +102,13 @@ abstract contract CallBreakerStorage {
         }
     }
 
-    /// @notice Inserts a key-value pair into the hintdicesStore and hintdicesStoreKeyList
-    /// @dev If the key doesn't exist in the hintdicesStore, it initializes it
-    /// @param key The key to be inserted into the hintdicesStore
-    /// @param value The value to be associated with the key in the hintdicesStore
-    function _insertIntoHintdices(bytes32 key, uint256 value) internal {
-        // If the key doesn't exist in the hintdices, initialize it
-        if (!hintdicesStore[key].set) {
-            hintdicesStore[key].set = true;
-            hintdicesStore[key].indices = new uint256[](0);
-            hintdicesStoreKeyList.push(key);
-        }
-
-        // Append the value to the list of values associated with the key
-        hintdicesStore[key].indices.push(value);
-    }
-
-    /// @notice Inserts a pair of bytes32 into the associatedDataStore and associatedDataKeyList
-    /// @param key The key to be inserted into the associatedDataStore
-    /// @param value The value to be associated with the key in the associatedDataStore
-    function _insertIntoAssociatedDataStore(bytes32 key, bytes memory value) internal {
-        // Check if the key already exists in the associatedDataStore
-        if (associatedDataStore[key].set()) {
-            revert KeyAlreadyExists();
-        }
-
-        emit InsertIntoAssociatedDataStore(key, value);
-        // Insert the key-value pair into the associatedDataStore
-        associatedDataStore[key].store(value);
-
-        // Add the key to the associatedDataKeyList
-        associatedDataKeyList.push(key);
-    }
-
     /// @dev Cleans up storage by resetting all stores
     function _cleanUpStorage() internal {
         delete callStore;
         delete returnStore;
         delete callList;
         for (uint256 i = 0; i < associatedDataKeyList.length; i++) {
-            associatedDataStore[associatedDataKeyList[i]].wipe();
+            delete associatedDataStore[associatedDataKeyList[i]];
         }
         delete associatedDataKeyList;
 
@@ -151,8 +118,10 @@ abstract contract CallBreakerStorage {
         delete hintdicesStoreKeyList;
 
         // Transfer remaining ETH balance to the block builder
-        address payable blockBuilder = payable(block.coinbase);
-        blockBuilder.transfer(address(this).balance);
+        if (address(this).balance > 0) {
+            address payable blockBuilder = payable(block.coinbase);
+            blockBuilder.transfer(address(this).balance);
+        }
     }
 
     /// @dev Helper function to fetch and remove the last ReturnObject from the storage

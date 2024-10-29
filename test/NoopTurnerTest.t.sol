@@ -34,21 +34,14 @@ contract NoopTurnerTest is Test {
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(uint16(52))});
 
-        bytes memory callObjsBytes = abi.encode(callObjs);
-        bytes memory returnObjsBytes = abi.encode(returnObjs);
+        AdditionalData[] memory associatedData = new AdditionalData[](0);
 
-        bytes32[] memory keys = new bytes32[](0);
-        bytes[] memory values = new bytes[](0);
-        bytes memory encodedData = abi.encode(keys, values);
+        AdditionalData[] memory hintdices = new AdditionalData[](1);
+        hintdices[0] = AdditionalData({key: keccak256(abi.encode(callObjs[0])), value: abi.encode(0)});
 
-        bytes32[] memory hintdicesKeys = new bytes32[](1);
-        hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
-        uint256[] memory hintindicesVals = new uint256[](1);
-        hintindicesVals[0] = 0;
-        bytes memory hintindices = abi.encode(hintdicesKeys, hintindicesVals);
-
-        // call verify
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.executeAndVerify(callObjsBytes, returnObjsBytes, encodedData, hintindices);
+        callbreaker.executeAndVerify(
+            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+        );
     }
 }

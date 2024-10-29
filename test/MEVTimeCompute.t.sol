@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 import "src/timetravel/CallBreaker.sol";
+import "src/lamination/LaminatedProxy.sol";
 import "test/examples/MEVOracle/MEVTimeCompute.sol";
 import "test/solve-lib/MEVTimeOracle/MEVTimeComputeLib.sol";
 

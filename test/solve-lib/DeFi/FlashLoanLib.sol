@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.26;
 
-import "src/lamination/Laminator.sol";
+import {FlashLoanData} from "src/CallBreakerTypes.sol";
+import {Laminator, SolverData} from "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
 import "src/timetravel/SmarterContract.sol";
 import "test/examples/DeFi/MockDaiWethPool.sol";
 import "test/examples/DeFi/MockFlashLoan.sol";
 import "test/utils/MockERC20Token.sol";
 import "test/utils/Constants.sol";
-import {FlashLoanData} from "src/CallBreakerTypes.sol";
 
 contract FlashLoanLib {
     address payable public pusherLaminated;
@@ -60,7 +60,7 @@ contract FlashLoanLib {
             callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", amountIn, slippagePercent)
         });
 
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", dataValues);
     }
@@ -133,33 +133,24 @@ contract FlashLoanLib {
         returnObjs[4] = ReturnObject({returnvalue: ""});
         returnObjs[5] = ReturnObject({returnvalue: ""});
 
-        bytes32[] memory keys = new bytes32[](2);
-        keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
-        keys[1] = keccak256(abi.encodePacked("pullIndex"));
-        bytes[] memory values = new bytes[](2);
-        values[0] = abi.encodePacked(filler);
-        values[1] = abi.encode(laminatorSequenceNumber);
-        bytes memory encodedData = abi.encode(keys, values);
+        AdditionalData[] memory associatedData = new AdditionalData[](2);
+        associatedData[0] =
+            AdditionalData({key: keccak256(abi.encodePacked("tipYourBartender")), value: abi.encodePacked(filler)});
+        associatedData[1] =
+            AdditionalData({key: keccak256(abi.encodePacked("pullIndex")), value: abi.encode(laminatorSequenceNumber)});
 
-        bytes32[] memory hintdicesKeys = new bytes32[](5);
-        hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
-        hintdicesKeys[1] = keccak256(abi.encode(callObjs[1]));
-        hintdicesKeys[2] = keccak256(abi.encode(callObjs[2]));
-        hintdicesKeys[3] = keccak256(abi.encode(callObjs[3]));
-        hintdicesKeys[4] = keccak256(abi.encode(callObjs[4]));
-        uint256[] memory hintindicesVals = new uint256[](5);
-        hintindicesVals[0] = 0;
-        hintindicesVals[1] = 1;
-        hintindicesVals[2] = 2;
-        hintindicesVals[3] = 3;
-        hintindicesVals[4] = 4;
-        bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
+        AdditionalData[] memory hintdices = new AdditionalData[](5);
+        hintdices[0] = AdditionalData({key: keccak256(abi.encode(callObjs[0])), value: abi.encode(0)});
+        hintdices[1] = AdditionalData({key: keccak256(abi.encode(callObjs[1])), value: abi.encode(1)});
+        hintdices[2] = AdditionalData({key: keccak256(abi.encode(callObjs[2])), value: abi.encode(2)});
+        hintdices[3] = AdditionalData({key: keccak256(abi.encode(callObjs[3])), value: abi.encode(3)});
+        hintdices[4] = AdditionalData({key: keccak256(abi.encode(callObjs[4])), value: abi.encode(4)});
 
         callbreaker.executeAndVerify(
             abi.encode(callObjs),
             abi.encode(returnObjs),
-            encodedData,
-            hintdices,
+            abi.encode(associatedData),
+            abi.encode(hintdices),
             abi.encode(generateFlashLoanData(address(flashLoan)))
         );
     }

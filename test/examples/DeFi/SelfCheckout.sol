@@ -5,6 +5,7 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "src/TimeTypes.sol";
 import "src/timetravel/CallBreaker.sol";
 import "src/timetravel/SmarterContract.sol";
+import "forge-std/console.sol";
 
 contract SelfCheckout is SmarterContract {
     address owner;
@@ -58,11 +59,13 @@ contract SelfCheckout is SmarterContract {
         return callbreakerAddress;
     }
 
-    function getSwapPartner() public view returns (address) {
+    function getSwapPartner() public view returns (address swapPartnerAddress) {
         bytes32 swapPartnerKey = keccak256(abi.encodePacked("swapPartner"));
         bytes memory swapPartnerBytes =
             CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(swapPartnerKey);
-        return address(bytes20(swapPartnerBytes));
+        assembly {
+            swapPartnerAddress := mload(add(swapPartnerBytes, 32))
+        }
     }
 
     event LogCallObj(CallObject callObj);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.26;
 
-import "src/lamination/Laminator.sol";
+import {Laminator, SolverData} from "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
 import "src/timetravel/SmarterContract.sol";
 import "test/examples/FlashPill.sol";
@@ -32,7 +32,7 @@ contract FlashPillLib {
 
         pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
 
-        ILaminator.AdditionalData[] memory dataValues = Constants.emptyDataValues();
+        SolverData[] memory dataValues = Constants.emptyDataValues();
 
         return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", dataValues);
     }
@@ -54,21 +54,17 @@ contract FlashPillLib {
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
-        bytes32[] memory keys = new bytes32[](2);
-        keys[0] = keccak256(abi.encodePacked("tipYourBartender"));
-        keys[1] = keccak256(abi.encodePacked("pullIndex"));
-        // keys[2] = keccak256(abi.encodePacked("hintdex"));
-        bytes[] memory values = new bytes[](2);
-        values[0] = abi.encodePacked(filler);
-        values[1] = abi.encode(laminatorSequenceNumber);
-        // values[2] = abi.encode(4);
-        bytes memory encodedData = abi.encode(keys, values);
+        AdditionalData[] memory associatedData = new AdditionalData[](2);
+        associatedData[0] =
+            AdditionalData({key: keccak256(abi.encodePacked("tipYourBartender")), value: abi.encodePacked(filler)});
+        associatedData[1] =
+            AdditionalData({key: keccak256(abi.encodePacked("pullIndex")), value: abi.encode(laminatorSequenceNumber)});
 
-        bytes32[] memory hintdicesKeys = new bytes32[](1);
-        hintdicesKeys[0] = keccak256(abi.encode(callObjs[0]));
-        uint256[] memory hintindicesVals = new uint256[](1);
-        hintindicesVals[0] = 0;
-        bytes memory hintdices = abi.encode(hintdicesKeys, hintindicesVals);
-        callbreaker.executeAndVerify(abi.encode(callObjs), abi.encode(returnObjs), encodedData, hintdices);
+        AdditionalData[] memory hintdices = new AdditionalData[](1);
+        hintdices[0] = AdditionalData({key: keccak256(abi.encode(callObjs[0])), value: abi.encode(0)});
+
+        callbreaker.executeAndVerify(
+            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+        );
     }
 }
