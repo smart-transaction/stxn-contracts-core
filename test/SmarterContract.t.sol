@@ -397,10 +397,6 @@ contract SmarterContractTest is Test {
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
         returnObjs[1] = ReturnObject({returnvalue: abi.encode(true)});
 
-        bytes32[] memory keys = new bytes32[](0);
-        bytes[] memory values = new bytes[](0);
-        bytes memory encodedData = abi.encode(keys, values);
-
         AdditionalData[] memory associatedData = new AdditionalData[](0);
 
         AdditionalData[] memory hintdices = new AdditionalData[](2);
@@ -473,10 +469,6 @@ contract SmarterContractTest is Test {
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
         returnObjs[1] = ReturnObject({returnvalue: abi.encode(true)});
-
-        bytes32[] memory keys = new bytes32[](0);
-        bytes[] memory values = new bytes[](0);
-        bytes memory encodedData = abi.encode(keys, values);
 
         AdditionalData[] memory associatedData = new AdditionalData[](0);
 
