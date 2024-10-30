@@ -20,8 +20,8 @@ contract KITNDisbursalContract is AccessControl {
 
     // Constructor sets the deploying address as the default admin of the contract
     constructor(address _kitnAddress, address _owner) {
-        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _grantRole(DISBURSER, _msgSender());
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+        _grantRole(DISBURSER, _owner);
 
         kitnToken = IERC20(_kitnAddress);
         owner = _owner;
