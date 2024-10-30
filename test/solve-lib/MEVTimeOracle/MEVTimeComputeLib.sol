@@ -3,7 +3,6 @@ pragma solidity 0.8.26;
 
 import {Laminator, SolverData} from "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
-import "src/timetravel/SmarterContract.sol";
 import "test/examples/MEVOracle/MEVTimeCompute.sol";
 import "test/utils/Constants.sol";
 
@@ -13,7 +12,6 @@ contract MEVTimeComputeLib {
     Laminator public laminator;
     CallBreaker public callbreaker;
     uint256 _tipWei = 33;
-    uint256 hashChainInitConst = 1;
 
     function deployerLand(address pusher, uint256 divisor, uint256 initValue) public {
         // Initializing contracts
@@ -67,7 +65,7 @@ contract MEVTimeComputeLib {
 
         ReturnObject[] memory returnObjsFromPull = new ReturnObject[](2);
         returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
-        returnObjsFromPull[0] = ReturnObject({returnvalue: ""});
+        returnObjsFromPull[1] = ReturnObject({returnvalue: ""});
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
         returnObjs[1] = ReturnObject({returnvalue: ""});

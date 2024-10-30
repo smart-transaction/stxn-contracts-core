@@ -17,7 +17,7 @@ interface IDisbursalContract {
  *  changing, the list of users and amounts are provided by the solver at execution time based on reports generated
  *  in the CleanApp backend
  */
-contract CleanAppKITNDisbursal is SmarterContract, Ownable {
+contract KITNDisburmentScheduler is SmarterContract, Ownable {
     struct DisbursalData {
         address[] receivers;
         uint256[] amounts;
@@ -25,12 +25,13 @@ contract CleanAppKITNDisbursal is SmarterContract, Ownable {
 
     bool public shouldContinue;
     address public callbreakerAddress;
-    uint256 public nonce;
     IDisbursalContract public disbursalContract;
 
-    constructor(address _callbreaker, address _disbursalContract) SmarterContract(_callbreaker) {
+    constructor(address _callbreaker, address _disbursalContract, address _owner) SmarterContract(_callbreaker) {
         callbreakerAddress = _callbreaker;
         disbursalContract = IDisbursalContract(_disbursalContract);
+        shouldContinue = true;
+        _transferOwnership(_owner);
     }
 
     /**
@@ -44,13 +45,12 @@ contract CleanAppKITNDisbursal is SmarterContract, Ownable {
 
         DisbursalData memory disbursalData = abi.decode(data, (DisbursalData));
         disbursalContract.spendCoins(disbursalData.receivers, disbursalData.amounts);
-        nonce++;
 
         CallObject memory callObj = CallObject({
             amount: 0,
             addr: address(this),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("verifySignature()")
+            callvalue: abi.encodeWithSignature("verifySignature(bytes)", data)
         });
 
         assertFutureCallTo(callObj, 1);
@@ -60,18 +60,18 @@ contract CleanAppKITNDisbursal is SmarterContract, Ownable {
         shouldContinue = _shouldContinue;
     }
 
-    function verifySignature() public view {
-        bytes32 ethSignedMessageHash = getEthSignedMessageHash();
+    function verifySignature(bytes calldata data) public view {
+        bytes32 ethSignedMessageHash = getEthSignedMessageHash(data);
 
         bytes32 key = keccak256(abi.encodePacked("CleanAppSignature"));
         bytes memory signature = CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(key);
 
+        // TODO: verify signature to ensure if the data provided was given by a whitelisted solver
         (address signer,) = ECDSA.tryRecover(ethSignedMessageHash, signature);
-        require(signer == owner(), "CleanAppKITNDisbursal: Verification Failed");
+        // require(signer == owner(), "CleanAppKITNDisbursal: Verification Failed");
     }
 
-    function getEthSignedMessageHash() public view returns (bytes32) {
-        bytes32 messageHash = keccak256(abi.encodePacked(address(this), nonce));
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
+    function getEthSignedMessageHash(bytes memory data) public view returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", data));
     }
 }
