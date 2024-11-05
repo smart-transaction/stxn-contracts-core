@@ -12,10 +12,10 @@ interface IDisbursalContract {
 
 /**
  * @notice This is an POC example of a schedular which also fetches data at execution time from the SOLVER
- *  It schedules token dirbursal of KITN tokens and after evert disbursal schedule the next call for the same
- *  acting like an on chain cron job for distributing tokens to its users. Now, since the list of recievers keeps
- *  changing, the list of users and amounts are provided by the solver at execution time based on reports generated
- *  in the CleanApp backend
+ * It schedules token dirbursal of KITN tokens and after evert disbursal schedule the next call for the same
+ * acting like an on chain cron job for distributing tokens to its users. Now, since the list of recievers keeps
+ * changing, the list of users and amounts are provided by the solver at execution time based on reports generated
+ * in the CleanApp backend
  */
 contract KITNDisburmentScheduler is SmarterContract, Ownable {
     struct DisbursalData {
@@ -56,18 +56,22 @@ contract KITNDisburmentScheduler is SmarterContract, Ownable {
         assertFutureCallTo(callObj, 1);
     }
 
+    /// @notice function to be checked by Laminator before rescheduling a call to disburseKITNs
     function setContinue(bool _shouldContinue) external onlyOwner {
         shouldContinue = _shouldContinue;
     }
 
-    function verifySignature(bytes calldata data) public view {
-        bytes32 ethSignedMessageHash = getEthSignedMessageHash(data);
-
+    /// @notice function to be called by solver to ensure a succesful and valid call
+    function verifySignature(bytes calldata /* data */ ) public view {
         bytes32 key = keccak256(abi.encodePacked("CleanAppSignature"));
         bytes memory signature = CallBreaker(payable(callbreakerAddress)).fetchFromAssociatedDataStore(key);
 
-        // TODO: verify signature to ensure if the data provided was given by a whitelisted solver
-        (address signer,) = ECDSA.tryRecover(ethSignedMessageHash, signature);
+        // for the purpose of the POC we are verifying a standard value passed as signature
+        require(keccak256(signature) == keccak256(abi.encode("signature")));
+
+        /// @dev the following can be used to verify the source of the data
+        // bytes32 ethSignedMessageHash = getEthSignedMessageHash(data);
+        // (address signer,) = ECDSA.tryRecover(ethSignedMessageHash, signature);
         // require(signer == owner(), "CleanAppKITNDisbursal: Verification Failed");
     }
 

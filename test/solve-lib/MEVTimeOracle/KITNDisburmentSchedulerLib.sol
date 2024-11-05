@@ -101,11 +101,8 @@ contract KITNDisburmentSchedulerLib {
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
         returnObjs[1] = ReturnObject({returnvalue: ""});
 
-        // vm.startPrank(pusher);
-        // bytes32 digest = kitnDisbursalSchedular.getEthSignedMessageHash();
-        // (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, digest);
-        bytes memory signature = abi.encodePacked("rsv");
-        // vm.stopPrank();
+        // mock value for signature
+        bytes memory signature = abi.encode("signature");
 
         AdditionalData[] memory associatedData = new AdditionalData[](4);
         associatedData[0] =
