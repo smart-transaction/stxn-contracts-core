@@ -78,6 +78,7 @@ struct CallObjectHolderStorage {
     bool executed;
     uint40 firstCallableBlock;
     uint256 executionNonce;
+    bytes data;
     genericDynArrayHead callObjsHead;
     genericDynArrayElementsSlot callObjsElements;
 }
@@ -110,6 +111,7 @@ library CallObjectLib {
 
         holderStorage.callObjsHead = callObjsHead;
         holderStorage.executionNonce = holder.nonce;
+        holderStorage.data = abi.encode(holder.data);
     }
 
     function store(CallObjectStorage storage callObjStorage, CallObject memory callObj) internal {
@@ -135,6 +137,8 @@ library CallObjectLib {
         holder.initialized = holderStorage.initialized;
         holder.executed = holderStorage.executed;
         holder.firstCallableBlock = holderStorage.firstCallableBlock;
+        holder.nonce = holderStorage.executionNonce;
+        holder.data = _getDecodedData(holderStorage.data);
         uint256 len = holderStorage.callObjsHead.length();
         holder.callObjs = new CallObject[](len);
 
@@ -171,6 +175,12 @@ library CallObjectLib {
         /// @solidity memory-safe-assembly
         assembly {
             callObj.slot := ptr
+        }
+    }
+
+    function _getDecodedData(bytes memory encodedData) internal pure returns (SolverData[] memory solverData) {
+        if (encodedData.length != 0) {
+            solverData = abi.decode(encodedData, (SolverData[]));
         }
     }
 }

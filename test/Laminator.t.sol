@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 
-import {Laminator, SolverData} from "src/lamination/Laminator.sol";
+import {Laminator, SolverData, DATATYPE} from "src/lamination/Laminator.sol";
 import {CallBreaker} from "src/timetravel/CallBreaker.sol";
 import {LaminatedProxy} from "src/lamination/LaminatedProxy.sol";
 import {CallObjectLib, CallObject, CallObjectHolder, ReturnObject} from "src/TimeTypes.sol";
@@ -123,6 +123,24 @@ contract LaminatorTest is Test {
         emit DummyEvent(val2);
         vm.prank(address(callBreaker), address(callBreaker));
         proxy.pull(1);
+    }
+
+    function testPushToProxyDataValues() public {
+        CallObject[] memory callObj = new CallObject[](1);
+        callObj[0] = CallObject({
+            amount: 0,
+            addr: address(dummy),
+            gas: saneGasLeft(),
+            callvalue: abi.encodeWithSignature("emitArg(uint256)", 1)
+        });
+        bytes memory cData = abi.encode(callObj);
+        SolverData[] memory dataValues = new SolverData[](1);
+        dataValues[0] = SolverData({name: "MockVariable", datatype: DATATYPE.UINT256, value: "1"});
+
+        uint256 sequenceNumber = laminator.pushToProxy(cData, 0, DEFAULT_CODE, dataValues);
+        CallObjectHolder memory holder = proxy.deferredCalls(sequenceNumber);
+        assertEq(holder.data.length, 1);
+        assertEq(abi.encode(dataValues[0]), abi.encode(holder.data[0]));
     }
 
     // test delays in pushToProxy- 0 delay is immediately possible
