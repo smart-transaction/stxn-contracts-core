@@ -75,7 +75,7 @@ contract KITNDisburmentScheduler is SmarterContract, Ownable {
         // require(signer == owner(), "CleanAppKITNDisbursal: Verification Failed");
     }
 
-    function getEthSignedMessageHash(bytes memory data) public view returns (bytes32) {
+    function getEthSignedMessageHash(bytes memory data) public pure returns (bytes32) {
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", data));
     }
 }
