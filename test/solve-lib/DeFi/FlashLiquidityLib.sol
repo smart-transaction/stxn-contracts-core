@@ -20,9 +20,6 @@ contract FlashLiquidityLib {
     CallBreaker public callbreaker;
     uint256 _tipWei = 33;
 
-    uint256 public balanceOfWeth;
-    uint256 public balanceOfDai;
-
     function deployerLand(address pusher) public {
         // Initializing contracts
         callbreaker = new CallBreaker();
@@ -30,14 +27,14 @@ contract FlashLiquidityLib {
         dai = new MockERC20Token("Dai", "DAI");
         weth = new MockERC20Token("Weth", "WETH");
         daiWethPool = new MockDaiWethPool(address(callbreaker), address(dai), address(weth));
-        (balanceOfDai, balanceOfWeth) = daiWethPool.mintInitialLiquidity();
+        daiWethPool.mintInitialLiquidity();
 
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
-        dai.mint(pusherLaminated, 100000000000000000000);
+        dai.mint(pusherLaminated, 10000 * 1e18);
 
         liquidityProvider = new MockLiquidityProvider(dai, weth);
-        dai.mint(address(liquidityProvider), 1009000000000000000000);
-        weth.mint(address(liquidityProvider), 1000000000000000000000);
+        dai.mint(address(liquidityProvider), 1000000000 * 1e18);
+        weth.mint(address(liquidityProvider), 10000 * 1e18);
     }
 
     function userLand(uint256 tokenToApprove, uint256 amountIn, uint256 slippagePercent) public returns (uint256) {

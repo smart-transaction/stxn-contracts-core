@@ -30,11 +30,11 @@ contract FlashLoanLib {
         daiWethPool = new MockDaiWethPool(address(callbreaker), address(dai), address(weth));
         daiWethPool.mintInitialLiquidity();
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
-        dai.mint(pusherLaminated, 100000000000000000000);
+        dai.mint(pusherLaminated, 10000 * 1e18);
 
         flashLoan = new MockFlashLoan(address(dai), address(weth));
-        dai.mint(address(flashLoan), 1009000000000000000000);
-        weth.mint(address(flashLoan), 1000000000000000000000);
+        dai.mint(address(flashLoan), 1000000000 * 1e18);
+        weth.mint(address(flashLoan), 10000 * 1e18);
     }
 
     function userLand(uint256 tokenToApprove, uint256 amountIn, uint256 slippagePercent) public returns (uint256) {
@@ -157,7 +157,7 @@ contract FlashLoanLib {
 
     function generateFlashLoanData(address _flashLoan) public pure returns (FlashLoanData memory) {
         FlashLoanData memory flashLoanData =
-            FlashLoanData({provider: _flashLoan, amountA: 1000 * 1e18, amountB: 100 * 1e18});
+            FlashLoanData({provider: _flashLoan, amountA: 1000000000 * 1e18, amountB: 10000 * 1e18});
         return flashLoanData;
     }
 }

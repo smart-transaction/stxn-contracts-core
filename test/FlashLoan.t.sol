@@ -34,14 +34,14 @@ contract FlashLoanTest is Test, FlashLoanLib {
         uint256 laminatorSequenceNumber;
 
         vm.startPrank(pusher, pusher);
-        laminatorSequenceNumber = userLand(100000000000000000000, 10, 2);
+        laminatorSequenceNumber = userLand(10000 * 1e18, 10000, 2);
         vm.stopPrank();
 
         // go forward in time
         vm.roll(block.number + 1);
 
         vm.startPrank(filler, filler);
-        solverLand(1000, 100, laminatorSequenceNumber, 2, filler);
+        solverLand(1000000000, 10000, laminatorSequenceNumber, 2, filler);
         vm.stopPrank();
 
         assertFalse(callbreaker.isPortalOpen());
