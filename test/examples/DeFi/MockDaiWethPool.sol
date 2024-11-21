@@ -9,6 +9,7 @@ contract MockDaiWethPool is SmarterContract {
 
     uint256 private _balanceOfWeth;
     uint256 private _balanceOfDai;
+    uint256 expectedPrice;
 
     address public owner;
     IMintableERC20 public weth;
@@ -25,10 +26,11 @@ contract MockDaiWethPool is SmarterContract {
     }
 
     function mintInitialLiquidity() external returns (uint256, uint256) {
-        dai.mint(address(this), 100 * DECIMAL);
+        dai.mint(address(this), 100000 * DECIMAL);
         weth.mint(address(this), 10 * DECIMAL);
+        _balanceOfDai = 100000 * DECIMAL;
         _balanceOfWeth = 10 * DECIMAL;
-        _balanceOfDai = 100 * DECIMAL;
+        expectedPrice = _balanceOfDai * DECIMAL / _balanceOfWeth;
         return (_balanceOfDai, _balanceOfWeth);
     }
 
@@ -61,6 +63,7 @@ contract MockDaiWethPool is SmarterContract {
 
         _balanceOfDai += amount0Desired;
         _balanceOfWeth += amount1Desired;
+        expectedPrice = _balanceOfDai * DECIMAL / _balanceOfWeth;
     }
 
     function withdrawLiquidityFromDAIETHPool(address provider, uint256 _amount0Out, uint256 _amount1Out) external {
@@ -100,6 +103,7 @@ contract MockDaiWethPool is SmarterContract {
 
         _balanceOfDai = dai.balanceOf(address(this));
         _balanceOfWeth = weth.balanceOf(address(this));
+        expectedPrice = _balanceOfDai * DECIMAL / _balanceOfWeth;
 
         emit LiquiditySetForPriceTest();
     }
@@ -107,9 +111,6 @@ contract MockDaiWethPool is SmarterContract {
     function checkSlippage(uint256 maxDeviationPercentage) external view {
         // Calculate the current price (ratio) of DAI to WETH
         uint256 currentPrice = (_balanceOfDai * DECIMAL) / _balanceOfWeth;
-
-        // Assume initial expected price of 10 due to initial DAI and WETH ratio
-        uint256 expectedPrice = 10 * DECIMAL;
 
         // Calculate the absolute deviation in percentage
         uint256 slippage = (

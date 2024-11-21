@@ -27,8 +27,8 @@ contract SlippageProtectionLib {
         daiWethPool = new MockDaiWethPool(address(callbreaker), address(dai), address(weth));
         daiWethPool.mintInitialLiquidity();
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
-        dai.mint(pusherLaminated, 100e18);
-        weth.mint(address(callbreaker), 100e18);
+        dai.mint(pusherLaminated, 1000000000 * 1e18);
+        weth.mint(address(callbreaker), 10000 * 1e18);
     }
 
     function userLand(uint256 maxSlippage) public returns (uint256) {
@@ -43,13 +43,13 @@ contract SlippageProtectionLib {
             amount: 0,
             addr: address(dai),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("approve(address,uint256)", daiWethPool, 100e18)
+            callvalue: abi.encodeWithSignature("approve(address,uint256)", daiWethPool, 80000e18)
         });
         pusherCallObjs[1] = CallObject({
             amount: 0,
             addr: address(daiWethPool),
             gas: 1000000,
-            callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", 100, maxSlippage)
+            callvalue: abi.encodeWithSignature("swapDAIForWETH(uint256,uint256)", 80000, maxSlippage)
         });
         pusherCallObjs[2] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
         SolverData[] memory dataValues = Constants.emptyDataValues();
