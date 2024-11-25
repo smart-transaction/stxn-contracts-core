@@ -68,10 +68,8 @@ contract Laminator is ILaminator {
         returns (uint256 sequenceNumber)
     {
         LaminatedProxy proxy = LaminatedProxy(payable(_getOrCreateProxy(msg.sender)));
-
         sequenceNumber = proxy.push(callObjs, delay, dataValues);
 
-        CallObject[] memory callObjs = abi.decode(cData, (CallObject[]));
         emit ProxyPushed(address(proxy), callObjs, sequenceNumber, selector, dataValues);
     }
 

@@ -159,7 +159,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @param callObjs The CallObjects containing information about the function call to execute.
     /// @return returnValue The return value from the executed function call.
     function execute(CallObject[] calldata callObjs) external onlyOwner nonReentrant returns (bytes memory) {
-        return _executeAll(callsToMake);
+        return _executeAll(callObjs);
     }
 
     /// @notice Copies the current job with a specified delay and condition.
@@ -287,7 +287,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         _checkInitialized(coh);
         CallObjectHolder memory holder = coh.load();
 
-        return push(abi.encode(holder.callObjs), delay, holder.data);
+        return push(holder.callObjs, delay, holder.data);
     }
 
     /// @dev Safety checks before pushing calls to the LaminatedProxy
