@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {CallBreaker, CallObject, ReturnObject} from "src/timetravel/CallBreaker.sol";
+import "src/CallBreakerTypes.sol";
 
 contract CallBreakerHarness is CallBreaker {
     function setPortalOpen(CallObject[] memory calls, ReturnObject[] memory returnValues) public {
@@ -27,8 +28,8 @@ contract CallBreakerHarness is CallBreaker {
         _cleanUpStorage();
     }
 
-    function populateAssociatedDataStoreHarness(bytes memory encodedData) public {
-        _populateAssociatedDataStore(encodedData);
+    function populateAssociatedDataStoreHarness(AdditionalData[] memory associatedData) public {
+        _populateAssociatedDataStore(associatedData);
     }
 
     function populateHintdicesHarness(bytes memory encodedData) public {

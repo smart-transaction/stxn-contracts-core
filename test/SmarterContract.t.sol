@@ -116,7 +116,7 @@ contract SmarterContractTest is Test {
         SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.prank(pusher, pusher);
-        laminator.pushToProxy(abi.encode(pusherCallObjs), 0, DEFAULT_CODE, dataValues);
+        laminator.pushToProxy(pusherCallObjs, 0, DEFAULT_CODE, dataValues);
 
         CallObject[] memory callObjs = new CallObject[](2);
         ReturnObject[] memory returnObjs = new ReturnObject[](2);
@@ -144,7 +144,7 @@ contract SmarterContractTest is Test {
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.executeAndVerify(
-            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+            callObjs, returnObjs, associatedData
         );
     }
 
@@ -164,7 +164,7 @@ contract SmarterContractTest is Test {
         SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.prank(pusher, pusher);
-        laminator.pushToProxy(abi.encode(pusherCallObjs), 0, DEFAULT_CODE, dataValues);
+        laminator.pushToProxy(pusherCallObjs, 0, DEFAULT_CODE, dataValues);
 
         CallObject[] memory callObjs = new CallObject[](2);
         ReturnObject[] memory returnObjs = new ReturnObject[](2);
@@ -193,7 +193,7 @@ contract SmarterContractTest is Test {
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.executeAndVerify(
-            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+            callObjs, returnObjs, associatedData
         );
     }
 
@@ -213,7 +213,7 @@ contract SmarterContractTest is Test {
         SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.prank(pusher, pusher);
-        laminator.pushToProxy(abi.encode(pusherCallObjs), 0, DEFAULT_CODE, dataValues);
+        laminator.pushToProxy(pusherCallObjs, 0, DEFAULT_CODE, dataValues);
 
         CallObject[] memory callObjs = new CallObject[](2);
         ReturnObject[] memory returnObjs = new ReturnObject[](2);
@@ -242,7 +242,7 @@ contract SmarterContractTest is Test {
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.executeAndVerify(
-            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+            callObjs, returnObjs, associatedData
         );
     }
 
@@ -262,7 +262,7 @@ contract SmarterContractTest is Test {
         SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.prank(pusher, pusher);
-        laminator.pushToProxy(abi.encode(pusherCallObjs), 0, DEFAULT_CODE, dataValues);
+        laminator.pushToProxy(pusherCallObjs, 0, DEFAULT_CODE, dataValues);
 
         CallObject[] memory callObjs = new CallObject[](2);
         ReturnObject[] memory returnObjs = new ReturnObject[](2);
@@ -291,7 +291,7 @@ contract SmarterContractTest is Test {
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.executeAndVerify(
-            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+            callObjs, returnObjs, associatedData
         );
     }
 
@@ -311,7 +311,7 @@ contract SmarterContractTest is Test {
         SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.prank(pusher, pusher);
-        laminator.pushToProxy(abi.encode(pusherCallObjs), 0, DEFAULT_CODE, dataValues);
+        laminator.pushToProxy(pusherCallObjs, 0, DEFAULT_CODE, dataValues);
 
         CallObject[] memory callObjs = new CallObject[](2);
         ReturnObject[] memory returnObjs = new ReturnObject[](2);
@@ -345,7 +345,7 @@ contract SmarterContractTest is Test {
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.executeAndVerify(
-            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+            callObjs, returnObjs, associatedData
         );
 
         callbreakerHarness.setPortalOpen(callObjs, returnObjs);
@@ -371,7 +371,7 @@ contract SmarterContractTest is Test {
         SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.prank(pusher, pusher);
-        laminator.pushToProxy(abi.encode(pusherCallObjs), 0, DEFAULT_CODE, dataValues);
+        laminator.pushToProxy(pusherCallObjs, 0, DEFAULT_CODE, dataValues);
 
         CallObject[] memory callObjs = new CallObject[](2);
         ReturnObject[] memory returnObjs = new ReturnObject[](2);
@@ -405,7 +405,7 @@ contract SmarterContractTest is Test {
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.executeAndVerify(
-            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+            callObjs, returnObjs, associatedData
         );
 
         uint256 callLength = 3;
@@ -444,7 +444,7 @@ contract SmarterContractTest is Test {
         SolverData[] memory dataValues = Constants.emptyDataValues();
 
         vm.prank(pusher, pusher);
-        laminator.pushToProxy(abi.encode(pusherCallObjs), 0, DEFAULT_CODE, dataValues);
+        laminator.pushToProxy(pusherCallObjs, 0, DEFAULT_CODE, dataValues);
 
         CallObject[] memory callObjs = new CallObject[](2);
         ReturnObject[] memory returnObjs = new ReturnObject[](2);
@@ -478,7 +478,7 @@ contract SmarterContractTest is Test {
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.executeAndVerify(
-            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+            callObjs, returnObjs, associatedData
         );
 
         uint256 callLength = 3;
