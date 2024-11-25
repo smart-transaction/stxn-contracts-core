@@ -234,7 +234,7 @@ contract CallBreaker is CallBreakerStorage {
         _populateCallsAndReturnValues(calls, returnValues);
         _populateAssociatedDataStore(associatedData);
         // TODO pass correct value of hintdices
-        bytes calldata hintdices;
+        bytes memory hintdices;
         _populateHintdices(hintdices);
         _populateCallIndices();
 
