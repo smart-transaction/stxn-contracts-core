@@ -48,7 +48,7 @@ contract PnPLib {
         pusherCallObjs[1] = CallObject({amount: _tipWei, addr: address(callbreaker), gas: 10000000, callvalue: ""});
         SolverData[] memory dataValues = Constants.emptyDataValues();
 
-        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", dataValues);
+        return laminator.pushToProxy(pusherCallObjs, 1, "0x00", dataValues);
     }
 
     function solverLand(uint256 laminatorSequenceNumber, address filler) public {
@@ -79,7 +79,7 @@ contract PnPLib {
         hintdices[0] = AdditionalData({key: keccak256(abi.encode(callObjs[0])), value: abi.encode(0)});
 
         callbreaker.executeAndVerify(
-            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+            callObjs, returnObjs, associatedData
         );
     }
 }
