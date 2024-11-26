@@ -233,9 +233,6 @@ contract CallBreaker is CallBreakerStorage {
         _setPortalOpen(calls, returnValues);
         _populateCallsAndReturnValues(calls, returnValues);
         _populateAssociatedDataStore(associatedData);
-        // TODO pass correct value of hintdices
-        bytes memory hintdices;
-        _populateHintdices(hintdices);
         _populateCallIndices();
 
         return calls;
@@ -279,6 +276,10 @@ contract CallBreaker is CallBreakerStorage {
         for (uint256 i = 0; i < calls.length; i++) {
             callStore.push().store(calls[i]);
             returnStore.push(returnValues[i]);
+
+            bytes32 key = keccak256(abi.encode(calls[i]));
+            hintdicesStoreKeyList.push(key);
+            hintdicesStore[key].push(i);
         }
     }
 
@@ -299,17 +300,6 @@ contract CallBreaker is CallBreakerStorage {
             associatedDataKeyList.push(associatedData[i].key);
             associatedDataStore[associatedData[i].key] = associatedData[i].value;
         }
-    }
-
-    function _populateHintdices(bytes memory encodedData) internal {
-        // TODO: merge with storing call objects
-        // AdditionalData[] memory hintDices = abi.decode(encodedData, (AdditionalData[]));
-
-        // uint256 l = hintDices.length;
-        // for (uint256 i = 0; i < l; i++) {
-        //     hintdicesStoreKeyList.push(hintDices[i].key);
-        //     hintdicesStore[hintDices[i].key].push(abi.decode(hintDices[i].value, (uint256))); // Note: the value being pushed can repeat itself if given wrong data
-        // }
     }
 
     function _expectCallAt(CallObject memory callObj, uint256 index) internal view {
