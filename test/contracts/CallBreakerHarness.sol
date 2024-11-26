@@ -32,10 +32,6 @@ contract CallBreakerHarness is CallBreaker {
         _populateAssociatedDataStore(associatedData);
     }
 
-    function populateHintdicesHarness(bytes memory encodedData) public {
-        _populateHintdices(encodedData);
-    }
-
     function insertIntoHintdicesHarness(bytes32 key, uint256 value) public {
         hintdicesStore[key].push(value);
     }

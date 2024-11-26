@@ -189,7 +189,7 @@ contract LaminatorTest is Test {
     function testDelayedPushToProxy3delay1rollFails() public {
         // push sequence number 0. it should emit 42.
         uint256 val = 42;
-        CallObject[] memory callObjs;
+        CallObject[] memory callObjs = new CallObject[](1);
         callObjs[0] = CallObject({
             amount: 0,
             addr: address(dummy),
@@ -214,7 +214,7 @@ contract LaminatorTest is Test {
         laminator.harness_getOrCreateProxy(address(this));
 
         uint256 val = 42;
-        CallObject[] memory callObjs;
+        CallObject[] memory callObjs = new CallObject[](1);
         callObjs[0] = CallObject({
             amount: 0,
             addr: address(dummy),
@@ -438,7 +438,7 @@ contract LaminatorTest is Test {
     // ensure executions called directly to proxy as a random address don't work
     function testExecuteAsRandomAddress() public {
         laminator.harness_getOrCreateProxy(address(this));
-        CallObject[] memory callObjs;
+        CallObject[] memory callObjs = new CallObject[](1);
         callObjs[0] = CallObject({
             amount: 0,
             addr: address(dummy),
@@ -472,7 +472,7 @@ contract LaminatorTest is Test {
     // ensure executions as the owner directly into the proxy contract do NOT work
     function testExecuteAsOwner() public {
         laminator.harness_getOrCreateProxy(address(this));
-        CallObject[] memory callObjs;
+        CallObject[] memory callObjs = new CallObject[](1);
         callObjs[0] = CallObject({
             amount: 0,
             addr: address(dummy),
@@ -505,7 +505,7 @@ contract LaminatorTest is Test {
     // ensure executions as random address through the laminator do not work
     function testExecuteAsRandomAddressFromLaminator() public {
         laminator.harness_getOrCreateProxy(address(this));
-        CallObject[] memory callObjs;
+        CallObject[] memory callObjs = new CallObject[](1);
         callObjs[0] = CallObject({
             amount: 0,
             addr: address(dummy),
@@ -522,7 +522,7 @@ contract LaminatorTest is Test {
     // ensure executions as laminator through the laminator do work
     function testExecuteAsLaminatorAddressFromLaminator() public {
         laminator.harness_getOrCreateProxy(address(this));
-        CallObject[] memory callObjs;
+        CallObject[] memory callObjs = new CallObject[](1);
         callObjs[0] = CallObject({
             amount: 0,
             addr: address(dummy),

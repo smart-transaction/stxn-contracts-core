@@ -4,7 +4,6 @@ pragma solidity 0.8.26;
 import {FlashLoanData} from "src/CallBreakerTypes.sol";
 import {Laminator, SolverData} from "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
-import "src/timetravel/SmarterContract.sol";
 import "test/examples/DeFi/MockDaiWethPool.sol";
 import "test/examples/DeFi/MockFlashLoan.sol";
 import "test/utils/MockERC20Token.sol";
@@ -138,14 +137,7 @@ contract FlashLoanLib {
             AdditionalData({key: keccak256(abi.encodePacked("tipYourBartender")), value: abi.encodePacked(filler)});
         associatedData[1] =
             AdditionalData({key: keccak256(abi.encodePacked("pullIndex")), value: abi.encode(laminatorSequenceNumber)});
-
-        AdditionalData[] memory hintdices = new AdditionalData[](5);
-        hintdices[0] = AdditionalData({key: keccak256(abi.encode(callObjs[0])), value: abi.encode(0)});
-        hintdices[1] = AdditionalData({key: keccak256(abi.encode(callObjs[1])), value: abi.encode(1)});
-        hintdices[2] = AdditionalData({key: keccak256(abi.encode(callObjs[2])), value: abi.encode(2)});
-        hintdices[3] = AdditionalData({key: keccak256(abi.encode(callObjs[3])), value: abi.encode(3)});
-        hintdices[4] = AdditionalData({key: keccak256(abi.encode(callObjs[4])), value: abi.encode(4)});
-
+        
         callbreaker.executeAndVerify(
             callObjs,
             returnObjs,
