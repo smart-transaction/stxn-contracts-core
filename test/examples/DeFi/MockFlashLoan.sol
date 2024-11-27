@@ -2,7 +2,6 @@
 pragma solidity 0.8.26;
 
 import {IERC20} from "test/utils/interfaces/IMintableERC20.sol";
-import "src/TimeTypes.sol";
 
 interface IFlashLoanBorrower {
     function onFlashLoan(
@@ -11,7 +10,7 @@ interface IFlashLoanBorrower {
         uint256 amount1,
         address token2,
         uint256 amount2,
-        CallObject[] calldata callObjs
+        bytes calldata data
     ) external returns (bool);
 }
 
@@ -34,7 +33,7 @@ contract MockFlashLoan {
         return (dai.balanceOf(address(this)), weth.balanceOf(address(this)));
     }
 
-    function flashLoan(address receiver, uint256 daiAmount, uint256 wethAmount, CallObject[] calldata callObjs)
+    function flashLoan(address receiver, uint256 daiAmount, uint256 wethAmount, bytes memory data)
         external
         returns (bool)
     {
@@ -42,7 +41,7 @@ contract MockFlashLoan {
         require(weth.transfer(receiver, wethAmount), "Insufficient usdt liquidity");
 
         // Call the borrower's onFlashLoan function once (consolidated)
-        IFlashLoanBorrower(receiver).onFlashLoan(msg.sender, address(dai), daiAmount, address(weth), wethAmount, callObjs);
+        IFlashLoanBorrower(receiver).onFlashLoan(msg.sender, address(dai), daiAmount, address(weth), wethAmount, data);
 
         // Fetch the amount + fee via transferFrom
         require(dai.transferFrom(receiver, address(this), daiAmount), "Loan repayment failed");

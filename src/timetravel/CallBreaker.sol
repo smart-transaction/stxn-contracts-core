@@ -67,7 +67,8 @@ contract CallBreaker is CallBreakerStorage {
         AdditionalData[] calldata associatedData
     ) external payable onlyPortalClosed {
         CallObject[] memory calls = _setupExecutionData(callsBytes, returnsBytes, associatedData);
-        _executeAndVerifyCalls(calls);
+        bytes memory data = abi.encode(calls);
+        _executeAndVerifyCalls(data);
     }
 
     /// @notice fetches flash loan before executing and verifying call objects who might use the loaned amount
@@ -84,8 +85,9 @@ contract CallBreaker is CallBreakerStorage {
         FlashLoanData calldata flashLoanData
     ) external payable onlyPortalClosed {
         _setupExecutionData(callObjs, returnsBytes, associatedData);
+        bytes memory data = abi.encode(callObjs); 
         IFlashLoan(flashLoanData.provider).flashLoan(
-            address(this), flashLoanData.amountA, flashLoanData.amountB, callObjs
+            address(this), flashLoanData.amountA, flashLoanData.amountB, data
         );
     }
 
@@ -95,7 +97,7 @@ contract CallBreaker is CallBreakerStorage {
      * @param amountA The amount of tokens lent.
      * @param tokenB The second loan currency.
      * @param amountB The amount of tokens lent.
-     * @param calls The calls to be executed
+     * @param data The encoded calls to be executed
      * @return true if the function executed successfully
      */
     function onFlashLoan(
@@ -104,11 +106,11 @@ contract CallBreaker is CallBreakerStorage {
         uint256 amountA,
         address tokenB,
         uint256 amountB,
-        CallObject[] calldata calls
+        bytes memory data
     ) external onlyPortalOpen returns (bool) {
         emit CallBreakerFlashFunds(tokenA, amountA, tokenB, amountB);
 
-        _executeAndVerifyCalls(calls);
+        _executeAndVerifyCalls(data);
         IERC20(tokenA).approve(msg.sender, amountA);
         IERC20(tokenB).approve(msg.sender, amountB);
         return true;
@@ -238,7 +240,8 @@ contract CallBreaker is CallBreakerStorage {
         return calls;
     }
 
-    function _executeAndVerifyCalls(CallObject[] memory calls) internal {
+    function _executeAndVerifyCalls(bytes memory callData) internal {
+        CallObject[] memory calls = abi.decode(callData, (CallObject[]));
         uint256 l = calls.length;
         for (uint256 i = 0; i < l; i++) {
             _setCurrentlyExecutingCallIndex(i);
@@ -277,6 +280,7 @@ contract CallBreaker is CallBreakerStorage {
             callStore.push().store(calls[i]);
             returnStore.push(returnValues[i]);
 
+            // Populating hintdices value while setting execution data
             bytes32 key = keccak256(abi.encode(calls[i]));
             hintdicesStoreKeyList.push(key);
             hintdicesStore[key].push(i);
