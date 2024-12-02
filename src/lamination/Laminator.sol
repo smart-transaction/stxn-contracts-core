@@ -4,7 +4,9 @@ pragma solidity 0.8.26;
 import "./LaminatedProxy.sol";
 import "../interfaces/ICallBreaker.sol";
 
-contract Laminator is ILaminator {
+import {ERC2771Context} from "openzeppelin/metatx/ERC2771Context.sol";
+
+contract Laminator is ERC2771Context, ILaminator {
     ICallBreaker public callBreaker;
 
     /// @notice The address passed was a zero address
@@ -32,7 +34,7 @@ contract Laminator is ILaminator {
     /// @notice Constructs a new contract instance - usually called by the Laminator contract
     /// @dev Initializes the contract, setting the call breaker address.
     /// @param _callBreaker The address of the laminator contract.
-    constructor(address _callBreaker) {
+    constructor(address _callBreaker, address forwarder) ERC2771Context(forwarder) {
         if (_callBreaker == address(0)) {
             revert AddressZero();
         }
