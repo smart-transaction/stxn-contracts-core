@@ -28,6 +28,7 @@ contract Blockclock is AccessControl {
     uint256 public currentEarthTimeAvg;
 
     event Tick(uint256 currentEarthTimeBlockStart, uint256 currentEarthTimeBlockEnd);
+    event EarthTimeUpdated(uint256 newEarthTime, Chronicle[] chronicles);
 
     error InsufficientEvidence();
 
@@ -36,13 +37,16 @@ contract Blockclock is AccessControl {
         _grantRole(ADMIN_ROLE, _msgSender());
     }
 
-    /// @notice changes earth avg tim
-    function moveClock(Chronicle[] calldata chronicles) external {
+    /// @notice changes earth avg time
+    function moveClock(Chronicle[] calldata chronicles, uint256 meanCurrentEarthTime) external {
         // number of chronicles submitted should be greater than a threshold value
         uint256 len = chronicles.length;
         if (len < minNumberOfChronicles) {
             revert InsufficientEvidence();
         }
+
+        currentEarthTimeAvg = meanCurrentEarthTime;
+        emit EarthTimeUpdated(meanCurrentEarthTime, chronicles);
 
         // all time keepers should be whitelisted i.e. have the Time Keeper role
         // all the time values should be greater than currentEarthTimeAvg and less than currentEarthTimeAvg + maxBlockWidth
