@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import "../TimeTypes.sol";
 import "./LaminatedStorage.sol";
-import "openzeppelin/security/ReentrancyGuard.sol";
+import "openzeppelin/utils/ReentrancyGuard.sol";
 
 contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @notice Some functions must be called by the laminator or the proxy only.
