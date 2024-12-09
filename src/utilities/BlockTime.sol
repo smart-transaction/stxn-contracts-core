@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import "openzeppelin-contracts/contracts/access/AccessControl.sol";
 
-contract Blockclock is AccessControl {
+contract BlockTime is AccessControl {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant TIME_KEEPER = keccak256("TIME_KEEPER");
 
@@ -38,7 +38,7 @@ contract Blockclock is AccessControl {
     }
 
     /// @notice changes earth avg time
-    function moveClock(Chronicle[] calldata chronicles, uint256 meanCurrentEarthTime) external {
+    function moveTime(Chronicle[] calldata chronicles, uint256 meanCurrentEarthTime) external {
         // number of chronicles submitted should be greater than a threshold value
         uint256 len = chronicles.length;
         if (len < minNumberOfChronicles) {
