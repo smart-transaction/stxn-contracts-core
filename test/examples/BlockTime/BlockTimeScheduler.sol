@@ -12,7 +12,7 @@ interface IBlockTime {
 }
 
 interface ITimeToken {
-    function batchMint(address[] memory to, uint256[] memory amounts) public;
+    function batchMint(address[] memory to, uint256[] memory amounts) external;
 }
 
 /**

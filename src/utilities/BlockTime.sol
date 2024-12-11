@@ -6,6 +6,7 @@ import "openzeppelin-contracts/contracts/access/AccessControl.sol";
 contract BlockTime is AccessControl {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant TIME_KEEPER = keccak256("TIME_KEEPER");
+    bytes32 public constant SCHEDULER_ROLE = keccak256("SCHEDULER_ROLE");
 
     struct Chronicle {
         uint256 epoch;
@@ -29,8 +30,7 @@ contract BlockTime is AccessControl {
 
     event Tick(uint256 currentEarthTimeBlockStart, uint256 currentEarthTimeBlockEnd);
     event EarthTimeUpdated(uint256 newEarthTime, Chronicle[] chronicles);
-
-    error InsufficientEvidence();
+    event MaxBlockWidthSet(uint256 maxBlockWidth);
 
     constructor() {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -38,19 +38,9 @@ contract BlockTime is AccessControl {
     }
 
     /// @notice changes earth avg time
-    function moveTime(Chronicle[] calldata chronicles, uint256 meanCurrentEarthTime) external {
-        // number of chronicles submitted should be greater than a threshold value
-        uint256 len = chronicles.length;
-        if (len < minNumberOfChronicles) {
-            revert InsufficientEvidence();
-        }
-
+    function moveTime(Chronicle[] calldata chronicles, uint256 meanCurrentEarthTime) external onlyRole(SCHEDULER_ROLE) {
         currentEarthTimeAvg = meanCurrentEarthTime;
         emit EarthTimeUpdated(meanCurrentEarthTime, chronicles);
-
-        // all time keepers should be whitelisted i.e. have the Time Keeper role
-        // all the time values should be greater than currentEarthTimeAvg and less than currentEarthTimeAvg + maxBlockWidth
-        // emit Tick(uint256, /*currentEarthTimeBlockStart*/ uint256 /*currentEarthTimeBlockEnd*/ );
     }
 
     /// @notice returns current block time
@@ -58,5 +48,14 @@ contract BlockTime is AccessControl {
     /// @return block end epoch
     function getBlockTime() external view returns (uint256, uint256) {
         return (currentEarthTimeAvg, currentEarthTimeAvg + maxBlockWidth);
+    }
+
+    function setMaxBlockWidth(uint256 _maxBlockWidth) public onlyRole(ADMIN_ROLE) {
+        maxBlockWidth = _maxBlockWidth;
+        emit MaxBlockWidthSet(_maxBlockWidth);
+    }
+
+    function getMaxBlockWidth() public view returns (uint256) {
+        return maxBlockWidth;
     }
 }
