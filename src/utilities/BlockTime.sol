@@ -29,7 +29,7 @@ contract BlockTime is IBlockTime, AccessControl, ReentrancyGuard {
     TimeToken public timeToken; 
 
     event Tick(uint256 currentEarthTimeBlockStart, uint256 currentEarthTimeBlockEnd);
-    event EarthTimeUpdated(uint256 newEarthTime, Chronicle[] chronicles);
+    event EarthTimeUpdated(uint256 newEarthTime, Chronicle[] chronicles, address[] timeTokenReceivers, uint256[] amounts);
     event MaxBlockWidthSet(uint256 maxBlockWidth);
 
     constructor(string memory _name, string memory _symbol) {
@@ -42,7 +42,7 @@ contract BlockTime is IBlockTime, AccessControl, ReentrancyGuard {
     function moveTime(Chronicle[] calldata chronicles, uint256 meanCurrentEarthTime, address[] calldata receivers, uint256[] calldata amounts) external onlyRole(SCHEDULER_ROLE) nonReentrant {
         currentEarthTimeAvg = meanCurrentEarthTime;
         timeToken.batchMint(receivers, amounts);
-        emit EarthTimeUpdated(meanCurrentEarthTime, chronicles);
+        emit EarthTimeUpdated(meanCurrentEarthTime, chronicles, receivers, amounts);
     }
 
     /// @notice returns current block time
