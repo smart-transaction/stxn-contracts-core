@@ -2,17 +2,14 @@
 pragma solidity 0.8.26;
 
 import "openzeppelin-contracts/contracts/access/AccessControl.sol";
+import "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import "src/utilities/TimeToken.sol";
+import "src/interfaces/IBlockTime.sol";
 
-contract BlockTime is AccessControl {
+contract BlockTime is IBlockTime, AccessControl, ReentrancyGuard {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant TIME_KEEPER = keccak256("TIME_KEEPER");
     bytes32 public constant SCHEDULER_ROLE = keccak256("SCHEDULER_ROLE");
-
-    struct Chronicle {
-        uint256 epoch;
-        address timeKeeper;
-        bytes32 signature;
-    }
 
     /// @dev minimum number of signed time values needed
     uint256 public minNumberOfChronicles;
@@ -28,18 +25,23 @@ contract BlockTime is AccessControl {
     /// @notice the current average of all time keepers provided time value
     uint256 public currentEarthTimeAvg;
 
+    /// @notice The ERC20 timeToken that will be transferred to users on successfull time updation
+    TimeToken public timeToken; 
+
     event Tick(uint256 currentEarthTimeBlockStart, uint256 currentEarthTimeBlockEnd);
     event EarthTimeUpdated(uint256 newEarthTime, Chronicle[] chronicles);
     event MaxBlockWidthSet(uint256 maxBlockWidth);
 
-    constructor() {
+    constructor(string memory _name, string memory _symbol) {
+        timeToken = new TimeToken(_name, _symbol, address(this));
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(ADMIN_ROLE, _msgSender());
     }
 
     /// @notice changes earth avg time
-    function moveTime(Chronicle[] calldata chronicles, uint256 meanCurrentEarthTime) external onlyRole(SCHEDULER_ROLE) {
+    function moveTime(Chronicle[] calldata chronicles, uint256 meanCurrentEarthTime, address[] calldata receivers, uint256[] calldata amounts) external onlyRole(SCHEDULER_ROLE) nonReentrant {
         currentEarthTimeAvg = meanCurrentEarthTime;
+        timeToken.batchMint(receivers, amounts);
         emit EarthTimeUpdated(meanCurrentEarthTime, chronicles);
     }
 
@@ -58,4 +60,5 @@ contract BlockTime is AccessControl {
     function getMaxBlockWidth() public view returns (uint256) {
         return maxBlockWidth;
     }
+
 }

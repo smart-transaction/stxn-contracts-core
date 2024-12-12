@@ -11,7 +11,7 @@ contract TimeToken is ERC20, Ownable {
     // Event to log batch minting
     event BatchMinted(address[] to, uint256[] amounts);
 
-    constructor(string memory _name, string memory _symbol, address _blockTimeScheduler) ERC20(_name, _symbol) Ownable(_blockTimeScheduler) {}
+    constructor(string memory _name, string memory _symbol, address _blockTime) ERC20(_name, _symbol) Ownable(_blockTime) {}
 
     // Batch mint function
     /// @dev The onlyOwner modifier will be later changed to execute calls through a governance proposal
