@@ -26,10 +26,12 @@ contract BlockTime is IBlockTime, AccessControl, ReentrancyGuard {
     uint256 public currentEarthTimeAvg;
 
     /// @notice The ERC20 timeToken that will be transferred to users on successfull time updation
-    TimeToken public timeToken; 
+    TimeToken public timeToken;
 
     event Tick(uint256 currentEarthTimeBlockStart, uint256 currentEarthTimeBlockEnd);
-    event EarthTimeUpdated(uint256 newEarthTime, Chronicle[] chronicles, address[] timeTokenReceivers, uint256[] amounts);
+    event EarthTimeUpdated(
+        uint256 newEarthTime, Chronicle[] chronicles, address[] timeTokenReceivers, uint256[] amounts
+    );
     event MaxBlockWidthSet(uint256 maxBlockWidth);
 
     constructor(string memory _name, string memory _symbol) {
@@ -39,7 +41,12 @@ contract BlockTime is IBlockTime, AccessControl, ReentrancyGuard {
     }
 
     /// @notice changes earth avg time
-    function moveTime(Chronicle[] calldata chronicles, uint256 meanCurrentEarthTime, address[] calldata receivers, uint256[] calldata amounts) external onlyRole(SCHEDULER_ROLE) nonReentrant {
+    function moveTime(
+        Chronicle[] calldata chronicles,
+        uint256 meanCurrentEarthTime,
+        address[] calldata receivers,
+        uint256[] calldata amounts
+    ) external onlyRole(SCHEDULER_ROLE) nonReentrant {
         currentEarthTimeAvg = meanCurrentEarthTime;
         timeToken.batchMint(receivers, amounts);
         emit EarthTimeUpdated(meanCurrentEarthTime, chronicles, receivers, amounts);
@@ -60,5 +67,4 @@ contract BlockTime is IBlockTime, AccessControl, ReentrancyGuard {
     function getMaxBlockWidth() public view returns (uint256) {
         return maxBlockWidth;
     }
-
 }
