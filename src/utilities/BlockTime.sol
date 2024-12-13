@@ -32,8 +32,8 @@ contract BlockTime is IBlockTime, AccessControl, ReentrancyGuard {
     event EarthTimeUpdated(uint256 newEarthTime, Chronicle[] chronicles, address[] timeTokenReceivers, uint256[] amounts);
     event MaxBlockWidthSet(uint256 maxBlockWidth);
 
-    constructor(string memory _name, string memory _symbol) {
-        timeToken = new TimeToken(_name, _symbol, address(this));
+    constructor() {
+        timeToken = new TimeToken();
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(ADMIN_ROLE, _msgSender());
     }
