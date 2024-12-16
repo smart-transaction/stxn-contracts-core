@@ -39,7 +39,7 @@ contract MEVTimeComputeLib {
 
         SolverData[] memory dataValues = Constants.emptyDataValues();
 
-        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, "0x00", dataValues);
+        return laminator.pushToProxy(pusherCallObjs, 1, "0x00", dataValues);
     }
 
     function solverLand(uint256 laminatorSequenceNumber, address filler) public {
@@ -83,7 +83,7 @@ contract MEVTimeComputeLib {
         hintdices[1] = AdditionalData({key: keccak256(abi.encode(callObjs[1])), value: abi.encode(1)});
 
         callbreaker.executeAndVerify(
-            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+            callObjs, returnObjs, associatedData
         );
     }
 }
