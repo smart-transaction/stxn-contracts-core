@@ -27,7 +27,7 @@ contract BlockTimeScheduler is SmarterContract, Ownable {
     address public callBreaker;
     IBlockTime public blockTime;
 
-    constructor(address _callBreaker, address _blockTime, address _owner) SmarterContract(_callBreaker) Ownable(_owner) {
+    constructor(address _callBreaker, address _blockTime) SmarterContract(_callBreaker) Ownable(msg.sender) {
         callBreaker = _callBreaker;
         blockTime = IBlockTime(_blockTime);
         shouldContinue = true;
