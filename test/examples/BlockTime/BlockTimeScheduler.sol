@@ -5,13 +5,11 @@ import "src/interfaces/IBlockTime.sol";
 import "src/timetravel/CallBreaker.sol";
 import "src/timetravel/SmarterContract.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
-import "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 
 /**
  * @notice This is an POC example of a block scheduler
  */
 contract BlockTimeScheduler is SmarterContract, Ownable {
-
     struct BlockTimeData {
         IBlockTime.Chronicle[] chronicles;
         uint256 meanCurrentErathTime;
@@ -39,16 +37,12 @@ contract BlockTimeScheduler is SmarterContract, Ownable {
         bytes memory data = CallBreaker(payable(callBreaker)).fetchFromAssociatedDataStore(key);
 
         BlockTimeData memory moveTimeData = abi.decode(data, (BlockTimeData));
-        blockTime.moveTime(moveTimeData.chronicles, moveTimeData.meanCurrentErathTime, moveTimeData.mintTokensData.receiver, moveTimeData.mintTokensData.amounts);
-
-        CallObject memory callObj = CallObject({
-            amount: 0,
-            addr: address(this),
-            gas: 1000000,
-            callvalue: abi.encodeWithSignature("verifySignature(bytes)", data)
-        });
-
-        assertFutureCallTo(callObj, 1);
+        blockTime.moveTime(
+            moveTimeData.chronicles,
+            moveTimeData.meanCurrentErathTime,
+            moveTimeData.mintTokensData.receiver,
+            moveTimeData.mintTokensData.amounts
+        );
     }
 
     /// @notice function to be checked by Laminator before rescheduling a call to disburseKITNs
