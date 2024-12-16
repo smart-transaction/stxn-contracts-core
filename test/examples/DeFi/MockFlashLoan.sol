@@ -33,7 +33,7 @@ contract MockFlashLoan {
         return (dai.balanceOf(address(this)), weth.balanceOf(address(this)));
     }
 
-    function flashLoan(address receiver, uint256 daiAmount, uint256 wethAmount, bytes calldata data)
+    function flashLoan(address receiver, uint256 daiAmount, uint256 wethAmount, bytes memory data)
         external
         returns (bool)
     {

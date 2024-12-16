@@ -156,11 +156,10 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @notice Executes a function call immediately.
     /// @dev Decodes the provided `input` into a CallObject and then calls `_execute`.
     ///      Can only be invoked by the owner of the contract.
-    /// @param input The encoded CallObject containing information about the function call to execute.
+    /// @param callObjs The CallObjects containing information about the function call to execute.
     /// @return returnValue The return value from the executed function call.
-    function execute(bytes calldata input) external onlyOwner nonReentrant returns (bytes memory) {
-        CallObject[] memory callsToMake = abi.decode(input, (CallObject[]));
-        return _executeAll(callsToMake);
+    function execute(CallObject[] calldata callObjs) external onlyOwner nonReentrant returns (bytes memory) {
+        return _executeAll(callObjs);
     }
 
     /// @notice Copies the current job with a specified delay and condition.
@@ -215,17 +214,17 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
     /// @dev Adds a new CallObject to the `deferredCalls` mapping and emits a CallPushed event.
     ///      The function can only be called by the Laminator or the LaminatedProxy contract itself.
     ///      It can also be called re-entrantly to enable the contract to do cronjobs with tail recursion.
-    /// @param input The encoded CallObject containing information about the function call to defer.
+    /// @param callObjs The CallObjects containing information about the function call to defer.
     /// @param delay The number of blocks to delay before the function call can be executed.
     /// @param data Additional data to be associated with the sequence of call objs
     /// @return callSequenceNumber The sequence number assigned to this deferred call.
-    function push(bytes memory input, uint256 delay, SolverData[] memory data)
+    function push(CallObject[] memory callObjs, uint256 delay, SolverData[] memory data)
         public
         onlyLaminatorOrProxy
         returns (uint256 callSequenceNumber)
     {
         CallObjectHolder memory holder;
-        holder.callObjs = abi.decode(input, (CallObject[]));
+        holder.callObjs = callObjs;
         callSequenceNumber = _incrementSequenceNumber();
         holder.initialized = true;
         holder.executed = false;
@@ -288,7 +287,7 @@ contract LaminatedProxy is LaminatedStorage, ReentrancyGuard {
         _checkInitialized(coh);
         CallObjectHolder memory holder = coh.load();
 
-        return push(abi.encode(holder.callObjs), delay, holder.data);
+        return push(holder.callObjs, delay, holder.data);
     }
 
     /// @dev Safety checks before pushing calls to the LaminatedProxy

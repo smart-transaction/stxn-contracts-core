@@ -41,7 +41,7 @@ contract NoopTurnerTest is Test {
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
         callbreaker.executeAndVerify(
-            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
+            callObjs, returnObjs, associatedData
         );
     }
 }
