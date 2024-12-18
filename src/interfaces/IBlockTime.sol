@@ -9,7 +9,7 @@ interface IBlockTime {
     struct Chronicle {
         uint256 epoch;
         address timeKeeper;
-        bytes32 signature;
+        bytes signature;
     }
 
     /// @notice changes earth avg time
