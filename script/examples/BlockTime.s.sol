@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: GPL-3.0
 
 pragma solidity 0.8.26;
@@ -21,10 +20,10 @@ contract DeployBlockTime is Script, BaseDeployer {
     modifier computeCreate2(bytes32 salt) {
         _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
 
-        _blockTime =
-            computeCreate2Address(salt, hashInitCode(type(BlockTime).creationCode, abi.encode()));
-        _blockTimeScheduler = 
-            computeCreate2Address(salt, hashInitCode(type(BlockTimeScheduler).creationCode, abi.encode(_callBreaker, _blockTime)));
+        _blockTime = computeCreate2Address(salt, hashInitCode(type(BlockTime).creationCode, abi.encode()));
+        _blockTimeScheduler = computeCreate2Address(
+            salt, hashInitCode(type(BlockTimeScheduler).creationCode, abi.encode(_callBreaker, _blockTime))
+        );
 
         _;
     }
