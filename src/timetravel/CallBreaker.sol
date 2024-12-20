@@ -85,10 +85,8 @@ contract CallBreaker is CallBreakerStorage {
         FlashLoanData calldata flashLoanData
     ) external payable onlyPortalClosed {
         _setupExecutionData(callObjs, returnsBytes, associatedData);
-        bytes memory data = abi.encode(callObjs); 
-        IFlashLoan(flashLoanData.provider).flashLoan(
-            address(this), flashLoanData.amountA, flashLoanData.amountB, data
-        );
+        bytes memory data = abi.encode(callObjs);
+        IFlashLoan(flashLoanData.provider).flashLoan(address(this), flashLoanData.amountA, flashLoanData.amountB, data);
     }
 
     /**
