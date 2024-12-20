@@ -27,7 +27,10 @@ contract KITNDisburmentScheduler is SmarterContract, Ownable {
     address public callbreakerAddress;
     IDisbursalContract public disbursalContract;
 
-    constructor(address _callbreaker, address _disbursalContract, address _owner) SmarterContract(_callbreaker) Ownable(_owner) {
+    constructor(address _callbreaker, address _disbursalContract, address _owner)
+        SmarterContract(_callbreaker)
+        Ownable(_owner)
+    {
         callbreakerAddress = _callbreaker;
         disbursalContract = IDisbursalContract(_disbursalContract);
         shouldContinue = true;
