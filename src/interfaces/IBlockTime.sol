@@ -5,7 +5,6 @@ import "openzeppelin-contracts/contracts/access/IAccessControl.sol";
 import "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
 interface IBlockTime {
-
     struct Chronicle {
         uint256 epoch;
         address timeKeeper;
@@ -18,9 +17,9 @@ interface IBlockTime {
     /// @param receivers List of addresses that will receive TimeToken rewards
     /// @param amounts List of amounts of TimeToken to be minted for each receiver
     function moveTime(
-        Chronicle[] calldata chronicles, 
-        uint256 meanCurrentEarthTime, 
-        address[] calldata receivers, 
+        Chronicle[] calldata chronicles,
+        uint256 meanCurrentEarthTime,
+        address[] calldata receivers,
         uint256[] calldata amounts
     ) external;
 
