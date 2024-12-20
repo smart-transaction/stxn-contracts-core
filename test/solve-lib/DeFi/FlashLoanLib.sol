@@ -137,13 +137,8 @@ contract FlashLoanLib {
             AdditionalData({key: keccak256(abi.encodePacked("tipYourBartender")), value: abi.encodePacked(filler)});
         associatedData[1] =
             AdditionalData({key: keccak256(abi.encodePacked("pullIndex")), value: abi.encode(laminatorSequenceNumber)});
-        
-        callbreaker.executeAndVerify(
-            callObjs,
-            returnObjs,
-            associatedData,
-            generateFlashLoanData(address(flashLoan))
-        );
+
+        callbreaker.executeAndVerify(callObjs, returnObjs, associatedData, generateFlashLoanData(address(flashLoan)));
     }
 
     function generateFlashLoanData(address _flashLoan) public pure returns (FlashLoanData memory) {

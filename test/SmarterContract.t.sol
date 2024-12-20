@@ -143,9 +143,7 @@ contract SmarterContractTest is Test {
         hintdices[1] = AdditionalData({key: keccak256(abi.encode(callObjs[1])), value: abi.encode(1)});
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.executeAndVerify(
-            callObjs, returnObjs, associatedData
-        );
+        callbreaker.executeAndVerify(callObjs, returnObjs, associatedData);
     }
 
     function testFail_FrontrunBlocker() external {
@@ -192,9 +190,7 @@ contract SmarterContractTest is Test {
         hintdices[1] = AdditionalData({key: keccak256(abi.encode(callObjs[1])), value: abi.encode(1)});
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.executeAndVerify(
-            callObjs, returnObjs, associatedData
-        );
+        callbreaker.executeAndVerify(callObjs, returnObjs, associatedData);
     }
 
     function testBackrunBlocker() external {
@@ -241,9 +237,7 @@ contract SmarterContractTest is Test {
         hintdices[1] = AdditionalData({key: keccak256(abi.encode(callObjs[1])), value: abi.encode(1)});
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.executeAndVerify(
-            callObjs, returnObjs, associatedData
-        );
+        callbreaker.executeAndVerify(callObjs, returnObjs, associatedData);
     }
 
     function testFail_BackrunBlocker() external {
@@ -290,9 +284,7 @@ contract SmarterContractTest is Test {
         hintdices[1] = AdditionalData({key: keccak256(abi.encode(callObjs[1])), value: abi.encode(1)});
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.executeAndVerify(
-            callObjs, returnObjs, associatedData
-        );
+        callbreaker.executeAndVerify(callObjs, returnObjs, associatedData);
     }
 
     function testAssertFutureCallTo() external {
@@ -344,9 +336,7 @@ contract SmarterContractTest is Test {
         hintdices[1] = AdditionalData({key: keccak256(abi.encode(callObjs[1])), value: abi.encode(1)});
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.executeAndVerify(
-            callObjs, returnObjs, associatedData
-        );
+        callbreaker.executeAndVerify(callObjs, returnObjs, associatedData);
 
         callbreakerHarness.setPortalOpen(callObjs, returnObjs);
 
@@ -404,9 +394,7 @@ contract SmarterContractTest is Test {
         hintdices[1] = AdditionalData({key: keccak256(abi.encode(callObjs[1])), value: abi.encode(1)});
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.executeAndVerify(
-            callObjs, returnObjs, associatedData
-        );
+        callbreaker.executeAndVerify(callObjs, returnObjs, associatedData);
 
         uint256 callLength = 3;
         uint256 executeIndex = 2;
@@ -477,9 +465,7 @@ contract SmarterContractTest is Test {
         hintdices[1] = AdditionalData({key: keccak256(abi.encode(callObjs[1])), value: abi.encode(1)});
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.executeAndVerify(
-            callObjs, returnObjs, associatedData
-        );
+        callbreaker.executeAndVerify(callObjs, returnObjs, associatedData);
 
         uint256 callLength = 3;
         uint256 executeIndex = 2;

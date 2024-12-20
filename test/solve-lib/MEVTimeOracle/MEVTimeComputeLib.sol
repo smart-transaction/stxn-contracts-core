@@ -82,8 +82,6 @@ contract MEVTimeComputeLib {
         hintdices[0] = AdditionalData({key: keccak256(abi.encode(callObjs[0])), value: abi.encode(0)});
         hintdices[1] = AdditionalData({key: keccak256(abi.encode(callObjs[1])), value: abi.encode(1)});
 
-        callbreaker.executeAndVerify(
-            callObjs, returnObjs, associatedData
-        );
+        callbreaker.executeAndVerify(callObjs, returnObjs, associatedData);
     }
 }

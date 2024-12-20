@@ -23,12 +23,8 @@ contract BlockTimeSchedulerTest is Test, BlockTimeSchedulerLib {
 
         // start deployer calls
         vm.startPrank(deployer);
-        (address pusherLaminated, address _blockTimeScheduler) = deployerLand(pusher);
+        deployerLand(pusher);
         vm.stopPrank();
-
-        BlockTimeScheduler blockTimeScheduler = BlockTimeScheduler(_blockTimeScheduler);
-        vm.prank(pusher);
-        blockTimeScheduler.transferOwnership(pusherLaminated);
 
         // Label operations in the run function.
         vm.label(pusher, "pusher");

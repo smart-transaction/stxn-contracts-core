@@ -21,15 +21,15 @@ contract BlockTimeSchedulerLib {
     uint256 constant tipWei = 33;
     bytes32 public constant SELECTOR = keccak256(abi.encode("BLOCKTIME.UPDATE_TIME"));
 
-    function deployerLand(address pusher) public returns (address, address) {
+    function deployerLand(address pusher) public {
         // Initializing contracts
         callBreaker = new CallBreaker();
         laminator = new Laminator(address(callBreaker));
-        blockTime = new BlockTime(timeTokenName, timeTokenSymbol);
-        blockTimeScheduler = new BlockTimeScheduler(address(callBreaker), address(blockTime), pusher);
+        blockTime = new BlockTime();
+        blockTimeScheduler = new BlockTimeScheduler(address(callBreaker), address(blockTime));
         blockTime.grantRole(blockTime.SCHEDULER_ROLE(), address(blockTimeScheduler));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
-        return (address(pusherLaminated), address(blockTimeScheduler));
+        blockTimeScheduler.grantRole(blockTimeScheduler.TIME_SOLVER(), address(pusherLaminated));
     }
 
     function userLand() public returns (uint256) {
@@ -66,11 +66,12 @@ contract BlockTimeSchedulerLib {
         SolverData[] memory dataValues = new SolverData[](1);
         dataValues[0] = data;
 
-        return laminator.pushToProxy(abi.encode(pusherCallObjs), 1, SELECTOR, dataValues);
+        return laminator.pushToProxy(pusherCallObjs, 1, SELECTOR, dataValues);
     }
 
     function solverLand(uint256 laminatorSequenceNumber, address filler, address pusher) public {
-        BlockTimeScheduler.BlockTimeData memory data = _getUpdateTimeData(filler, pusher);
+        (bytes memory chroniclesData, bytes memory meanTimeData, bytes memory receiversData, bytes memory amountsData) =
+            _getUpdateTimeData(filler, pusher);
 
         CallObject[] memory callObjs = new CallObject[](1);
         ReturnObject[] memory returnObjs = new ReturnObject[](1);
@@ -89,37 +90,40 @@ contract BlockTimeSchedulerLib {
 
         returnObjs[0] = ReturnObject({returnvalue: abi.encode(abi.encode(returnObjsFromPull))});
 
-        AdditionalData[] memory associatedData = new AdditionalData[](3);
+        AdditionalData[] memory associatedData = new AdditionalData[](6);
         associatedData[0] =
             AdditionalData({key: keccak256(abi.encodePacked("tipYourBartender")), value: abi.encodePacked(filler)});
         associatedData[1] =
             AdditionalData({key: keccak256(abi.encodePacked("pullIndex")), value: abi.encode(laminatorSequenceNumber)});
-        associatedData[2] = AdditionalData({key: keccak256(abi.encodePacked("MoveTimeData")), value: abi.encode(data)});
+        associatedData[2] = AdditionalData({key: keccak256(abi.encodePacked("Chronicles")), value: chroniclesData});
+        associatedData[3] = AdditionalData({key: keccak256(abi.encodePacked("CurrentMeanTime")), value: meanTimeData});
+        associatedData[4] = AdditionalData({key: keccak256(abi.encodePacked("Recievers")), value: receiversData});
+        associatedData[5] = AdditionalData({key: keccak256(abi.encodePacked("Amounts")), value: amountsData});
 
-        AdditionalData[] memory hintdices = new AdditionalData[](1);
-        hintdices[0] = AdditionalData({key: keccak256(abi.encode(callObjs[0])), value: abi.encode(0)});
-
-        callBreaker.executeAndVerify(
-            abi.encode(callObjs), abi.encode(returnObjs), abi.encode(associatedData), abi.encode(hintdices)
-        );
+        callBreaker.executeAndVerify(callObjs, returnObjs, associatedData);
     }
 
     function _getUpdateTimeData(address receiver, address pusher)
         private
         view
-        returns (BlockTimeScheduler.BlockTimeData memory)
+        returns (
+            bytes memory chroniclesData,
+            bytes memory meanTimeData,
+            bytes memory receiversData,
+            bytes memory amountsData
+        )
     {
         IBlockTime.Chronicle[] memory chronicles = new IBlockTime.Chronicle[](1);
-        chronicles[0] = IBlockTime.Chronicle(100, pusher, bytes32(0));
+        chronicles[0] = IBlockTime.Chronicle(100, pusher, bytes(""));
         address[] memory receivers = new address[](1);
         uint256[] memory amounts = new uint256[](1);
 
         receivers[0] = receiver;
         amounts[0] = 1e18;
 
-        BlockTimeScheduler.BatchMintData memory batchMintData = BlockTimeScheduler.BatchMintData(receivers, amounts);
-        BlockTimeScheduler.BlockTimeData memory data =
-            BlockTimeScheduler.BlockTimeData(chronicles, block.timestamp, batchMintData);
-        return data;
+        chroniclesData = abi.encode(chronicles);
+        meanTimeData = abi.encode(block.timestamp);
+        receiversData = abi.encode(receivers);
+        amountsData = abi.encode(amounts);
     }
 }

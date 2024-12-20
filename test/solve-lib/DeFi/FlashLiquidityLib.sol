@@ -140,8 +140,6 @@ contract FlashLiquidityLib {
         hintdices[3] = AdditionalData({key: keccak256(abi.encode(callObjs[3])), value: abi.encode(3)});
         hintdices[4] = AdditionalData({key: keccak256(abi.encode(callObjs[4])), value: abi.encode(4)});
 
-        callbreaker.executeAndVerify(
-            callObjs, returnObjs, associatedData
-        );
+        callbreaker.executeAndVerify(callObjs, returnObjs, associatedData);
     }
 }
