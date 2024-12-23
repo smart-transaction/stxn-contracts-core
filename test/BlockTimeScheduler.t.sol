@@ -23,7 +23,7 @@ contract BlockTimeSchedulerTest is Test, BlockTimeSchedulerLib {
 
         // start deployer calls
         vm.startPrank(deployer);
-        deployerLand(pusher);
+        deployerLand(pusher, deployer);
         vm.stopPrank();
 
         // Label operations in the run function.

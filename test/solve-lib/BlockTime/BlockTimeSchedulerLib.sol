@@ -21,12 +21,12 @@ contract BlockTimeSchedulerLib {
     uint256 constant tipWei = 33;
     bytes32 public constant SELECTOR = keccak256(abi.encode("BLOCKTIME.UPDATE_TIME"));
 
-    function deployerLand(address pusher) public {
+    function deployerLand(address pusher, address deployer) public {
         // Initializing contracts
         callBreaker = new CallBreaker();
         laminator = new Laminator(address(callBreaker));
-        blockTime = new BlockTime();
-        blockTimeScheduler = new BlockTimeScheduler(address(callBreaker), address(blockTime));
+        blockTime = new BlockTime(deployer);
+        blockTimeScheduler = new BlockTimeScheduler(address(callBreaker), address(blockTime), deployer);
         blockTime.grantRole(blockTime.SCHEDULER_ROLE(), address(blockTimeScheduler));
         pusherLaminated = payable(laminator.computeProxyAddress(pusher));
         blockTimeScheduler.grantRole(blockTimeScheduler.TIME_SOLVER(), address(pusherLaminated));
@@ -62,7 +62,7 @@ contract BlockTimeSchedulerLib {
 
         pusherCallObjs[2] = CallObject({amount: tipWei, addr: address(callBreaker), gas: 10000000, callvalue: ""});
 
-        SolverData memory data = SolverData({name: "CRON", datatype: DATATYPE.UINT256, value: "5m"});
+        SolverData memory data = SolverData({name: "BLOCKCLOCK", datatype: DATATYPE.STRING, value: "xx"});
         SolverData[] memory dataValues = new SolverData[](1);
         dataValues[0] = data;
 
