@@ -20,9 +20,9 @@ contract DeployBlockTime is Script, BaseDeployer {
     modifier computeCreate2(bytes32 salt) {
         _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
 
-        _blockTime = computeCreate2Address(salt, hashInitCode(type(BlockTime).creationCode, abi.encode()));
+        _blockTime = computeCreate2Address(salt, hashInitCode(type(BlockTime).creationCode, abi.encode(_ownerAddress)));
         _blockTimeScheduler = computeCreate2Address(
-            salt, hashInitCode(type(BlockTimeScheduler).creationCode, abi.encode(_callBreaker, _blockTime))
+            salt, hashInitCode(type(BlockTimeScheduler).creationCode, abi.encode(_callBreaker, _blockTime, _ownerAddress))
         );
 
         _;
@@ -56,8 +56,8 @@ contract DeployBlockTime is Script, BaseDeployer {
 
     /// @dev Function to perform actual deployment.
     function chainDeployBlockTime() private broadcast(_deployerPrivateKey) {
-        address blockTime = address(new BlockTime{salt: _salt}());
-        address blockTimeScheduler = address(new BlockTimeScheduler{salt: _salt}(_callBreaker, blockTime));
+        address blockTime = address(new BlockTime{salt: _salt}(_ownerAddress));
+        address blockTimeScheduler = address(new BlockTimeScheduler{salt: _salt}(_callBreaker, blockTime, _ownerAddress));
 
         require(_blockTime == blockTime, "Address mismatch BlockTime");
         require(_blockTimeScheduler == blockTimeScheduler, "Address mismatch BlockTimeScheduler");

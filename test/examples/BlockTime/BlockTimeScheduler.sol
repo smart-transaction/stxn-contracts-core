@@ -30,13 +30,13 @@ contract BlockTimeScheduler is SmarterContract, AccessControl {
     address public callBreaker;
     IBlockTime public blockTime;
 
-    constructor(address _callBreaker, address _blockTime) SmarterContract(_callBreaker) {
+    constructor(address _callBreaker, address _blockTime, address _admin) SmarterContract(_callBreaker) {
         callBreaker = _callBreaker;
         blockTime = IBlockTime(_blockTime);
         shouldContinue = true;
 
-        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _grantRole(ADMIN_ROLE, _msgSender());
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        _grantRole(ADMIN_ROLE, _admin);
     }
 
     /// @dev The onlyOwner modifier will be later changed to execute calls through a governance proposal
