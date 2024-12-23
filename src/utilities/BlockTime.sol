@@ -33,10 +33,10 @@ contract BlockTime is IBlockTime, AccessControl, ReentrancyGuard {
     );
     event MaxBlockWidthSet(uint256 maxBlockWidth);
 
-    constructor() {
+    constructor(address _admin) {
         timeToken = new TimeToken();
-        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _grantRole(ADMIN_ROLE, _msgSender());
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        _grantRole(ADMIN_ROLE, _admin);
     }
 
     /// @notice changes earth avg time
