@@ -107,8 +107,6 @@ contract CronCounterLib {
             associatedData[1].value = abi.encode(laminatorSequenceNumber + 1);
         }
 
-        callbreaker.executeAndVerify(
-            callObjs, returnObjs, associatedData
-        );
+        callbreaker.executeAndVerify(callObjs, returnObjs, associatedData);
     }
 }

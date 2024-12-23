@@ -40,8 +40,6 @@ contract NoopTurnerTest is Test {
         hintdices[0] = AdditionalData({key: keccak256(abi.encode(callObjs[0])), value: abi.encode(0)});
 
         vm.prank(address(0xdeadbeef), address(0xdeadbeef));
-        callbreaker.executeAndVerify(
-            callObjs, returnObjs, associatedData
-        );
+        callbreaker.executeAndVerify(callObjs, returnObjs, associatedData);
     }
 }
