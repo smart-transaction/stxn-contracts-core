@@ -1,84 +1,91 @@
 import * as dotenv from 'dotenv';
-import fs from 'fs';
-import csvParser from 'csv-parser';
+import fetch from 'node-fetch';
 import chalk from 'chalk';
 
 dotenv.config();
 
-const { CSV_FILE_PATH, FROM_DATE, TO_DATE } = process.env;
+const { GRAPHQL_URL, AUTHORIZATION, FROM_BLOCK, TO_BLOCK, CUSTOM_QUERY } = process.env;
+const apiUrl = GRAPHQL_URL && GRAPHQL_URL.trim() !== "" ? GRAPHQL_URL : 'https://streaming.bitquery.io/graphql';
 
-if (!CSV_FILE_PATH || !FROM_DATE || !TO_DATE) {
-  throw new Error('Missing required environment variables: CSV_FILE_PATH, FROM_DATE, TO_DATE');
+if (!apiUrl || !AUTHORIZATION || !FROM_BLOCK || !TO_BLOCK) {
+    throw new Error('Missing one or more required environment variables: GRAPHQL_URL, AUTHORIZATION, FROM_BLOCK, TO_BLOCK');
 }
 
-// Convert the FROM_DATE and TO_DATE from string to Date object
-const fromDate = new Date(FROM_DATE.replace(' ', 'T')); // Replace space with 'T' to make it ISO 8601
-const toDate = new Date(TO_DATE.replace(' ', 'T')); // Replace space with 'T' to make it ISO 8601
-
-// Check if the dates are valid
-if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-  throw new Error('Invalid date format in .env file. Ensure FROM_DATE and TO_DATE are valid date strings.');
-}
-
-// Function to read and parse the CSV file, then calculate the total burnt ETH
-async function calculateBurntETH() {
-  return new Promise((resolve, reject) => {
-    const burntFeesColumn = 'Burnt Fees (ETH)';
-    const dateColumn = 'DateTime (UTC)';
-    let totalBurntETH = 0;
-    let foundBlocks = 0;
-
-    fs.createReadStream(CSV_FILE_PATH)
-      .pipe(csvParser())
-      .on('data', (row) => {
-        try {
-          // Parse the 'DateTime (UTC)' and convert to a valid timestamp
-          const blockDate = row[dateColumn];
-          const blockTimestamp = new Date(blockDate.replace(' ', 'T')).getTime(); // Replace space with 'T' to match ISO format
-          
-          if (isNaN(blockTimestamp)) {
-            throw new Error(`Invalid date format in row: ${JSON.stringify(row)}`);
+// If a custom query is provided, use it; otherwise, use the default query
+const defaultQuery = `
+  subscription {
+    EVM(network: eth) {
+      Blocks(
+        orderBy: {ascending: Block_Time}
+        where: {Block: {Number: {gt: "${FROM_BLOCK}", le: "${TO_BLOCK}"}}}
+      ) {
+        Block {
+          Number
+          Date
+          BaseFee
+          Result {
+            Errors
+            Gas
           }
-
-          // Get the burnt fees (ETH) for the current block
-          const burntFees = parseFloat(row[burntFeesColumn]);
-
-          if (isNaN(burntFees)) {
-            throw new Error(`Invalid burnt fee value in row: ${JSON.stringify(row)}`);
-          }
-
-          // Check if the block timestamp is within the given date range
-          if (blockTimestamp >= fromDate.getTime() && blockTimestamp <= toDate.getTime()) {
-            totalBurntETH += burntFees;
-            foundBlocks++;
-          }
-        } catch (error) {
-          // Catch any error in parsing the CSV row
-          console.error(chalk.red(`Error processing row: ${error.message}`));
         }
-      })
-      .on('end', () => {
-        if (foundBlocks === 0) {
-          reject(new Error(`No blocks found between the specified dates (${fromDate} and ${toDate})`));
-        } else {
-          resolve(totalBurntETH);
-        }
-      })
-      .on('error', (error) => {
-        reject(new Error(`Error reading CSV file: ${error.message}`));
-      });
-  });
-}
-
-// Run the script
-async function main() {
-  try {
-    const totalBurntETH = await calculateBurntETH();
-    console.log(chalk.green(`Total Burnt ETH between blocks: ${totalBurntETH} ETH`));
-  } catch (error) {
-    console.error(chalk.red(`Error: ${error.message}`));
-    process.exit(1);
+      }
+    }
   }
+`;
+
+const query = CUSTOM_QUERY && CUSTOM_QUERY.trim() !== "" ? CUSTOM_QUERY : defaultQuery;
+
+// Function to fetch blocks from the BitQuery GraphQL API
+async function fetchBlocksFromGraphQL() {
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${AUTHORIZATION}`,
+        },
+        body: JSON.stringify({ query: query, variables: {} }),
+    });
+
+    const data = await response.json();
+
+    if (data.errors) {
+        throw new Error(`Error fetching data: ${JSON.stringify(data.errors)}`);
+    }
+
+    return data.data.EVM.Blocks || [];
 }
 
-main();
+// Function to calculate the total burnt ETH
+async function calculateBurntETH() {
+    try {
+        const blocks = await fetchBlocksFromGraphQL();
+        let totalBurntETH = 0;
+
+        blocks.forEach(block => {
+            const { BaseFee, Result } = block.Block;
+
+            if (Result.Errors === "") {
+                const gas = parseFloat(Result.Gas);
+                const baseFee = parseFloat(BaseFee);
+
+                if (!isNaN(gas) && !isNaN(baseFee)) {
+                    const burntFees = gas * baseFee;
+                    totalBurntETH += burntFees;
+                } else {
+                    console.error(chalk.red(`Invalid Gas/BaseFee in block ${block.Block.Number}`));
+                }
+            }
+        });
+
+        if (totalBurntETH === 0) {
+            console.log(chalk.yellow('No burnt ETH found for the specified blocks.'));
+        } else {
+            console.log(chalk.green(`Total Burnt ETH between blocks ${FROM_BLOCK} and ${TO_BLOCK}: ${totalBurntETH} ETH`));
+        }
+    } catch (error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+        process.exit(1);
+    }
+}
+
+calculateBurntETH();

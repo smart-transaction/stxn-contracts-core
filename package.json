@@ -5,6 +5,7 @@
   "dependencies": {
     "chalk": "^5.4.1",
     "csv-parser": "^3.1.0",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "node-fetch": "^3.3.2"
   }
 }
