@@ -4,6 +4,7 @@ out = 'out'
 libs = ['lib']
 evm_version = "cancun"
 solc = "0.8.26"
+via_ir = true
 
 ffi = true
 ast = true
