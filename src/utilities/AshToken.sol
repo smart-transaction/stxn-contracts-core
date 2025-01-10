@@ -24,12 +24,12 @@ contract ASHToken is ERC20, AccessControl, ReentrancyGuard {
         _grantRole(MINTER_ROLE, admin);
     }
 
-    function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) nonReentrant {
+    function mint(address to, uint256 amount, uint256 latestBlockNumber) external onlyRole(MINTER_ROLE) nonReentrant {
         require(to != address(0), InvalidMintAddress());
 
         _mint(to, amount);
-        latestMintBlock = block.number;
+        latestMintBlock = latestBlockNumber;
 
-        emit LatestMintBlockUpdated(latestMintBlock);
+        emit LatestMintBlockUpdated(latestBlockNumber);
     }
 }
