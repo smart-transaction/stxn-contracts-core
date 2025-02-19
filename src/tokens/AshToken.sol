@@ -3,7 +3,6 @@ pragma solidity 0.8.26;
 
 import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-contracts/contracts/access/AccessControl.sol";
-import "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
 // ASH Token Contract
 contract ASHToken is ERC20, AccessControl, ReentrancyGuard {
@@ -24,12 +23,11 @@ contract ASHToken is ERC20, AccessControl, ReentrancyGuard {
         _grantRole(MINTER_ROLE, admin);
     }
 
-    function mint(address to, uint256 amount, uint256 latestBlockNumber) external onlyRole(MINTER_ROLE) nonReentrant {
+    function mint(address to, uint256 amount, uint256 latestBlockNumber) external onlyRole(MINTER_ROLE) {
         require(to != address(0), InvalidMintAddress());
+        latestMintBlock = latestBlockNumber;
+        emit LatestMintBlockUpdated(latestBlockNumber);
 
         _mint(to, amount);
-        latestMintBlock = latestBlockNumber;
-
-        emit LatestMintBlockUpdated(latestBlockNumber);
     }
 }
