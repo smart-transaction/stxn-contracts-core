@@ -5,7 +5,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-contracts/contracts/access/AccessControl.sol";
 
 // ASH Token Contract
-contract ASHToken is ERC20, AccessControl, ReentrancyGuard {
+contract ASHToken is ERC20, AccessControl {
     // Define the MINTER_ROLE constant
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 

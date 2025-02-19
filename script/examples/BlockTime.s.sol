@@ -5,7 +5,7 @@ pragma solidity 0.8.26;
 import {Script} from "forge-std/Script.sol";
 import {BaseDeployer} from "../BaseDeployer.s.sol";
 import {BlockTime} from "src/utilities/BlockTime.sol";
-import {BlockTimeScheduler} from "test/examples/BlockTime/BlockTimeScheduler.sol";
+import {BlockTimeScheduler} from "src/schedulers/BlockTimeScheduler.sol";
 
 /* solhint-disable no-console*/
 import {console2} from "forge-std/console2.sol";

@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import {CallBreaker, CallObject, ReturnObject, AdditionalData} from "src/timetravel/CallBreaker.sol";
 import {Laminator, SolverData} from "src/lamination/Laminator.sol";
 import {KITNDisbursalContract} from "src/utilities/KITNDisbursalContract.sol";
-import {KITNDisburmentScheduler} from "test/examples/MEVOracle/KITNDisburmentScheduler.sol";
+import {KITNDisburmentScheduler} from "src/schedulers/KITNDisburmentScheduler.sol";
 import {MockERC20Token} from "test/utils/MockERC20Token.sol";
 import {Constants} from "test/utils/Constants.sol";
 import {DATATYPE} from "src/TimeTypes.sol";

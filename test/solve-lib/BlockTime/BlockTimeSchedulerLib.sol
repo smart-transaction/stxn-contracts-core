@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.26;
 
+import "src/timetravel/CallBreaker.sol";
 import {IBlockTime, BlockTime} from "src/utilities/BlockTime.sol";
 import {Laminator, SolverData} from "src/lamination/Laminator.sol";
-import "src/timetravel/CallBreaker.sol";
-import {BlockTimeScheduler} from "test/examples/BlockTime/BlockTimeScheduler.sol";
+import {BlockTimeScheduler} from "src/schedulers/BlockTimeScheduler.sol";
 import {TimeToken} from "src/tokens/TimeToken.sol";
 import {DATATYPE} from "src/TimeTypes.sol";
 
