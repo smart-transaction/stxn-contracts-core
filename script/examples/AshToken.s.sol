@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 
 import {Script} from "forge-std/Script.sol";
 import {BaseDeployer} from "../BaseDeployer.s.sol";
-import {ASHToken} from "src/utilities/AshToken.sol";
+import {ASHToken} from "src/tokens/AshToken.sol";
 
 /* solhint-disable no-console*/
 import {console2} from "forge-std/console2.sol";

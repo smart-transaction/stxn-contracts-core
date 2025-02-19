@@ -5,7 +5,7 @@ import {IBlockTime, BlockTime} from "src/utilities/BlockTime.sol";
 import {Laminator, SolverData} from "src/lamination/Laminator.sol";
 import "src/timetravel/CallBreaker.sol";
 import {BlockTimeScheduler} from "test/examples/BlockTime/BlockTimeScheduler.sol";
-import {TimeToken} from "src/utilities/TimeToken.sol";
+import {TimeToken} from "src/tokens/TimeToken.sol";
 import {DATATYPE} from "src/TimeTypes.sol";
 
 contract BlockTimeSchedulerLib {
