@@ -4,18 +4,18 @@ pragma solidity 0.8.26;
 
 import {Script} from "forge-std/Script.sol";
 import {BaseDeployer} from "../BaseDeployer.s.sol";
-import {ASHToken} from "src/tokens/AshToken.sol";
+import {AshToken} from "src/tokens/AshToken.sol";
 
 /* solhint-disable no-console*/
 import {console2} from "forge-std/console2.sol";
 
-contract DeployASHToken is Script, BaseDeployer {
+contract DeployAshToken is Script, BaseDeployer {
     address private _ashToken;
 
     /// @dev Compute the CREATE2 addresses for contracts (proxy, counter).
-    /// @param salt The salt for the ASHToken contract.
+    /// @param salt The salt for the AshToken contract.
     modifier computeCreate2(bytes32 salt) {
-        _ashToken = computeCreate2Address(salt, hashInitCode(type(ASHToken).creationCode, abi.encode(_ownerAddress)));
+        _ashToken = computeCreate2Address(salt, hashInitCode(type(AshToken).creationCode, abi.encode(_ownerAddress)));
 
         _;
     }
@@ -29,10 +29,10 @@ contract DeployASHToken is Script, BaseDeployer {
         computeCreate2(_salt)
         returns (address)
     {
-        console2.log("ASHToken create2 address:", _ashToken, "\n");
+        console2.log("AshToken create2 address:", _ashToken, "\n");
 
         for (uint256 i; i < deployForks.length;) {
-            console2.log("Deploying ASHToken to chain: ", uint256(deployForks[i]), "\n");
+            console2.log("Deploying AshToken to chain: ", uint256(deployForks[i]), "\n");
 
             createSelectFork(deployForks[i]);
 
@@ -47,10 +47,10 @@ contract DeployASHToken is Script, BaseDeployer {
 
     /// @dev Function to perform actual deployment.
     function chainDeployAshToken() private broadcast(_deployerPrivateKey) {
-        address ashToken = address(new ASHToken{salt: _salt}(_ownerAddress));
+        address ashToken = address(new AshToken{salt: _salt}(_ownerAddress));
 
-        require(_ashToken == ashToken, "Address mismatch ASHToken");
+        require(_ashToken == ashToken, "Address mismatch AshToken");
 
-        console2.log("ASHToken deployed at address:", ashToken, "\n");
+        console2.log("AshToken deployed at address:", ashToken, "\n");
     }
 }
