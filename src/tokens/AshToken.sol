@@ -25,7 +25,8 @@ contract AshToken is ERC20, AccessControl {
 
     function mint(address to, uint256 amount, uint256 latestBlockNumber) external onlyRole(MINTER_ROLE) {
         require(to != address(0), InvalidMintAddress());
-        latestMintBlock = latestBlockNumber;
+        require(latestBlockNumber - latestMintBlock == 1, "Inconsistent Update");
+        latestMintBlock++;
         emit LatestMintBlockUpdated(latestBlockNumber);
 
         _mint(to, amount);
