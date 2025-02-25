@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
-import "src/utilities/TimeToken.sol";
+import "src/tokens/TimeToken.sol";
 import "src/interfaces/IBlockTime.sol";
 
 contract BlockTime is IBlockTime, AccessControl, ReentrancyGuard {

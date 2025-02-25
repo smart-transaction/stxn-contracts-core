@@ -4,27 +4,29 @@ pragma solidity 0.8.26;
 
 import {Script} from "forge-std/Script.sol";
 import {BaseDeployer} from "../BaseDeployer.s.sol";
-import {KITNDisburmentScheduler} from "src/schedulers/KITNDisburmentScheduler.sol";
+import {AshMintScheduler} from "src/schedulers/AshMintScheduler.sol";
 
 /* solhint-disable no-console*/
 import {console2} from "forge-std/console2.sol";
 
-contract DeployKITNDisburmentScheduler is Script, BaseDeployer {
+contract DeployAshMintScheduler is Script, BaseDeployer {
     address private _callBreaker;
-    address private _kitnDisbursalCtr;
-    address private _kitnOwner;
+    address private _ashBI;
+    address private _ashB;
+    address private _ashBIS;
 
     /// @dev Compute the CREATE2 addresses for contracts (proxy, counter).
-    /// @param salt The salt for the KITNDisburmentScheduler contract.
+    /// @param salt The salt for the AshMintScheduler contract.
     modifier computeCreate2(bytes32 salt) {
-        _kitnDisbursalCtr = vm.envAddress("KITN_DISBURSAL_ADDRESS");
-        _kitnOwner = vm.envAddress("KITN_OWNER");
+        _ashBI = vm.envAddress("ASH_BI");
+        _ashB = vm.envAddress("ASH_B");
+        _ashBIS = vm.envAddress("ASH_BIS");
         _callBreaker = vm.envAddress("CALL_BREAKER_ADDRESS");
 
         _create2addr = computeCreate2Address(
             salt,
             hashInitCode(
-                type(KITNDisburmentScheduler).creationCode, abi.encode(_callBreaker, _kitnDisbursalCtr, _kitnOwner)
+                type(AshMintScheduler).creationCode, abi.encode(_callBreaker, _ownerAddress, _ashBI, _ashB, _ashBIS, _ownerAddress)
             )
         );
 
@@ -40,10 +42,10 @@ contract DeployKITNDisburmentScheduler is Script, BaseDeployer {
         computeCreate2(_salt)
         returns (address)
     {
-        console2.log("KITNDisburmentScheduler create2 address:", _create2addr, "\n");
+        console2.log("AshMintScheduler create2 address:", _create2addr, "\n");
 
         for (uint256 i; i < deployForks.length;) {
-            console2.log("Deploying KITNDisburmentScheduler to chain: ", uint256(deployForks[i]), "\n");
+            console2.log("Deploying AshMintScheduler to chain: ", uint256(deployForks[i]), "\n");
 
             createSelectFork(deployForks[i]);
 
@@ -58,11 +60,11 @@ contract DeployKITNDisburmentScheduler is Script, BaseDeployer {
 
     /// @dev Function to perform actual deployment.
     function _chainDeployFlashLoan() private broadcast(_deployerPrivateKey) {
-        address kitnDisbursalCt =
-            address(new KITNDisburmentScheduler{salt: _salt}(_callBreaker, _kitnDisbursalCtr, _kitnOwner));
+        address _ashMintScheduler =
+            address(new AshMintScheduler{salt: _salt}(_callBreaker, _ownerAddress, _ashBI, _ashB, _ashBIS, _ownerAddress));
 
-        require(_create2addr == kitnDisbursalCt, "Address mismatch KITNDisburmentScheduler");
+        require(_create2addr == _ashMintScheduler, "Address mismatch AshMintScheduler");
 
-        console2.log("KITNDisburmentScheduler deployed at address:", kitnDisbursalCt, "\n");
+        console2.log("AshMintScheduler deployed at address:", _ashMintScheduler, "\n");
     }
 }
